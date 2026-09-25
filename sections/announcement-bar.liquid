@@ -1,0 +1,37 @@
+{%- capture run -%}
+  <div class="marquee__run">
+    {%- for block in section.blocks -%}
+      {%- if block.settings.text contains '[countdown]' and settings.sale_end == blank -%}{%- continue -%}{%- endif -%}
+      {%- if block.settings.text contains '[stock]' and settings.sale_stock <= 0 -%}{%- continue -%}{%- endif -%}
+      <div class="sale-bar__item" {{ block.shopify_attributes }}>
+        {%- if forloop.first %}<span class="sale-bar__dot"></span>{% endif -%}
+        {{- block.settings.text | escape | replace: '[countdown]', '<span data-countdown>–</span>' | replace: '[stock]', settings.sale_stock -}}
+        <span class="sale-bar__sep">✦</span>
+      </div>
+    {%- endfor -%}
+  </div>
+{%- endcapture -%}
+{%- if section.blocks.size > 0 -%}
+  <div class="sale-bar" role="marquee" aria-label="Sale">
+    <div class="marquee" style="animation-duration:{{ section.settings.speed }}s">{{ run }}{{ run | replace: 'class="marquee__run"', 'class="marquee__run" aria-hidden="true"' }}</div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Sale marquee",
+  "settings": [
+    { "type": "range", "id": "speed", "label": "Loop duration (seconds)", "min": 10, "max": 60, "step": 2, "default": 28 }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Item",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Text", "default": "WE SHIP NATIONWIDE", "info": "Use [countdown] for the timer and [stock] for stands left." }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Sale marquee" }]
+}
+{% endschema %}

@@ -1,0 +1,57 @@
+<section class="sec sec--tight">
+  <div class="sec__titles"><div class="eyebrow">YOUR ORDER</div><h1 class="h2">Cart</h1></div>
+
+  {%- if cart.item_count > 0 -%}
+    <form action="{{ routes.cart_url }}" method="post" class="cart">
+      <div class="cart__lines">
+        {%- for item in cart.items -%}
+          <div class="line">
+            <a class="line__img" href="{{ item.url }}">
+              {%- if item.image -%}{{ item.image | image_url: width: 240 | image_tag: loading: 'lazy', alt: item.title }}{%- else -%}{{ 'product-1' | placeholder_svg_tag: 'p-card__ph' }}{%- endif -%}
+            </a>
+            <div class="line__info">
+              <a class="line__title" href="{{ item.url }}">{{ item.product.title | escape }}</a>
+              {%- unless item.product.has_only_default_variant %}<div class="m3">{{ item.variant.title | escape }}</div>{% endunless -%}
+              {%- if item.selling_plan_allocation %}<div class="lime mono-12">{{ item.selling_plan_allocation.selling_plan.name | escape }}</div>{% endif -%}
+              {%- for p in item.properties -%}
+                {%- assign first = p.first | slice: 0 -%}
+                {%- if p.last != blank and first != '_' -%}<div class="line__prop"><span>{{ p.first | escape }}:</span> {{ p.last | escape }}</div>{%- endif -%}
+              {%- endfor -%}
+              {%- for d in item.line_level_discount_allocations -%}<div class="lime mono-12">{{ d.discount_application.title | escape }} (−{{ d.amount | money }})</div>{%- endfor -%}
+            </div>
+            <div class="line__qty">
+              <input class="field__in" type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="Quantity for {{ item.title | escape }}">
+              <a class="m3" href="{{ item.url_to_remove }}">Remove</a>
+            </div>
+            <div class="line__price">
+              {{ item.final_line_price | money }}
+              {%- if item.original_line_price > item.final_line_price %}<s class="price__was">{{ item.original_line_price | money }}</s>{% endif -%}
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <div class="summary cart__sum">
+        <div class="row-between mono-12" style="font-weight:700"><span>ORDER SUMMARY</span><span>{{ cart.item_count }} ITEMS</span></div>
+        {%- for d in cart.cart_level_discount_applications -%}<div class="row-between"><span>{{ d.title | escape }}</span><span>−{{ d.total_allocated_amount | money }}</span></div>{%- endfor -%}
+        <div class="row-between" style="align-items:flex-end"><span style="font-weight:600">Subtotal</span><b class="summary__big">{{ cart.total_price | money }}</b></div>
+        <label class="field field--dark">Order note<textarea class="field__in" name="note" rows="2" placeholder="Anything we should know before we print?">{{ cart.note | escape }}</textarea></label>
+        <div style="font-size:13px;font-weight:600">Taxes and shipping calculated at checkout · Ships nationwide in 3–5 days</div>
+        <div class="row-wrap">
+          <button class="btn btn--ghost-dark" name="update">Update cart</button>
+          <button class="btn btn--dark btn--lg" style="flex:1" name="checkout">Check out →</button>
+        </div>
+        {%- if additional_checkout_buttons %}<div class="dynamic-checkout__content">{{ content_for_additional_checkout_buttons }}</div>{% endif -%}
+      </div>
+    </form>
+  {%- else -%}
+    <div class="empty">
+      <p class="sec__lead">Your cart is empty.</p>
+      <a class="btn btn--lime btn--lg" href="{{ routes.root_url }}#build">Build your setup →</a>
+    </div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{ "name": "Cart", "settings": [] }
+{% endschema %}

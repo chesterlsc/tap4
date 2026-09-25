@@ -1,0 +1,24 @@
+{
+  "type": "header",
+  "name": "Header group",
+  "sections": {
+    "sale": {
+      "type": "announcement-bar",
+      "blocks": {
+        "a": { "type": "item", "settings": { "text": "TAP FOR REVIEWS · SCAN FOR YOUR MENU" } },
+        "b": { "type": "item", "settings": { "text": "PRINTED FOR YOUR BUSINESS" } },
+        "c": { "type": "item", "settings": { "text": "CHOOSE YOUR SETUP BELOW" } },
+        "d": { "type": "item", "settings": { "text": "NFC STANDS & CARDS" } },
+        "e": { "type": "item", "settings": { "text": "WE SHIP NATIONWIDE" } },
+        "f": { "type": "item", "settings": { "text": "LUZON · VISAYAS · MINDANAO" } }
+      },
+      "block_order": ["a", "b", "c", "d", "e", "f"],
+      "settings": { "speed": 28 }
+    },
+    "header": {
+      "type": "header",
+      "settings": { "brand": "tapfour", "cta_label": "Order now" }
+    }
+  },
+  "order": ["sale", "header"]
+}

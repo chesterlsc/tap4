@@ -1,0 +1,24 @@
+Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Status
+acrylic-glass-stand,Acrylic Glass Stand,<p>Glowing-edge acrylic stand with a weighted NFC base and QR backup. Printed with your business name and programmed before it ships.</p>,tapfour,Review stand,hardware,TRUE,Title,Default Title,,,TF-STAND-ACR,450,,deny,manual,899,1499,TRUE,TRUE,active
+l-stand,L-Stand,<p>Slim acrylic L-stand with the NFC chip on the face. Printed and programmed before it ships.</p>,tapfour,Review stand,hardware,TRUE,Title,Default Title,,,TF-STAND-L,250,,deny,manual,549,919,TRUE,TRUE,active
+nfc-card-4-in-1,4-in-1 NFC Card,"<p>Matte black PVC NFC card, CR80 size. Tap opens Google, Facebook, Instagram and TikTok — no app needed.</p>",tapfour,NFC card,hardware,TRUE,Title,Default Title,,,TF-CARD,10,,deny,manual,249,419,TRUE,TRUE,active
+4-tap-bar,4-Tap Bar,<p>Long acrylic bar with 4 NFC zones. Each tap goes straight to its own app — no page in between.</p>,tapfour,Review stand,hardware,TRUE,Title,Default Title,,,TF-BAR,700,,deny,manual,1490,2479,TRUE,TRUE,active
+printed-qr-menu,Printed QR menu,<p>We build your mobile menu and print its QR right on the stand. Send a photo of your menu — we type it up. Includes 1 free price update per year.</p>,tapfour,Add-on,add-on,TRUE,Title,Default Title,,,TF-ADD-MENU,0,,deny,manual,499,829,FALSE,TRUE,active
+multi-link-page,4-in-1 links page,"<p>Hosted 4-in-1 page for 2, 3 or 4 apps. One-time — links stay live for life.</p>",tapfour,Add-on,add-on,TRUE,Title,Default Title,,,TF-ADD-LINKS,0,,deny,manual,350,579,FALSE,TRUE,active
+tapfour-app,tapfour app,"<p>Dashboard for taps, reviews, followers and menu views. Edit links anytime, no reprint. Cancel anytime — your stand keeps working.</p>",tapfour,Subscription,"subscription, monthly",TRUE,Plan,Solo,Billing,Monthly,TF-APP-SOLO-M,0,,deny,manual,299,,FALSE,TRUE,active
+tapfour-app,,,,,,,,Solo,,Yearly,TF-APP-SOLO-Y,0,,deny,manual,2870,3588,FALSE,TRUE,active
+tapfour-app,,,,,,,,Business,,Monthly,TF-APP-BIZ-M,0,,deny,manual,799,,FALSE,TRUE,active
+tapfour-app,,,,,,,,Business,,Yearly,TF-APP-BIZ-Y,0,,deny,manual,7670,9588,FALSE,TRUE,active
+tapfour-app,,,,,,,,Agency,,Monthly,TF-APP-AGY-M,0,,deny,manual,1999,,FALSE,TRUE,active
+tapfour-app,,,,,,,,Agency,,Yearly,TF-APP-AGY-Y,0,,deny,manual,19190,23988,FALSE,TRUE,active
+tapfour-app-add-ons,tapfour app add-ons,<p>Monthly add-ons for the tapfour app.</p>,tapfour,Subscription,"subscription, monthly",TRUE,Feature,Live QR menu,,,TF-APP-MENU,0,,deny,manual,199,,FALSE,TRUE,active
+tapfour-app-add-ons,,,,,,,,Table ordering,,,TF-APP-ORDER,0,,deny,manual,499,,FALSE,TRUE,active
+tapfour-app-add-ons,,,,,,,,Customer in/out data,,,TF-APP-CRM,0,,deny,manual,299,,FALSE,TRUE,active
+tapfour-app-add-ons,,,,,,,,Tap-to-join Wi-Fi,,,TF-APP-WIFI,0,,deny,manual,99,,FALSE,TRUE,active
+page-build,Page build,"<p>We design your 4-in-1 tap page with your logo, photos and links.</p>",tapfour,Service,service,TRUE,Title,Default Title,,,TF-SVC-PAGE-BUILD,0,,deny,manual,1500,,FALSE,TRUE,active
+menu-setup,Menu setup,"<p>Send a photo of your menu — we type, price and photograph it.</p>",tapfour,Service,service,TRUE,Title,Default Title,,,TF-SVC-MENU-SETUP,0,,deny,manual,2500,,FALSE,TRUE,active
+google-profile-setup,Google profile setup,<p>Create or fix your Google Business Profile so reviews land.</p>,tapfour,Service,service,TRUE,Title,Default Title,,,TF-SVC-GOOGLE-PROFI,0,,deny,manual,1800,,FALSE,TRUE,active
+custom-stand-design,Custom stand design,<p>Fully custom print artwork for your stand or card.</p>,tapfour,Service,service,TRUE,Title,Default Title,,,TF-SVC-CUSTOM-STAND,0,,deny,manual,1200,,FALSE,TRUE,active
+social-starter-pack,Social starter pack,<p>9 launch posts and 3 reels announcing your tap stand.</p>,tapfour,Service,service,TRUE,Title,Default Title,,,TF-SVC-SOCIAL-START,0,,deny,manual,3500,,FALSE,TRUE,active
+managed-dashboard,Managed dashboard,"<p>We watch your stats, reply to reviews and update your menu.</p>",tapfour,Service,"service, monthly",TRUE,Title,Default Title,,,TF-SVC-MANAGED-DASH,0,,deny,manual,1500,,FALSE,TRUE,active
+reseller-starter-kit,Reseller starter kit,"<p>20 cards, 5 stands, 25 activations and the Agency dashboard.</p>",tapfour,Bundle,"hardware, reseller",TRUE,Title,Default Title,,,TF-RESELLER,2000,,deny,manual,2490,,TRUE,TRUE,active

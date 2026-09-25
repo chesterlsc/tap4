@@ -1,0 +1,46 @@
+{%- liquid
+  assign s = section.settings
+  assign p = s.product
+  if s.image
+    assign img = s.image | image_url: width: 1600
+  else
+    assign img = 'stand-acrylic.jpg' | asset_url
+  endif
+-%}
+<section class="sec sec--tight">
+  <div class="reseller">
+    <img src="{{ img }}" alt="" loading="lazy" width="1448" height="1086">
+    <div class="reseller__shade"></div>
+    <div class="reseller__in">
+      <h2 class="h2">{{ s.title | escape }}</h2>
+      <p>{{ s.text | escape }}</p>
+      <div class="row-wrap">
+        {%- if p != blank and p.available -%}
+          {%- form 'product', p -%}
+            <input type="hidden" name="id" value="{{ p.selected_or_first_available_variant.id }}">
+            <button class="btn btn--lime btn--lg">{{ s.cta | escape }}</button>
+          {%- endform -%}
+        {%- else -%}
+          <a class="btn btn--lime btn--lg" href="{{ s.sales_link | default: 'mailto:hello@tapfour.ph' }}">{{ s.cta | escape }}</a>
+        {%- endif -%}
+        <a class="btn btn--ghost btn--lg" href="{{ s.sales_link | default: 'mailto:hello@tapfour.ph' }}">{{ s.cta2 | escape }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Reseller banner",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "Selling to businesses? Become a reseller." },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Starter kit ₱2,490 — 20 cards, 5 stands, 25 activations and the Agency dashboard." },
+    { "type": "product", "id": "product", "label": "Starter kit product" },
+    { "type": "text", "id": "cta", "label": "Button", "default": "Get the kit →" },
+    { "type": "text", "id": "cta2", "label": "Second button", "default": "Talk to sales" },
+    { "type": "url", "id": "sales_link", "label": "Sales link", "info": "Defaults to mailto:hello@tapfour.ph" },
+    { "type": "image_picker", "id": "image", "label": "Background" }
+  ],
+  "presets": [{ "name": "Reseller banner" }]
+}
+{% endschema %}

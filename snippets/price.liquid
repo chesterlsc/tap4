@@ -1,0 +1,12 @@
+{%- liquid
+  if variant == blank
+    assign variant = product.selected_or_first_available_variant
+  endif
+-%}
+<div class="price" data-price>
+  <span class="price__now">{{ variant.price | money }}</span>
+  {%- if variant.compare_at_price > variant.price -%}
+    <s class="price__was">{{ variant.compare_at_price | money }}</s>
+  {%- endif -%}
+  {%- if product.selling_plan_groups.size > 0 -%}<span class="price__note">{{ product.selling_plan_groups.first.name }}</span>{%- endif -%}
+</div>

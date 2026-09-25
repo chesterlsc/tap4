@@ -1,0 +1,17 @@
+<section class="sec sec--tight">
+  <div class="sec__titles"><h1 class="h2">Shop</h1></div>
+  <div class="p-grid">
+    {%- for c in collections -%}
+      <a class="p-card" href="{{ c.url }}">
+        <div class="p-card__media">
+          {%- if c.featured_image -%}{{ c.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', alt: c.title }}{%- else -%}{{ 'collection-1' | placeholder_svg_tag: 'p-card__ph' }}{%- endif -%}
+        </div>
+        <div class="p-card__body"><div class="p-card__title">{{ c.title | escape }}</div><span class="m3">{{ c.products_count }} products</span></div>
+      </a>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{ "name": "Collections list", "settings": [] }
+{% endschema %}

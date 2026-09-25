@@ -1,0 +1,11 @@
+{
+  "type": "footer",
+  "name": "Footer group",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": { "brand": "tapfour", "menu": "footer", "text": "Made in the Philippines · hello@tapfour.ph" }
+    }
+  },
+  "order": ["footer"]
+}

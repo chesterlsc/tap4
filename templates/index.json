@@ -1,0 +1,55 @@
+{
+  "sections": {
+    "hero": {
+      "type": "tf-hero",
+      "blocks": {
+        "s1": { "type": "stat", "settings": { "value": "3 sec", "label": "tap to review box" } },
+        "s2": { "type": "stat", "settings": { "value": "NFC + QR", "label": "two ways to connect" } },
+        "s3": { "type": "stat", "settings": { "value": "₱0/mo", "label": "stand works alone" } }
+      },
+      "block_order": ["s1", "s2", "s3"],
+      "settings": {}
+    },
+    "taps": {
+      "type": "tf-live-taps",
+      "blocks": {
+        "e1": { "type": "event", "settings": { "icon": "google", "name": "Kape Norte", "text": "got a 5★ Google review", "ago": "2m" } },
+        "e2": { "type": "event", "settings": { "icon": "menu", "name": "Hapag Grill", "text": "menu opened 38× this hour", "ago": "4m" } },
+        "e3": { "type": "event", "settings": { "icon": "instagram", "name": "Salon Ligaya", "text": "+12 Instagram followers", "ago": "6m" } },
+        "e4": { "type": "event", "settings": { "icon": "tiktok", "name": "Lomi House QC", "text": "TikTok views up 3×", "ago": "9m" } },
+        "e5": { "type": "event", "settings": { "icon": "facebook", "name": "Barbero Uno", "text": "+8 page likes today", "ago": "11m" } },
+        "e6": { "type": "event", "settings": { "icon": "google", "name": "Café Anino", "text": "rating 4.4 → 4.8★", "ago": "14m" } }
+      },
+      "block_order": ["e1", "e2", "e3", "e4", "e5", "e6"],
+      "settings": {}
+    },
+    "builder": { "type": "tf-builder", "settings": {} },
+    "app": { "type": "tf-app", "settings": {} },
+    "dashboard": { "type": "tf-dashboard", "settings": {} },
+    "plans": {
+      "type": "tf-plans",
+      "blocks": {
+        "solo": { "type": "plan", "settings": { "name": "Solo", "tag": "1 LOCATION", "price": 299, "text": "For a single shop that wants reviews and a live menu.", "features": "1 business page\nEdit links anytime\nTap & menu analytics\nQR menu editor\nEmail support" } },
+        "business": { "type": "plan", "settings": { "name": "Business", "tag": "UP TO 5 BRANCHES", "price": 799, "text": "For growing brands with several branches.", "features": "Up to 5 locations\nEverything in Solo\nReview alerts\nMonthly report PDF\nPriority chat support" } },
+        "agency": { "type": "plan", "settings": { "name": "Agency", "tag": "RESELLERS", "price": 1999, "text": "For resellers managing many client businesses.", "features": "Unlimited clients\nSales pipeline board\nWhite-label pages\nClient billing tracker\nDedicated manager" } }
+      },
+      "block_order": ["solo", "business", "agency"],
+      "settings": { "product": "tapfour-app" }
+    },
+    "services": {
+      "type": "tf-services",
+      "blocks": {
+        "v1": { "type": "service", "settings": { "product": "page-build", "text": "We design your 4-in-1 tap page with your logo, photos and links." } },
+        "v2": { "type": "service", "settings": { "product": "menu-setup", "text": "Send a photo of your menu — we type, price and photograph it." } },
+        "v3": { "type": "service", "settings": { "product": "google-profile-setup", "text": "Create or fix your Google Business Profile so reviews land." } },
+        "v4": { "type": "service", "settings": { "product": "custom-stand-design", "text": "Fully custom print artwork for your stand or card." } },
+        "v5": { "type": "service", "settings": { "product": "social-starter-pack", "text": "9 launch posts and 3 reels announcing your tap stand." } },
+        "v6": { "type": "service", "settings": { "product": "managed-dashboard", "text": "We watch your stats, reply to reviews and update your menu." } }
+      },
+      "block_order": ["v1", "v2", "v3", "v4", "v5", "v6"],
+      "settings": {}
+    },
+    "reseller": { "type": "tf-reseller", "settings": { "product": "reseller-starter-kit" } }
+  },
+  "order": ["hero", "taps", "builder", "app", "dashboard", "plans", "services", "reseller"]
+}

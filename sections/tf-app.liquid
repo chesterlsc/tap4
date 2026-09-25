@@ -1,0 +1,66 @@
+{%- liquid
+  assign s = section.settings
+  if s.image
+    assign img = s.image | image_url: width: 900
+  else
+    assign img = 'stand-l.jpg' | asset_url
+  endif
+-%}
+<section id="app" class="sec">
+  <div class="sec__titles">
+    <div class="eyebrow">{{ s.eyebrow | escape }}</div>
+    <h2 class="h2" style="max-width:820px">{{ s.title | escape }}</h2>
+  </div>
+  <div class="app-grid">
+    <div class="app-card">
+      <div class="phone"><div class="phone__screen phone__screen--light">
+        <div class="phone__hero">SAMPLE MENU · KAPE NORTE</div>
+        <div class="phone__body">
+          <div class="mini-tabs mini-tabs--lg"><span class="on">Coffee</span><span>Pastry</span><span>Meals</span></div>
+          <div class="pm"><div><b>Sagada Latte</b><span>Double shot, oat</span></div><i>₱165</i></div>
+          <div class="pm"><div><b>Benguet Pour-over</b><span>Single origin</span></div><i>₱180</i></div>
+          <div class="pm"><div><b>Ube Cold Brew</b><span>Seasonal · NEW</span></div><i>₱190</i></div>
+          <div class="pm-cta"><span>Loved it? Leave a review</span><span class="lime">★★★★★</span></div>
+        </div>
+      </div></div>
+      <div class="app-card__txt"><h3>{{ s.card1_title | escape }}</h3><p>{{ s.card1_text | escape }}</p></div>
+    </div>
+    <div class="app-card">
+      <div class="phone"><div class="phone__screen phone__screen--dark">
+        <div class="kn">{{ s.initials | escape }}</div>
+        <div class="kn-q">How was your visit?</div>
+        <div class="kn-stars">★★★★★</div>
+        <div class="kn-links">
+          <div class="kn-link on"><svg width="14" height="14" style="fill:#0a0a0b"><use href="#i-google"/></svg>Post on Google</div>
+          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-facebook"/></svg>Like on Facebook</div>
+          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-instagram"/></svg>Follow on Instagram</div>
+          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-tiktok"/></svg>Watch on TikTok</div>
+        </div>
+      </div></div>
+      <div class="app-card__txt"><h3>{{ s.card2_title | escape }}</h3><p>{{ s.card2_text | escape }}</p></div>
+    </div>
+    <div class="app-photo">
+      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="900" height="675">
+      <div class="app-photo__txt"><h3>{{ s.card3_title | escape }}</h3><p>{{ s.card3_text | escape }}</p></div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "App showcase",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "02 — THE TAPFOUR APP" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Scan for the menu. Tap for the review." },
+    { "type": "text", "id": "card1_title", "label": "Card 1 title", "default": "QR digital menu" },
+    { "type": "text", "id": "card1_text", "label": "Card 1 text", "default": "Upload once, edit prices in seconds. Sold-out items hide automatically." },
+    { "type": "text", "id": "initials", "label": "Demo initials", "default": "KN" },
+    { "type": "text", "id": "card2_title", "label": "Card 2 title", "default": "Tap for reviews" },
+    { "type": "text", "id": "card2_text", "label": "Card 2 text", "default": "One tap opens a 4-in-1 page. Customers pick where to review, like, follow or watch." },
+    { "type": "image_picker", "id": "image", "label": "Card 3 photo" },
+    { "type": "text", "id": "card3_title", "label": "Card 3 title", "default": "Both on one stand" },
+    { "type": "text", "id": "card3_text", "label": "Card 3 text", "default": "NFC in the center, menu QR on the face. Guests use whichever they like." }
+  ],
+  "presets": [{ "name": "App showcase" }]
+}
+{% endschema %}

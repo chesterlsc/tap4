@@ -1,0 +1,67 @@
+<section id="build" class="sec" data-builder>
+  <div class="sec__head">
+    <div class="sec__titles">
+      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
+      <h2 class="h2">{{ section.settings.title | escape }}</h2>
+    </div>
+    <p class="sec__aside">{{ section.settings.aside | escape }}</p>
+  </div>
+
+  <div class="stack-14">
+    <div class="row-between mono-12">
+      <span class="m3">QUICK PICKS — ONE CLICK, THEN FINE-TUNE BELOW</span>
+      <span class="m5">FREE SHIPPING · PROGRAMMED BEFORE IT SHIPS</span>
+    </div>
+    <div class="presets" id="tf-presets"></div>
+  </div>
+
+  <div class="builder">
+    <div class="preview" id="tf-preview"></div>
+
+    <div class="stack-14">
+      <div class="panel">
+        <div class="panel__head"><span>A · YOUR BUSINESS</span><span>PRINTED ON THE FACE</span></div>
+        <div class="fields">
+          <label class="field">Business name<input id="tf-name" value="Kape Norte" maxlength="40" autocomplete="organization"></label>
+          <label class="field">Headline<input id="tf-headline" value="Leave us a review" maxlength="40"></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head"><span>B · HARDWARE</span><span>NFC + QR BACKUP</span></div>
+        <div class="hw-grid" id="tf-hw"></div>
+        <div class="row-between">
+          <div class="m2" style="font-size:14px">Quantity</div>
+          <div class="qty">
+            <button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button>
+            <output id="tf-qty">1</output>
+            <button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__head"><span>C · WHAT THE TAP OPENS</span><span id="tf-mode-tag"></span></div>
+        <div id="tf-mode"></div>
+        <input id="tf-website" class="field__in mono" value="" placeholder="https://example.com" type="url" aria-label="Website" hidden>
+        <div id="tf-mode-after"></div>
+      </div>
+
+      <div class="panel" id="tf-extra"></div>
+
+      <div class="summary" id="tf-summary"></div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Setup builder",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "01 — BUILD YOUR SETUP" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Design it live. We print, program & ship." },
+    { "type": "textarea", "id": "aside", "label": "Intro", "default": "Every choice updates the preview and your total. Start from a quick pick or build from scratch." }
+  ],
+  "presets": [{ "name": "Setup builder" }]
+}
+{% endschema %}

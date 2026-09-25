@@ -1,0 +1,56 @@
+{%- comment -%}
+  Prices + variant ids the builder, plans and services read from.
+  all_products allows 20 unique handles per page; this uses 15.
+  Recurring variants need exactly one applicable recurring selling plan.
+{%- endcomment -%}
+{%- liquid
+  assign handles = 'acrylic-glass-stand,l-stand,nfc-card-4-in-1,4-tap-bar,printed-qr-menu,multi-link-page,tapfour-app,tapfour-app-add-ons,page-build,menu-setup,google-profile-setup,custom-stand-design,social-starter-pack,managed-dashboard,reseller-starter-kit' | split: ','
+-%}
+<script>
+  window.TF = {
+    cartUrl: {{ routes.cart_url | json }},
+    cartAddUrl: {{ routes.cart_add_url | append: '.js' | json }},
+    currency: {{ cart.currency.iso_code | default: 'PHP' | json }},
+    sale: {
+      end: {{ settings.sale_end | json | replace: '<', '\u003c' }},
+      stock: {{ settings.sale_stock | default: 0 }},
+      label: {{ settings.sale_label | json | replace: '<', '\u003c' }}
+    },
+    img: {
+      standAcrylic: {{ 'stand-acrylic.jpg' | asset_url | json }},
+      standAcrylicKn: {{ 'stand-acrylic-kn.jpg' | asset_url | json }},
+      standL: {{ 'stand-l.jpg' | asset_url | json }},
+      standLKn: {{ 'stand-l-kn.jpg' | asset_url | json }},
+      standCombo: {{ 'stand-combo.jpg' | asset_url | json }},
+      cardNfc: {{ 'card-nfc.jpg' | asset_url | json }}
+    },
+    products: {
+      {%- for h in handles -%}
+        {%- assign p = all_products[h] -%}
+        {{ h | json }}: {% if p.id %}{"title": {{ p.title | json | replace: '<', '\u003c' }}, "variants": [
+          {%- for v in p.variants -%}
+            {%- liquid
+              assign recurring_count = 0
+              assign plan_id = 'null'
+              assign unit_price = v.price
+              if p.tags contains 'subscription' or p.tags contains 'monthly'
+                for allocation in v.selling_plan_allocations
+                  if allocation.selling_plan.recurring_deliveries
+                    assign recurring_count = recurring_count | plus: 1
+                    assign plan_id = allocation.selling_plan.id
+                    assign unit_price = allocation.price
+                  endif
+                endfor
+                if recurring_count != 1
+                  assign plan_id = 'null'
+                  assign unit_price = v.price
+                endif
+              endif
+            -%}
+            {"id": {{ v.id }}, "title": {{ v.title | json | replace: '<', '\u003c' }}, "price": {{ unit_price }}, "compare": {{ v.compare_at_price | default: 0 }}, "available": {{ v.available }}, "sp": {{ plan_id }}}{% unless forloop.last %},{% endunless %}
+          {%- endfor -%}
+        ]}{% else %}null{% endif %}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    }
+  };
+</script>

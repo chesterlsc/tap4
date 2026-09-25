@@ -1,0 +1,9 @@
+{
+  "current": "Default",
+  "presets": {
+    "Default": {
+      "sale_label": "",
+      "sale_stock": 0
+    }
+  }
+}

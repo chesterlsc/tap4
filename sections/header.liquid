@@ -1,0 +1,42 @@
+{%- liquid
+  assign menu = section.settings.menu
+  assign default_cta_link = routes.root_url | append: '#build'
+  assign cta_link = section.settings.cta_link | default: default_cta_link
+-%}
+{%- capture links -%}
+  {%- if menu.links.size > 0 -%}
+    {%- for link in menu.links -%}<a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{%- endfor -%}
+  {%- else -%}
+    <a href="{{ routes.root_url }}#build">Review stands</a><a href="{{ routes.root_url }}#app">QR menu</a><a href="{{ routes.root_url }}#pipeline">tapfour app</a><a href="{{ routes.root_url }}#plans">Pricing</a><a href="{{ routes.root_url }}#services">Services</a>
+  {%- endif -%}
+{%- endcapture -%}
+<header class="site-header">
+  <div class="site-header__in">
+    <a class="brand" href="{{ routes.root_url }}">{% render 'tf-mark' %}{{ section.settings.brand | default: shop.name | escape }}</a>
+    <nav class="nav" aria-label="Main">{{ links }}</nav>
+    <div class="header-actions">
+      <a class="btn btn--light" href="{{ cta_link }}">{{ section.settings.cta_label | escape }}</a>
+      <a class="cart-link" href="{{ routes.cart_url }}" aria-label="Cart, {{ cart.item_count }} items">
+        <svg width="20" height="20" aria-hidden="true"><use href="#i-bag"/></svg>
+        {%- if cart.item_count > 0 %}<span class="cart-link__count">{{ cart.item_count }}</span>{% endif -%}
+      </a>
+      <details class="mobile-nav">
+        <summary aria-label="Menu"><span></span><span></span></summary>
+        <nav class="mobile-nav__panel" aria-label="Mobile">{{ links }}</nav>
+      </details>
+    </div>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "class": "sticky-header",
+  "settings": [
+    { "type": "text", "id": "brand", "label": "Brand name", "default": "tapfour" },
+    { "type": "link_list", "id": "menu", "label": "Menu", "info": "Empty menu shows the homepage section links." },
+    { "type": "text", "id": "cta_label", "label": "Button label", "default": "Order now" },
+    { "type": "url", "id": "cta_link", "label": "Button link" }
+  ]
+}
+{% endschema %}

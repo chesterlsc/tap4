@@ -1,0 +1,94 @@
+{%- comment -%}
+  Plan prices come from the product's "<Plan> / Monthly" and "<Plan> / Yearly" variants.
+  Yearly is shown per month (price ÷ 12). Block "fallback price" shows until the product exists.
+{%- endcomment -%}
+{%- assign app = section.settings.product -%}
+<section id="plans" class="sec" data-plans>
+  <div class="sec__head">
+    <div class="sec__titles">
+      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
+      <h2 class="h2">{{ section.settings.title | escape }}</h2>
+      <p class="sec__lead">{{ section.settings.text | escape }}</p>
+    </div>
+    <div class="seg">
+      <button type="button" class="on" data-act="yearly" data-arg="0">Monthly</button>
+      <button type="button" data-act="yearly" data-arg="1">Yearly −20%</button>
+    </div>
+  </div>
+  <div class="plans">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign name = block.settings.name
+        assign m_title = name | append: ' / Monthly'
+        assign y_title = name | append: ' / Yearly'
+        assign vm = app.variants | where: 'title', m_title | first
+        assign vy = app.variants | where: 'title', y_title | first
+        if vm
+          assign pm = vm.price | divided_by: 100.0
+          assign plan_count = 0
+          for allocation in vm.selling_plan_allocations
+            if allocation.selling_plan.recurring_deliveries
+              assign plan_count = plan_count | plus: 1
+              assign pm = allocation.price | divided_by: 100.0
+            endif
+          endfor
+          if plan_count != 1
+            assign pm = vm.price | divided_by: 100.0
+          endif
+        else
+          assign pm = block.settings.price
+        endif
+        if vy
+          assign py = vy.price | divided_by: 1200.0
+          assign plan_count = 0
+          for allocation in vy.selling_plan_allocations
+            if allocation.selling_plan.recurring_deliveries
+              assign plan_count = plan_count | plus: 1
+              assign py = allocation.price | divided_by: 1200.0
+            endif
+          endfor
+          if plan_count != 1
+            assign py = vy.price | divided_by: 1200.0
+          endif
+        else
+          assign py = block.settings.price | times: 0.8
+        endif
+      -%}
+      <div class="plan{% if forloop.first %} on{% endif %}" data-plan="{{ name | handleize }}" data-m="{{ pm }}" data-y="{{ py }}" {{ block.shopify_attributes }}>
+        <div class="row-between"><h3>{{ name | escape }}</h3><span class="plan__tag">{{ block.settings.tag | escape }}</span></div>
+        <div class="plan__price"><b data-plan-price>{{ pm | times: 100 | money_without_trailing_zeros }}</b><span>/mo</span></div>
+        <p class="mono-12 m3" data-plan-billing>Billed monthly</p>
+        <p>{{ block.settings.text | escape }}</p>
+        <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
+        <button type="button" class="plan__cta" data-act="planCta" data-arg="{{ name | handleize }}">Choose {{ name | escape }}</button>
+      </div>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Plans",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "04 — OPTIONAL DASHBOARD" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Your stand works without it." },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Hardware is a one-time buy. The dashboard is here if you want menus, stats and link edits — cancel anytime, the stand keeps working." },
+    { "type": "product", "id": "product", "label": "App product", "info": "Variants named \"<Plan> / Monthly\" and \"<Plan> / Yearly\"." }
+  ],
+  "blocks": [
+    {
+      "type": "plan",
+      "name": "Plan",
+      "limit": 3,
+      "settings": [
+        { "type": "text", "id": "name", "label": "Name (matches variant option)", "default": "Solo" },
+        { "type": "text", "id": "tag", "label": "Tag", "default": "1 LOCATION" },
+        { "type": "text", "id": "text", "label": "Description", "default": "For a single shop that wants reviews and a live menu." },
+        { "type": "textarea", "id": "features", "label": "Features (one per line)" },
+        { "type": "number", "id": "price", "label": "Fallback monthly price", "default": 299 }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Plans" }]
+}
+{% endschema %}

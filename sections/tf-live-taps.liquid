@@ -1,0 +1,63 @@
+{%- liquid
+  assign colors = 'google:4285F4,instagram:FF0069,tiktok:f2f0eb,facebook:0866FF' | split: ','
+-%}
+{%- capture run -%}
+  <div class="ticker__run">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        assign ic = block.settings.icon
+        assign fill = ''
+        for c in colors
+          assign pair = c | split: ':'
+          if pair[0] == ic
+            assign fill = pair[1]
+          endif
+        endfor
+      -%}
+      <div class="tap-ev" {{ block.shopify_attributes }}>
+        <span class="tap-ev__ic"><svg width="14" height="14"{% if fill != '' %} style="fill:#{{ fill }}"{% endif %}><use href="#i-{{ ic }}"/></svg></span>
+        <b>{{ block.settings.name | escape }}</b>
+        <span class="tap-ev__txt">{{ block.settings.text | escape }}</span>
+        <span class="tap-ev__ago">{{ block.settings.ago | escape }} ago</span>
+      </div>
+    {%- endfor -%}
+  </div>
+{%- endcapture -%}
+<div class="live-taps">
+  <div class="live-taps__label"><span class="sale-bar__dot"></span>{{ section.settings.label | escape }}</div>
+  <div class="live-taps__track">
+    <div class="live-taps__fade"></div>
+    <div class="marquee" style="animation-duration:40s">{{ run }}{{ run | replace: 'class="ticker__run"', 'class="ticker__run" aria-hidden="true"' }}</div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Sample taps ticker",
+  "settings": [
+    { "type": "text", "id": "label", "label": "Label", "default": "SAMPLE TAPS" }
+  ],
+  "blocks": [
+    {
+      "type": "event",
+      "name": "Event",
+      "settings": [
+        {
+          "type": "select", "id": "icon", "label": "Icon", "default": "google",
+          "options": [
+            { "value": "google", "label": "Google" },
+            { "value": "menu", "label": "Menu" },
+            { "value": "instagram", "label": "Instagram" },
+            { "value": "tiktok", "label": "TikTok" },
+            { "value": "facebook", "label": "Facebook" }
+          ]
+        },
+        { "type": "text", "id": "name", "label": "Business", "default": "Kape Norte" },
+        { "type": "text", "id": "text", "label": "Event", "default": "got a 5★ Google review" },
+        { "type": "text", "id": "ago", "label": "Time", "default": "2m" }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Sample taps ticker" }]
+}
+{% endschema %}

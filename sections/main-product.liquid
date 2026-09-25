@@ -1,0 +1,143 @@
+{%- liquid
+  assign current = product.selected_or_first_available_variant
+  assign subscription_product = false
+  if product.tags contains 'subscription' or product.tags contains 'monthly'
+    assign subscription_product = true
+  endif
+  assign current_requires_plan = current.requires_selling_plan
+  if subscription_product
+    assign current_requires_plan = true
+  endif
+  assign current_allocation = current.selected_selling_plan_allocation
+  if subscription_product and current_allocation.selling_plan.recurring_deliveries != true
+    assign current_allocation = nil
+  endif
+  assign current_plan_count = 0
+  for allocation in current.selling_plan_allocations
+    if subscription_product and allocation.selling_plan.recurring_deliveries != true
+      continue
+    endif
+    assign current_plan_count = current_plan_count | plus: 1
+    if current_allocation == blank and current_requires_plan
+      assign current_allocation = allocation
+    endif
+  endfor
+  assign current_price = current_allocation.price | default: current.price
+  assign current_compare = current_allocation.compare_at_price | default: current.compare_at_price
+  assign can_purchase = current.available
+  if current_requires_plan and current_allocation == blank
+    assign can_purchase = false
+  endif
+-%}
+<section class="sec sec--tight" data-pdp>
+  <div class="pdp">
+    <div class="pdp__media">
+      {%- if product.media.size > 0 -%}
+        {%- for media in product.media -%}
+          <div class="pdp__img{% if forloop.first %} pdp__img--main{% endif %}">
+            {%- assign media_alt = media.alt | default: product.title -%}
+            {{ media.preview_image | image_url: width: 1400 | image_tag: loading: 'lazy', sizes: '(min-width: 900px) 55vw, 100vw', widths: '600,900,1400', alt: media_alt }}
+          </div>
+        {%- endfor -%}
+      {%- else -%}
+        <div class="pdp__img pdp__img--main">{{ 'product-1' | placeholder_svg_tag: 'p-card__ph' }}</div>
+      {%- endif -%}
+    </div>
+
+    <div class="pdp__info">
+      {%- if product.vendor != blank %}<div class="eyebrow">{{ product.vendor | upcase | escape }}</div>{% endif -%}
+      <h1 class="h2">{{ product.title | escape }}</h1>
+      <div data-pdp-price aria-live="polite" aria-atomic="true">
+        <div class="price" data-price>
+          <span class="price__now">{{ current_price | money }}</span>
+          <s class="price__was"{% unless current_compare > current_price %} hidden{% endunless %}>{{ current_compare | money }}</s>
+          <span class="price__note"{% unless current_allocation %} hidden{% endunless %}>{{ current_allocation.selling_plan.name | escape }}</span>
+        </div>
+      </div>
+
+      {%- form 'product', product, class: 'pdp__form', data-pdp-form: '' -%}
+        {{ form.errors | default_errors }}
+        {%- unless product.has_only_default_variant -%}
+          <label class="field">Option
+            <select name="id" class="field__in" data-pdp-variant>
+              {%- for v in product.variants -%}
+                <option value="{{ v.id }}"{% if v == current %} selected{% endif %}>{{ v.title | escape }}{% unless v.available %} — sold out{% endunless %}</option>
+              {%- endfor -%}
+            </select>
+          </label>
+        {%- else -%}
+          <input type="hidden" name="id" value="{{ current.id }}">
+        {%- endunless -%}
+
+        {%- if product.selling_plan_groups.size > 0 or subscription_product -%}
+          <label class="field" data-pdp-billing{% if current_plan_count == 0 %} hidden{% endif %}>Billing
+            <select name="selling_plan" class="field__in" data-pdp-plan{% if current_requires_plan %} required{% endif %}{% if current_plan_count == 0 %} disabled{% endif %}>
+              {%- unless current_requires_plan -%}<option value=""{% unless current_allocation %} selected{% endunless %}>One-time purchase</option>{%- endunless -%}
+              {%- for allocation in current.selling_plan_allocations -%}
+                {%- if subscription_product and allocation.selling_plan.recurring_deliveries != true -%}{%- continue -%}{%- endif -%}
+                <option value="{{ allocation.selling_plan.id }}"{% if allocation.selling_plan.id == current_allocation.selling_plan.id %} selected{% endif %}>{{ allocation.selling_plan.name | escape }}</option>
+              {%- endfor -%}
+            </select>
+          </label>
+        {%- endif -%}
+
+        <div class="row-between">
+          <label class="field" style="max-width:120px">Quantity<input class="field__in" type="number" name="quantity" value="1" min="1"></label>
+        </div>
+        <button type="submit" class="btn btn--lime btn--lg btn--block" data-pdp-submit{% unless can_purchase %} disabled{% endunless %}>
+          {%- if can_purchase %}Add to cart{% elsif current.available %}Unavailable{% else %}Sold out{% endif -%}
+        </button>
+        <p class="m3" data-pdp-status role="status"{% if can_purchase or current.available == false %} hidden{% endif %}>Subscription billing is not available for this option yet.</p>
+        <div data-pdp-payment{% unless can_purchase %} hidden{% endunless %}>{{ form | payment_button }}</div>
+      {%- endform -%}
+
+      <div class="rte">{{ product.description }}</div>
+    </div>
+  </div>
+  <script type="application/json" data-pdp-data>
+    [
+      {%- for v in product.variants -%}
+        {
+          "id": {{ v.id | json }},
+          "available": {{ v.available | json }},
+          "requiresPlan": {% if subscription_product %}true{% else %}{{ v.requires_selling_plan | json }}{% endif %},
+          "price": {{ v.price | money | strip_html | json | replace: '<', '\u003c' }},
+          "compare": {% if v.compare_at_price > v.price %}{{ v.compare_at_price | money | strip_html | json | replace: '<', '\u003c' }}{% else %}""{% endif %},
+          "plans": [
+            {%- assign plan_separator = '' -%}
+            {%- for allocation in v.selling_plan_allocations -%}
+              {%- if subscription_product and allocation.selling_plan.recurring_deliveries != true -%}{%- continue -%}{%- endif -%}
+              {{- plan_separator -}}
+              {
+                "id": {{ allocation.selling_plan.id | json }},
+                "name": {{ allocation.selling_plan.name | json | replace: '<', '\u003c' }},
+                "price": {{ allocation.price | money | strip_html | json | replace: '<', '\u003c' }},
+                "compare": {% if allocation.compare_at_price > allocation.price %}{{ allocation.compare_at_price | money | strip_html | json | replace: '<', '\u003c' }}{% else %}""{% endif %}
+              }
+              {%- assign plan_separator = ',' -%}
+            {%- endfor -%}
+          ]
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  </script>
+</section>
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": {{ product.title | json }},
+    "description": {{ product.description | strip_html | json }},
+    {%- if product.featured_image %}"image": {{ product.featured_image | image_url: width: 1200 | prepend: 'https:' | json }},{% endif %}
+    "offers": [
+      {%- for v in product.variants -%}
+        {"@type": "Offer", "price": {{ v.price | divided_by: 100.0 | json }}, "priceCurrency": {{ cart.currency.iso_code | json }}, "availability": "https://schema.org/{% if v.available %}InStock{% else %}OutOfStock{% endif %}", "url": {{ request.origin | append: v.url | json }}}{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  }
+</script>
+
+{% schema %}
+{ "name": "Product", "settings": [] }
+{% endschema %}

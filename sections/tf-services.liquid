@@ -1,0 +1,74 @@
+{%- comment -%}
+  Each block points at a service product. Toggling a card adds it to the builder order.
+  Products with a subscription selling plan (or tag "monthly") show /mo.
+{%- endcomment -%}
+<section id="services" class="sec">
+  <div class="sec__head">
+    <div class="sec__titles">
+      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
+      <h2 class="h2">{{ section.settings.title | escape }}</h2>
+    </div>
+    <p class="sec__aside">{{ section.settings.aside | escape }}</p>
+  </div>
+  <div class="svc-grid">
+    {%- for block in section.blocks -%}
+      {%- assign p = block.settings.product -%}
+      {%- if p != blank -%}
+        {%- liquid
+          assign v = p.selected_or_first_available_variant
+          assign monthly = false
+          if p.tags contains 'subscription' or p.tags contains 'monthly'
+            assign monthly = true
+          endif
+          assign plan_count = 0
+          assign plan_id = ''
+          assign unit_price = v.price
+          if monthly
+            for allocation in v.selling_plan_allocations
+              if allocation.selling_plan.recurring_deliveries
+                assign plan_count = plan_count | plus: 1
+                assign plan_id = allocation.selling_plan.id
+                assign unit_price = allocation.price
+              endif
+            endfor
+            if plan_count != 1
+              assign plan_id = ''
+              assign unit_price = v.price
+            endif
+          endif
+          assign desc = block.settings.text | default: p.description | strip_html | truncatewords: 22
+        -%}
+        <button type="button" class="svc" data-act="svc" data-arg="{{ p.handle }}"
+          data-svc="{{ p.handle }}" data-name="{{ p.title | escape }}" data-variant="{{ v.id }}" data-price="{{ unit_price | divided_by: 100.0 }}"
+          data-sp="{{ plan_id }}"{% if monthly %} data-monthly{% endif %}{% unless v.available %} disabled{% endunless %} {{ block.shopify_attributes }}>
+          <span class="row-between"><span class="mono m3" style="font-weight:700;font-size:13px">{{ forloop.index | prepend: '0' | slice: -2, 2 }}</span><span class="svc__mark">+</span></span>
+          <span class="svc__name">{{ p.title | escape }}</span>
+          <span class="svc__desc">{{ desc | escape }}</span>
+          <span class="svc__price">{{ unit_price | money_without_trailing_zeros }}{% if monthly %}/mo{% else %} one-time{% endif %}</span>
+        </button>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Services",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "05 — DONE-FOR-YOU SERVICES" },
+    { "type": "text", "id": "title", "label": "Title", "default": "No time? We build it for you." },
+    { "type": "textarea", "id": "aside", "label": "Intro", "default": "Only when you need a hand. No bundles, no minimums — pick one, pay once." }
+  ],
+  "blocks": [
+    {
+      "type": "service",
+      "name": "Service",
+      "settings": [
+        { "type": "product", "id": "product", "label": "Product" },
+        { "type": "text", "id": "text", "label": "Short description", "info": "Defaults to the product description." }
+      ]
+    }
+  ],
+  "presets": [{ "name": "Services" }]
+}
+{% endschema %}

@@ -1,0 +1,14 @@
+.claude/**
+.github/**
+.preview/**
+.git/**
+node_modules/**
+scripts/**
+tests/**
+dist/**
+*.md
+package.json
+package-lock.json
+products.csv
+.DS_Store
+

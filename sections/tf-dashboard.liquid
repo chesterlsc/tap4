@@ -1,0 +1,75 @@
+{%- comment -%} Demo dashboard. Numbers are illustrative sample data. {%- endcomment -%}
+{%- liquid
+  assign kpis = 'TAPS · 30D|1,284|▲ 22% vs last month|lime;NEW REVIEWS|38|Avg 4.8 ★|;MENU VIEWS|3,902|Top: Ube Cold Brew|;NEW FOLLOWERS|216|IG 141 · TikTok 75|' | split: ';'
+  assign crm = 'CUSTOMERS IN · TODAY|146|Peak 12–1pm · 38 in now;CUSTOMERS OUT|108|Avg stay 46 min;RETURNING GUESTS|41%|62 came back this week;TABLE ORDERS|63|₱21,480 · 0 in line' | split: ';'
+  assign bars = '32,41,38,55,48,62,90,44,51,58,49,70,84,100' | split: ','
+  assign split = 'Google reviews|38%|#c8f23c;Menu|27%|#f2f0eb;Instagram|17%|#f27fa8;TikTok|11%|#7fd8f2;Facebook|7%|#f2b23c' | split: ';'
+  assign stages = 'Lead|#8a8883;Demo|#7fd8f2;Proposal|#f2b23c;Won|#c8f23c;Active|#f27fa8' | split: ';'
+  assign deals = 'Salon Ligaya|Walk-in demo|₱3,290|0;Barbero Uno|Referred|₱1,790|0;Lomi House QC|Demo Fri 3pm|₱4,580|1;Café Anino|Sent quote|₱2,690|2;Kape Norte|2 stands + menu|₱5,290|3;Hapag Grill|412 taps / mo|₱799/mo|4;Luna Nails|188 taps / mo|₱299/mo|4' | split: ';'
+-%}
+<section id="pipeline" class="sec" data-dash>
+  <div class="sec__head">
+    <div class="sec__titles">
+      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
+      <h2 class="h2">{{ section.settings.title | escape }}</h2>
+    </div>
+    <div class="seg" role="tablist">
+      <button type="button" class="on" data-dash-tab="analytics">Analytics</button>
+      <button type="button" data-dash-tab="pipeline">Pipeline</button>
+    </div>
+  </div>
+  <div class="dash">
+    <div class="dash__top">
+      <b>tapfour dashboard · sample data</b>
+      <span class="mono-12 m3" data-dash-caption data-a="KAPE NORTE · LAST 30 DAYS" data-p="RESELLER PIPELINE · {{ deals.size }} CLIENTS">KAPE NORTE · LAST 30 DAYS</span>
+    </div>
+    <div class="dash__body" data-dash-panel="analytics">
+      <div class="kpis">
+        {%- for k in kpis -%}{%- assign f = k | split: '|' -%}
+          <div class="kpi"><span>{{ f[0] }}</span><b>{{ f[1] }}</b><em{% if f[3] == 'lime' %} class="lime"{% endif %}>{{ f[2] }}</em></div>
+        {%- endfor -%}
+      </div>
+      <div class="kpis">
+        {%- for k in crm -%}{%- assign f = k | split: '|' -%}
+          <div class="kpi kpi--lime"><span>{{ f[0] }}</span><b>{{ f[1] }}</b><em>{{ f[2] }}</em></div>
+        {%- endfor -%}
+      </div>
+      <div class="dash__charts">
+        <div class="kpi">
+          <div class="row-between mono-11 m3"><span>TAPS PER DAY</span><span>LAST 14 DAYS</span></div>
+          <div class="bars">{% for b in bars %}<i style="height:{{ b }}%"{% if forloop.last %} class="on"{% endif %}></i>{% endfor %}</div>
+        </div>
+        <div class="kpi" style="gap:12px">
+          <span>WHERE TAPS GO</span>
+          {%- for x in split -%}{%- assign f = x | split: '|' -%}
+            <div class="split"><div class="row-between"><span>{{ f[0] }}</span><span class="mono m2">{{ f[1] }}</span></div><div class="split__bar"><i style="width:{{ f[1] }};background:{{ f[2] }}"></i></div></div>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+    <div class="dash__body pipe" data-dash-panel="pipeline" hidden>
+      {%- for st in stages -%}{%- assign sf = st | split: '|' -%}{%- assign col = forloop.index0 -%}
+        <div class="pipe__col" data-stage="{{ forloop.index0 }}">
+          <div class="row-between"><div class="pipe__name"><i style="background:{{ sf[1] }}"></i>{{ sf[0] }}</div><span class="mono-12 m3" data-count></span></div>
+          {%- for d in deals -%}{%- assign f = d | split: '|' -%}
+            {%- assign stage = f[3] | plus: 0 -%}
+            {%- if stage == col -%}
+              <div class="deal"><b>{{ f[0] }}</b><div class="row-between"><span>{{ f[1] }}</span><em>{{ f[2] }}</em></div><button type="button" data-pipe-move>Move to next →</button></div>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Dashboard demo",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "03 — DASHBOARD & PIPELINE" },
+    { "type": "text", "id": "title", "label": "Title", "default": "See every tap. Track every deal." }
+  ],
+  "presets": [{ "name": "Dashboard demo" }]
+}
+{% endschema %}

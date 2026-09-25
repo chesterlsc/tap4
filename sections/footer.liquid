@@ -1,0 +1,23 @@
+<footer class="site-footer">
+  <div class="site-footer__in">
+    <a class="site-footer__brand" href="{{ routes.root_url }}">{{ section.settings.brand | default: shop.name | escape }}</a>
+    {%- assign menu = section.settings.menu -%}
+    {%- if menu.links.size > 0 -%}
+      <nav class="row-wrap" style="gap:20px" aria-label="Footer">
+        {%- for link in menu.links -%}<a href="{{ link.url }}">{{ link.title | escape }}</a>{%- endfor -%}
+      </nav>
+    {%- endif -%}
+    <span>{{ section.settings.text | escape }}</span>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    { "type": "text", "id": "brand", "label": "Brand name", "default": "tapfour" },
+    { "type": "link_list", "id": "menu", "label": "Menu", "default": "footer" },
+    { "type": "text", "id": "text", "label": "Text", "default": "Made in the Philippines · hello@tapfour.ph" }
+  ]
+}
+{% endschema %}
