@@ -1,6 +1,10 @@
 {%- liquid
   assign s = section.settings
   assign p = s.product
+  assign sales_link = s.sales_link
+  if sales_link == blank
+    assign sales_link = settings.order_email | default: 'hello@tapfour.ph' | prepend: 'mailto:'
+  endif
   if s.image
     assign img = s.image | image_url: width: 1600
   else
@@ -15,15 +19,15 @@
       <h2 class="h2">{{ s.title | escape }}</h2>
       <p>{{ s.text | escape }}</p>
       <div class="row-wrap">
-        {%- if p != blank and p.available -%}
+        {%- if p != blank and p.available and settings.order_email == blank -%}
           {%- form 'product', p -%}
             <input type="hidden" name="id" value="{{ p.selected_or_first_available_variant.id }}">
             <button class="btn btn--lime btn--lg">{{ s.cta | escape }}</button>
           {%- endform -%}
         {%- else -%}
-          <a class="btn btn--lime btn--lg" href="{{ s.sales_link | default: 'mailto:hello@tapfour.ph' }}">{{ s.cta | escape }}</a>
+          <a class="btn btn--lime btn--lg" href="{{ sales_link }}">{{ s.cta | escape }}</a>
         {%- endif -%}
-        <a class="btn btn--ghost btn--lg" href="{{ s.sales_link | default: 'mailto:hello@tapfour.ph' }}">{{ s.cta2 | escape }}</a>
+        <a class="btn btn--ghost btn--lg" href="{{ sales_link }}">{{ s.cta2 | escape }}</a>
       </div>
     </div>
   </div>

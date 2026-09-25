@@ -16,10 +16,12 @@
     <nav class="nav" aria-label="Main">{{ links }}</nav>
     <div class="header-actions">
       <a class="btn btn--light" href="{{ cta_link }}">{{ section.settings.cta_label | escape }}</a>
+      {%- if settings.order_email == blank -%}
       <a class="cart-link" href="{{ routes.cart_url }}" aria-label="Cart, {{ cart.item_count }} items">
         <svg width="20" height="20" aria-hidden="true"><use href="#i-bag"/></svg>
         {%- if cart.item_count > 0 %}<span class="cart-link__count">{{ cart.item_count }}</span>{% endif -%}
       </a>
+      {%- endif -%}
       <details class="mobile-nav">
         <summary aria-label="Menu"><span></span><span></span></summary>
         <nav class="mobile-nav__panel" aria-label="Mobile">{{ links }}</nav>

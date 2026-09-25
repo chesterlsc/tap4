@@ -83,7 +83,7 @@ function previewNotice(emptyProducts) {
   return `<aside style="padding:9px 18px;background:#e4ff79;color:#101010;text-align:center;font:600 12px/1.5 system-ui" role="note">Local theme preview · ${emptyProducts ? 'No catalog products' : 'Sample catalog from products.csv; simulated variant IDs'} · Cart and checkout are disabled. <a style="color:inherit;text-decoration:underline" href="/collections/all">Products</a> · <a style="color:inherit;text-decoration:underline" href="/cart?sample=1">Sample cart</a> · <a style="color:inherit;text-decoration:underline" href="/search?q=stand">Search</a></aside>`;
 }
 
-export async function createPreview({ emptyProducts = false } = {}) {
+export async function createPreview({ emptyProducts = false, orderEmail = '' } = {}) {
   const catalog = await createCatalog();
   const allProducts = emptyProducts ? {} : catalog;
   const productList = Object.values(allProducts);
@@ -91,7 +91,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
   const stored = await readJSON('config/settings_data.json');
   const defaults = Object.fromEntries(schema.flatMap(group => group.settings || []).filter(s => s.id).map(s => [s.id, s.default]));
   const saved = typeof stored.current === 'string' ? stored.presets?.[stored.current] : stored.current;
-  const settings = { ...defaults, ...saved };
+  const settings = { ...defaults, ...saved, ...(orderEmail && { order_email: orderEmail }) };
   const money = cents => '₱' + (Number(cents || 0) / 100).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const engine = new Liquid({ root: [path.join(ROOT, 'snippets')], extname: '.liquid', strictFilters: true });
   engine.registerFilter('asset_url', file => '/assets/' + file);
@@ -184,7 +184,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
       layout = layout.replace(match[0], await renderGroup(`sections/${match[1]}.json`, globals));
     }
     let html = await engine.parseAndRender(layout, { ...globals, content_for_layout: body, content_for_header: '' }, { globals });
-    html = html.replace(/(<body\b[^>]*>)/, `$1${previewNotice(emptyProducts)}`);
+    if (!orderEmail) html = html.replace(/(<body\b[^>]*>)/, `$1${previewNotice(emptyProducts)}`);
     return { html, status };
   }
   return { renderPage, catalog };
@@ -200,6 +200,18 @@ export async function renderSite(options = {}) {
 
 async function main() {
   const emptyProducts = process.env.EMPTY === '1';
+  if (process.argv.includes('--static')) {
+    // Production site for Vercel (tap4.ph): homepage + 404, orders go out by email, no Shopify cart.
+    const preview = await createPreview({ orderEmail: process.env.ORDER_EMAIL || 'hello@tapfour.ph' });
+    const output = path.join(ROOT, 'dist');
+    await fs.rm(output, { recursive: true, force: true });
+    await fs.cp(path.join(ROOT, 'assets'), path.join(output, 'assets'), { recursive: true });
+    const site = process.env.SITE_URL || 'https://tap4.ph';
+    await fs.writeFile(path.join(output, 'index.html'), (await preview.renderPage(site + '/')).html);
+    await fs.writeFile(path.join(output, '404.html'), (await preview.renderPage(site + '/404')).html);
+    console.log('Built static site into dist/');
+    return;
+  }
   if (process.argv.includes('--build')) {
     const { pages } = await renderSite({ emptyProducts });
     const output = path.join(ROOT, '.preview');

@@ -10,6 +10,7 @@
   window.TF = {
     cartUrl: {{ routes.cart_url | json }},
     cartAddUrl: {{ routes.cart_add_url | append: '.js' | json }},
+    orderEmail: {{ settings.order_email | json | replace: '<', '\u003c' }},
     currency: {{ cart.currency.iso_code | default: 'PHP' | json }},
     sale: {
       end: {{ settings.sale_end | json | replace: '<', '\u003c' }},

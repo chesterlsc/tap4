@@ -71,7 +71,7 @@
     menuCat: 0, preset: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
     feats: { reviews: true, menu: true, order: false, crm: false, wifi: false }, hw: { menu: false }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
-  const set = o => { Object.assign(S, { error: '' }, o); render(); };
+  const set = o => { Object.assign(S, { error: '', sent: false }, o); render(); };
 
   function derive() {
     const isQuad = S.mode === 'quad', isApp = S.mode === 'app', isDirect = S.mode === 'direct';
@@ -232,12 +232,13 @@
       <div class="summary__totals"><div><div class="s13">One-time</div><div class="summary__big">${peso(d.oneTime)}</div></div>
         <div class="ta-r"><div class="s13">${d.yearly ? 'Monthly add-ons' : 'Monthly'}</div><div class="summary__mid">${peso(d.monthly)}</div><div class="s11">${d.monthly ? 'Billed monthly' : d.yearly ? 'Plan billed yearly' : 'No subscription'}</div></div></div>
       ${d.yearly ? `<div class="s13"><b>Yearly plan: ${peso(d.yearly)} due today</b><br>Renews yearly at ${peso(d.yearly)}. Monthly add-ons are billed separately.</div>` : ''}
-      <div class="s13"><b>${d.demoPrices ? 'Estimated total' : 'Due today'}: ${peso(d.dueNow)}</b>${d.monthly ? ' · includes the first monthly charge' : ''}<br>Taxes and shipping calculated at checkout.</div>
+      <div class="s13"><b>${d.demoPrices ? 'Estimated total' : 'Due today'}: ${peso(d.dueNow)}</b>${d.monthly ? ' · includes the first monthly charge' : ''}<br>${TF.orderEmail ? 'We reply by email to confirm shipping and payment.' : 'Taxes and shipping calculated at checkout.'}</div>
       ${d.demoPrices ? '<div class="summary__err">Sample prices shown. Ordering is unavailable until these products are configured.</div>' : ''}
       ${d.saved > 0 ? `<div class="summary__save"><span>${esc(label)}YOU SAVE ${peso(d.saved)}</span>${deadline ? `<span class="fg">${deadline === 'Offer ended' ? '' : 'ENDS '}<span data-countdown>${deadline}</span></span>` : ''}</div>` : ''}
       <div class="summary__line">${esc(d.summary)}</div>
       ${TF.sale.stock > 0 ? `<div class="s13 b6">Only ${TF.sale.stock} stands left at sale price · Ships nationwide in 3–5 days</div>` : ''}
-      <button type="button" class="btn btn--dark btn--lg btn--block" data-act="order"${S.ordering || d.demoPrices ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : d.demoPrices ? 'Ordering unavailable' : 'Order for ' + peso(d.dueNow) + ' →'}</button>
+      <button type="button" class="btn btn--dark btn--lg btn--block" data-act="order"${S.ordering || d.demoPrices ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : d.demoPrices ? 'Ordering unavailable' : (TF.orderEmail ? 'Email my order · ' : 'Order for ') + peso(d.dueNow) + ' →'}</button>
+      ${S.sent ? `<div class="s13" role="status">Your email app should open with the order filled in. Nothing opened? Email <a class="fg" href="mailto:${esc(TF.orderEmail)}">${esc(TF.orderEmail)}</a>.</div>` : ''}
       ${S.error ? `<div class="summary__err" role="alert">${esc(S.error)}</div>` : ''}`;
   }
 
@@ -328,7 +329,7 @@
     const add = (it, qty, props, recurring = false) => {
       const v = variant(it.handle, it.variant);
       if (!v || !v.available) return missing.push(it.name);
-      if (recurring && !v.sp) return missingPlans.push(it.name);
+      if (recurring && !v.sp && !TF.orderEmail) return missingPlans.push(it.name);
       const line = { id: v.id, quantity: qty };
       if (props) line.properties = props;
       if (recurring) line.selling_plan = v.sp;
@@ -352,12 +353,23 @@
     }
     d.activeSvcs.forEach(v => {
       if (!v.vid || !v.available) missing.push(v.name);
-      else if (v.monthly && !v.sp) missingPlans.push(v.name);
+      else if (v.monthly && !v.sp && !TF.orderEmail) missingPlans.push(v.name);
       else items.push({ id: v.vid, quantity: 1, ...(v.monthly ? { selling_plan: v.sp } : {}) });
     });
 
     if (missing.length) return reject('Not available right now: ' + missing.join(', ') + '. Message us and we’ll sort it out.');
     if (missingPlans.length) return reject('Subscription billing is not configured for: ' + missingPlans.join(', ') + '. Please contact us before ordering.');
+    if (TF.orderEmail) {
+      // No checkout on the static site: hand the full setup to the customer's mail app.
+      const body = [
+        'Hi tapfour, I’d like to order this setup:', '', d.summary, '',
+        ...Object.entries(props).map(([k, v]) => k + ': ' + v), '',
+        'One-time: ' + peso(d.oneTime), d.monthly ? 'Monthly: ' + peso(d.monthly) : null, '',
+        'Delivery address:', 'Contact number:'
+      ].filter(v => v !== null).join('\n');
+      (TF.open || (url => { location.href = url; }))('mailto:' + TF.orderEmail + '?subject=' + encodeURIComponent('Order: ' + S.qty + ' × ' + d.prod.name + ' — ' + S.name.trim()) + '&body=' + encodeURIComponent(body));
+      return set({ error: '', sent: true });
+    }
     set({ ordering: true });
     try {
       const r = await fetch(TF.cartAddUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ items }) });

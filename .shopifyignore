@@ -11,4 +11,4 @@ package.json
 package-lock.json
 products.csv
 .DS_Store
-
+vercel.json
