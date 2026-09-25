@@ -2,11 +2,13 @@
   <div class="site-footer__in">
     <a class="site-footer__brand" href="{{ routes.root_url }}">{{ section.settings.brand | default: shop.name | escape }}</a>
     {%- assign menu = section.settings.menu -%}
-    {%- if menu.links.size > 0 -%}
-      <nav class="row-wrap" style="gap:20px" aria-label="Footer">
+    <nav class="site-footer__nav" aria-label="Footer">
+      {%- if menu.links.size > 0 -%}
         {%- for link in menu.links -%}<a href="{{ link.url }}">{{ link.title | escape }}</a>{%- endfor -%}
-      </nav>
-    {%- endif -%}
+      {%- else -%}
+        <a href="/#build">Review stands</a><a href="/#app">QR menu</a><a href="/#plans">Pricing</a><a href="/#services">Services</a>
+      {%- endif -%}
+    </nav>
     <span>{{ section.settings.text | escape }}</span>
   </div>
 </footer>

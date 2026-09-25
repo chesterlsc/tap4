@@ -285,6 +285,7 @@
     $('#tf-mode-after').innerHTML = viewModeAfter(d);
     $('#tf-extra').innerHTML = viewExtra(d);
     $('#tf-summary').innerHTML = viewSummary(d);
+    $('#tf-bar-total').textContent = peso(d.oneTime) + (d.monthly ? ' + ' + peso(d.monthly) + '/mo' : '');
     for (const [id, key] of [['tf-name', 'name'], ['tf-headline', 'headline'], ['tf-website', 'website']]) {
       const el = document.getElementById(id);
       if (el !== document.activeElement) el.value = S[key];
@@ -426,6 +427,27 @@
     render();
   });
   render();
+
+  /* ---------- mobile: sticky order bar while configuring, hidden once the summary is on screen ---------- */
+  const bar = $('#tf-bar');
+  if (bar && 'IntersectionObserver' in window) {
+    const seen = { build: false, summary: false };
+    const sync = () => { const on = seen.build && !seen.summary; bar.classList.toggle('on', on); bar.setAttribute('aria-hidden', String(!on)); bar.querySelector('button').tabIndex = on ? 0 : -1; };
+    const io = new IntersectionObserver(es => { es.forEach(e => { seen[e.target === builder ? 'build' : 'summary'] = e.isIntersecting; }); sync(); });
+    io.observe(builder);
+    io.observe($('#tf-summary'));
+    bar.querySelector('[data-to-summary]').addEventListener('click', () => $('#tf-summary').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }
+
+  /* ---------- gentle reveal on scroll ---------- */
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+    $$('.sec__head, .sec > .sec__titles, .app-card, .app-photo, .dash, .plan, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
+  }
+
+  /* ---------- mobile menu: close after picking a link or tapping outside ---------- */
+  const mnav = $('.mobile-nav');
+  if (mnav) document.addEventListener('click', e => { if (mnav.open && (!mnav.contains(e.target) || e.target.closest('a'))) mnav.open = false; });
 
   /* ---------- dashboard demo ---------- */
   const dash = $('[data-dash]');
