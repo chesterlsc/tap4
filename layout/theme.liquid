@@ -7,7 +7,13 @@
   <link rel="canonical" href="{{ canonical_url }}">
   <title>{{ page_title }}{% if current_page != 1 %} – Page {{ current_page }}{% endif %}{% unless page_title contains shop.name %} – {{ shop.name }}{% endunless %}</title>
   {%- if page_description %}<meta name="description" content="{{ page_description | escape }}">{% endif %}
-  {%- if settings.favicon %}<link rel="icon" href="{{ settings.favicon | image_url: width: 64 }}">{% endif %}
+  {%- if settings.favicon -%}
+    <link rel="icon" href="{{ settings.favicon | image_url: width: 64 }}">
+  {%- else -%}
+    <link rel="icon" href="{{ 'favicon-32.png' | asset_url }}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{{ 'favicon.svg' | asset_url }}" type="image/svg+xml">
+  {%- endif %}
+  <link rel="apple-touch-icon" href="{{ 'apple-touch-icon.png' | asset_url }}">
   <meta property="og:site_name" content="{{ shop.name }}">
   <meta property="og:title" content="{{ page_title | escape }}">
   <meta property="og:url" content="{{ canonical_url }}">
