@@ -100,6 +100,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
     const attrs = Object.fromEntries(args.filter(Array.isArray));
     return `<img src="${escape(src)}" alt="${escape(attrs.alt || '')}" loading="${escape(attrs.loading || 'lazy')}">`;
   });
+  engine.registerFilter('preload_tag', (url, ...args) => `<link rel="preload" href="${escape(url)}" ${args.filter(Array.isArray).map(([k, v]) => `${k}="${escape(v)}"`).join(' ')}>`);
   engine.registerFilter('stylesheet_tag', url => `<link rel="stylesheet" href="${escape(url)}">`);
   engine.registerFilter('json', value => JSON.stringify(value ?? null).replace(/</g, '\\u003c'));
   engine.registerFilter('money', money);
@@ -109,6 +110,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
   engine.registerFilter('t', key => key.split('.').reduce((value, part) => value?.[part], translations) || key);
   engine.registerFilter('placeholder_svg_tag', (_, className = '') => `<svg class="${escape(className)}" viewBox="0 0 400 400" role="img" aria-label="Product image placeholder"><rect width="400" height="400" fill="#242426"/><path d="M100 125h200v160H100zM140 125v-25h120v25" fill="none" stroke="#777" stroke-width="3"/></svg>`);
   engine.registerFilter('payment_button', () => '');
+  engine.registerFilter('default_errors', () => '');
   engine.registerFilter('default_pagination', () => '');
   engine.registerTag('schema', { ...blockTag('endschema'), render() { return ''; } });
   engine.registerTag('paginate', blockTag('endpaginate'));
@@ -136,7 +138,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
       return { id: key, type: block.type, shopify_attributes: '', settings: resolveSettings(block.settings, schema.blocks?.find(b => b.type === block.type)?.settings) };
     });
     const section = { id, settings: resolveSettings(data.settings, schema.settings), blocks };
-    return `<div id="shopify-section-${escape(id)}" class="shopify-section ${escape(schema.class || '')}">${await engine.parseAndRender(source, { ...globals, section })}</div>`;
+    return `<div id="shopify-section-${escape(id)}" class="shopify-section ${escape(schema.class || '')}">${await engine.parseAndRender(source, { ...globals, section }, { globals })}</div>`;
   }
   async function renderGroup(file, globals) {
     const group = await readJSON(file);
@@ -181,7 +183,7 @@ export async function createPreview({ emptyProducts = false } = {}) {
     for (const match of [...layout.matchAll(/{%-?\s*sections\s+['"]([^'"]+)['"]\s*-?%}/g)]) {
       layout = layout.replace(match[0], await renderGroup(`sections/${match[1]}.json`, globals));
     }
-    let html = await engine.parseAndRender(layout, { ...globals, content_for_layout: body, content_for_header: '' });
+    let html = await engine.parseAndRender(layout, { ...globals, content_for_layout: body, content_for_header: '' }, { globals });
     html = html.replace(/(<body\b[^>]*>)/, `$1${previewNotice(emptyProducts)}`);
     return { html, status };
   }

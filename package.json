@@ -12,8 +12,8 @@
     "preview": "node scripts/preview.mjs",
     "preview:build": "node scripts/preview.mjs --build",
     "check": "shopify theme check --fail-level warning",
-    "test": "node --test tests/*.test.mjs",
-    "package": "node scripts/package.mjs",
+    "test": "node --test --test-timeout=30000 tests/*.test.mjs",
+    "package": "shopify theme package",
     "shopify:dev": "shopify theme dev",
     "shopify:push": "shopify theme push --unpublished"
   },
