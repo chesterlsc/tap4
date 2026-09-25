@@ -29,6 +29,7 @@
   const HW = [
     { id: 'acrylic', handle: 'acrylic-glass-stand', name: 'Acrylic Glass Stand', desc: 'Glowing edge, weighted NFC base', price: 899, was: 1499 },
     { id: 'l', handle: 'l-stand', name: 'L-Stand', desc: 'Slim acrylic L, NFC on the face', price: 549, was: 919 },
+    { id: 'pvc', handle: 'pvc-triangle-stand', name: 'PVC Triangle Stand', desc: 'Tent-style table stand, review tap + menu QR', price: 449, was: 749 },
     { id: 'card', handle: 'nfc-card-4-in-1', name: '4-in-1 NFC Card', desc: 'Matte black PVC, CR80 size', price: 249, was: 419 }
   ];
   const BAR = { id: 'bar', handle: '4-tap-bar', name: '4-Tap Bar', desc: 'Long acrylic bar · 4 NFC zones', price: 1490, was: 2479 };
@@ -131,10 +132,11 @@
 
   function viewPreview(d) {
     const shift = d.menuOn ? (d.isQuad ? '-60px' : '-100px') : '0px';
-    const photo = d.isApp ? TF.img.standCombo : d.prod.id === 'card' ? TF.img.cardNfc : d.prod.id === 'l' ? TF.img.standLKn : d.menuOn ? TF.img.standAcrylicKn : TF.img.standAcrylic;
+    const combo = d.isApp && d.prod.id === 'acrylic';
+    const photo = combo ? TF.img.standCombo : photoOf(d.prod.id, d);
     let stage = '<div class="pv-glow"></div>';
     if (!d.isQuad) {
-      stage += `<div class="pv-photo" style="transform:translateX(${shift})"><img src="${photo}" alt="${esc(d.prod.name)} sample"><span class="pv-cap">${d.isApp ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>`;
+      stage += `<div class="pv-photo" style="transform:translateX(${shift})"><img src="${photo}" alt="${esc(d.prod.name)} sample"><span class="pv-cap">${combo ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>`;
     } else {
       stage += `<div class="quad" style="transform:translateX(${shift})"><div class="quad__face"><div class="shine"></div>
         <div class="row-between rel"><div class="quad__id"><span class="ring ring--sm">${esc(d.initials)}</span><span class="quad__name">${esc(S.name.toUpperCase())}</span></div><span class="quad__tap">TAP ONE ))) </span></div>
@@ -155,11 +157,20 @@
       <div class="pv-url"><span><span class="lime">TAP OPENS →</span> ${esc(d.destUrl)}</span></div>`;
   }
 
+  // Product photo that matches the current setup (menu on/off, single link vs 4-in-1).
+  const photoOf = (id, d) => ({
+    acrylic: d.menuOn ? TF.img.standAcrylicKn : TF.img.standAcrylic,
+    l: d.menuOn ? TF.img.standLKn : TF.img.standLLinks,
+    pvc: TF.img.standPvcMenu,
+    card: d.isApp || S.dest === 'links' ? TF.img.cardNfc : TF.img.cardPersonal
+  })[id];
+
   function viewHardware(d) {
     return (d.isQuad ? [BAR] : HW).map(p => {
       const on = d.prod.id === p.id, was = wasOf(p);
-      return `<button type="button" class="opt${on ? ' on' : ''}" ${p.id === 'bar' ? 'disabled' : `data-act="product" data-arg="${p.id}"`} aria-pressed="${on}">
-        <b>${p.name}</b><span>${p.desc}</span><span class="opt__price"><em>${peso(priceOf(p))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`;
+      const img = photoOf(p.id, d);
+      return `<button type="button" class="opt${on ? ' on' : ''}${img ? ' opt--img' : ''}" ${p.id === 'bar' ? 'disabled' : `data-act="product" data-arg="${p.id}"`} aria-pressed="${on}">
+        ${img ? `<img class="opt__img" src="${img}" alt="" loading="lazy">` : ''}<b>${p.name}</b><span>${p.desc}</span><span class="opt__price"><em>${peso(priceOf(p))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`;
     }).join('');
   }
 

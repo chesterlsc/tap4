@@ -1,10 +1,10 @@
 {%- comment -%}
   Prices + variant ids the builder, plans and services read from.
-  all_products allows 20 unique handles per page; this uses 15.
+  all_products allows 20 unique handles per page; this uses 16.
   Recurring variants need exactly one applicable recurring selling plan.
 {%- endcomment -%}
 {%- liquid
-  assign handles = 'acrylic-glass-stand,l-stand,nfc-card-4-in-1,4-tap-bar,printed-qr-menu,multi-link-page,tapfour-app,tapfour-app-add-ons,page-build,menu-setup,google-profile-setup,custom-stand-design,social-starter-pack,managed-dashboard,reseller-starter-kit' | split: ','
+  assign handles = 'acrylic-glass-stand,l-stand,pvc-triangle-stand,nfc-card-4-in-1,4-tap-bar,printed-qr-menu,multi-link-page,tapfour-app,tapfour-app-add-ons,page-build,menu-setup,google-profile-setup,custom-stand-design,social-starter-pack,managed-dashboard,reseller-starter-kit' | split: ','
 -%}
 <script>
   window.TF = {
@@ -23,6 +23,9 @@
       standL: {{ 'stand-l.jpg' | asset_url | json }},
       standLKn: {{ 'stand-l-kn.jpg' | asset_url | json }},
       standCombo: {{ 'stand-combo.jpg' | asset_url | json }},
+      standLLinks: {{ 'stand-l-links.jpg' | asset_url | json }},
+      standPvcMenu: {{ 'stand-pvc-menu.jpg' | asset_url | json }},
+      cardPersonal: {{ 'card-personal.jpg' | asset_url | json }},
       cardNfc: {{ 'card-nfc.jpg' | asset_url | json }}
     },
     products: {
