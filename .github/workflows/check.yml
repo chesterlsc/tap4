@@ -16,6 +16,8 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - run: npm ci --prefix platform
+      - run: npm test --prefix platform
       - run: npm run build
       - run: npm run preview:build
       - run: npm run package

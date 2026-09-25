@@ -1,0 +1,20 @@
+{
+  "name": "tapfour-platform",
+  "private": true,
+  "type": "module",
+  "description": "Tap redirects, hosted links pages and the Tap4 admin dashboard (Cloudflare Worker + D1).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:init": "wrangler d1 migrations apply tapfour --local && wrangler d1 execute tapfour --local --file seed.sql",
+    "test": "node --test test/*.test.mjs",
+    "deploy": "wrangler d1 migrations apply tapfour --remote && wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.13.9",
+    "jose": "^6.2.12",
+    "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "wrangler": "^4.141.0"
+  }
+}

@@ -1,0 +1,35 @@
+name = "tapfour-platform"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# The live theme's assets (theme.css, fonts, product photos) are served as-is: one design source.
+assets = { directory = "../assets" }
+
+# Inline the theme's icon sprite from snippets/icon-sprite.liquid.
+rules = [{ type = "Text", globs = ["**/*.liquid"], fallthrough = true }]
+
+[vars]
+# Permanent domain burned into every chip and QR. Final before the first chip is written.
+# tap4.ph itself is the Vercel site, so taps live on a subdomain pointed at this Worker.
+TAP_BASE = "https://go.tap4.ph"
+# Staff dashboard hostname. Only /admin is served here; the tap host 404s /admin.
+# Protect this whole hostname with Cloudflare Access.
+ADMIN_HOST = "admin.tap4.ph"
+# Where a bare visit to "/" goes (the Shopify store). Leave empty to show a not-found page.
+SITE_URL = "https://tap4.ph"
+# Set in the dashboard or via `wrangler secret put`: CF_ACCESS_TEAM, CF_ACCESS_AUD, HASH_SECRET.
+
+# Both hostnames need tap4.ph's DNS on Cloudflare; keep the Vercel records for tap4.ph/www as DNS-only.
+routes = [
+  { pattern = "go.tap4.ph", custom_domain = true },
+  { pattern = "admin.tap4.ph", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tapfour"
+database_id = "00000000-0000-0000-0000-000000000000" # replace with the id from `wrangler d1 create tapfour`
+migrations_dir = "migrations"
+
+[observability]
+enabled = true

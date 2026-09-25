@@ -1,6 +1,6 @@
 # Tap4 Dashboard & Redirect Platform — Architecture
 
-Status: proposal, nothing built yet. Written 2026-09-26 against commit `559a1b9`.
+Status: **MVP admin dashboard + redirect service built in `platform/`** (see §12). Shopify order import not built (no orders yet).
 
 Goal: the smallest reliable software layer that makes Tap4's physical NFC + QR products
 **manageable, editable, measurable, and scalable**, without redesigning the existing site.
@@ -45,7 +45,7 @@ The "live taps" marquee (`tf-live-taps`, `templates/index.json`) is also sample 
 | L-shaped acrylic | `l-stand` / `TF-STAND-L` | 1 | backup QR |
 | Horizontal 4-in-1 | `4-tap-bar` / `TF-BAR` | **4** | — |
 | Personal NFC card | `nfc-card-4-in-1` / `TF-CARD` | 1 → links page | — |
-| Triangle PVC stand | **not in catalog** | ? | ? |
+| Triangle PVC stand | `pvc-triangle-stand` / `TF-STAND-PVC` | 1 | menu QR |
 | (add-on) Printed QR menu | `printed-qr-menu` | — | menu QR |
 
 **Naming collision:** "4-in-1" means two different things: the **4-chip bar** and the
@@ -92,7 +92,7 @@ script). The theme stays the only source of truth for the look.
                       └───────────────┬────────────────────────────────────┘
                                       │ Admin API (read_orders): "Import order #"
                                       ▼
- phone ──tap/scan──▶ go.tapfour.ph ── Cloudflare Worker (one app, Hono) ── D1 (SQLite)
+ phone ──tap/scan──▶ go.tap4.ph ── Cloudflare Worker (one app, Hono) ── D1 (SQLite)
                        /t/:code[/:slot]   302 → destination  + log event (waitUntil)
                        /q/:code[/:slot]
                        /p/:slug           hosted links page / menu (theme.css look)
@@ -106,8 +106,8 @@ Why this shape:
   "cancel anytime, your stand keeps working". Redirects run at the edge and never check subscription status.
 - **One deployable.** Redirects, hosted pages, and admin live in one Worker with one database: nothing to sync and one bill (likely $0–5/mo at your scale).
 - **No auth code for MVP.** Cloudflare Access sits in front of `/admin` (Google/email OTP, free for up to 50 users).
-- **Subdomain, not the root.** Shopify serves `tapfour.ph` and can't be proxied for `/t/*`, so tap URLs live on
-  `go.tapfour.ph` (or a short domain like `tap4.ph`). The platform owns it outright.
+- **Subdomain, not the root.** The storefront serves `tap4.ph` (currently a static Vercel build), so tap URLs live on
+  `go.tap4.ph`, which points at the Worker and is owned outright. It's the `TAP_BASE` setting and is final once chips are written.
 
 Code location: `platform/` in this repo (add `platform/**` to `.shopifyignore`), so it can reuse `assets/theme.css` directly.
 
@@ -162,7 +162,6 @@ CREATE TABLE businesses (
 CREATE TABLE business_links (
   business_id INTEGER NOT NULL REFERENCES businesses(id),
   key         TEXT NOT NULL,
-  label       TEXT,
   url         TEXT,                             -- NULL for Tap4-hosted keys ('links', hosted 'menu')
   PRIMARY KEY (business_id, key)
 );
@@ -171,7 +170,7 @@ CREATE TABLE devices (
   code          TEXT PRIMARY KEY,               -- random, in the URL: 'K7M2QX'
   label         TEXT,                           -- human: 'TF-KN-0001', 'Counter 1'
   business_id   INTEGER REFERENCES businesses(id),   -- NULL = blank stock
-  product_sku   TEXT NOT NULL,                  -- TF-STAND-ACR | TF-STAND-L | TF-BAR | TF-CARD | (triangle)
+  product_sku   TEXT NOT NULL,                  -- TF-STAND-ACR | TF-STAND-L | TF-STAND-PVC | TF-BAR | TF-CARD
   branch        TEXT,                           -- text until multi-branch is real
   status        TEXT NOT NULL DEFAULT 'new'     -- new | qc_passed | active | disabled
                 CHECK (status IN ('new','qc_passed','active','disabled')),
@@ -232,11 +231,11 @@ How the 4-in-1 cases fall out:
 ## 6. URL / redirect architecture
 
 ```
-https://go.tapfour.ph/t/K7M2QX        NFC, default slot 'main'
-https://go.tapfour.ph/t/K7M2QX/z2     NFC, bar zone 2
-https://go.tapfour.ph/q/K7M2QX        QR, default slot
-https://go.tapfour.ph/q/K7M2QX/menu   QR, menu
-https://go.tapfour.ph/p/kape-norte    hosted links page (also the fallback)
+https://go.tap4.ph/t/K7M2QX        NFC, default slot 'main'
+https://go.tap4.ph/t/K7M2QX/z2     NFC, bar zone 2
+https://go.tap4.ph/q/K7M2QX        QR, default slot
+https://go.tap4.ph/q/K7M2QX/menu   QR, menu
+https://go.tap4.ph/p/kape-norte    hosted links page (also the fallback)
 ```
 
 The prefix decides the source (`/t` = NFC, `/q` = QR). The same slot can be reached both ways, so it isn't stored on the slot.
@@ -258,7 +257,7 @@ Keep `TF-KN-0001` as the printed/admin `label`, not the URL. Here's why:
 - Sequential codes are enumerable (competitors scrape your client list, and bots pollute analytics).
 - `KN` ties a chip to one business forever, which blocks **pre-encoded blank stock**.
 
-Chip/QR budget: `https://go.tapfour.ph/t/K7M2QX/z2` is ~25 bytes after NDEF's `https://` prefix byte, far below the
+Chip/QR budget: `https://go.tap4.ph/t/K7M2QX/z2` is ~25 bytes after NDEF's `https://` prefix byte, far below the
 144 bytes on an NTAG213. For QR, uppercasing the whole URL enables alphanumeric mode, which gives a smaller, denser-safe code.
 
 ---
@@ -326,7 +325,7 @@ Future writers plug into step 2 only:
 | **Destination hijack** (the worst case: every stand becomes a phishing link) | MVP: only Tap4 staff edit. Phase 2 customer edits: email the owner on every change, write the audit_log, add admin "freeze", and rate-limit edits. |
 | **Device ID guessing** | Random codes. Never use a device code as a claim secret. If self-activation ever exists, it uses a separate one-time claim code inside the box. |
 | **Chip tampering** | Lock tags after writing. Otherwise anyone with a free NFC app can rewrite a café's stand. |
-| **QR sticker overlay** | Print `go.tapfour.ph` under the QR so guests can see the host. The QC photo is a reference for support. |
+| **QR sticker overlay** | Print `go.tap4.ph` under the QR so guests can see the host. The QC photo is a reference for support. |
 | **Admin access** | Cloudflare Access (SSO / OTP, per-email allow-list). The Worker re-verifies the Access JWT. Start with one admin role; split production-staff vs admin only when needed. |
 | **Customer data / tenant isolation** | Phase 2: every `/app` query goes through one `requireBusiness(user)` helper. Never trust a business id from the client. |
 | **Analytics privacy (PH Data Privacy Act)** | No raw IPs. Visitor = HMAC with a daily salt. Store country only. The public "live taps" ticker stays sample data or anonymised. |
@@ -371,3 +370,64 @@ Future writers plug into step 2 only:
   and the Agency plan's pipeline/white-label/billing. Each is a product in itself.
   - Wi-Fi **can't** go through a redirect: it needs a Wi-Fi NDEF record on the chip, and iPhones don't join Wi-Fi from tags.
   - Consider hiding these until built.
+
+---
+
+## 12. What's built (`platform/`)
+
+| Piece | Where |
+|---|---|
+| Schema | `platform/migrations/0001_init.sql` |
+| Resolver, codes, URL validation, product/slot map, QC checklist | `platform/src/lib.js` (unit-tested in `platform/test/`) |
+| Routes: `/t`, `/q`, `/p/:slug`, `/admin/*`. `go.tap4.ph` 404s `/admin`; `admin.tap4.ph` serves only `/admin` | `platform/src/index.js` |
+| Pages (the site's `theme.css`, fonts, icon sprite and photos, served straight from `assets/` and `snippets/`) | `platform/src/views.js` |
+| Local demo data | `platform/seed.sql` |
+
+Admin screens:
+- **Overview:** KPIs, taps per day, where taps go, device-status counts, top businesses, and live recent taps.
+- **Businesses:** list and create.
+- **Business page:** analytics, destinations (audit-logged), details and branding (brand colour re-tints its links page), and a devices table plus "add devices".
+- **Devices:** provisioning kanban (To encode → In QC → Ready to ship → Active → Disabled), blank-stock creation, and find by code.
+- **Device page:**
+  - NFC/QR URLs with copy buttons, plus a QR preview and SVG/2048px PNG downloads.
+  - QC checklist; Pass stays disabled until everything is ticked, and failing needs a note.
+  - Ship, disable and reopen, with enforced status transitions.
+  - Assignment, slot → destination mapping, and adding a menu slot.
+- **Audit log.**
+
+Run locally:
+```bash
+cd platform && npm install
+cp .dev.vars.example .dev.vars      # AUTH_DEV=1 bypasses Access locally only
+npm run db:init                      # schema + demo businesses/devices/taps
+npm run dev                          # http://localhost:8787/admin
+npm test
+```
+
+Deploy (one-time):
+1. `npx wrangler d1 create tapfour`, then paste its id into `platform/wrangler.toml`.
+2. `npx wrangler secret put HASH_SECRET` (any long random string).
+3. Cloudflare Zero Trust → Access → self-hosted app for the whole `admin.tap4.ph` hostname, with an allow-list of staff emails.
+   Then `wrangler secret put CF_ACCESS_TEAM` (team name) and `CF_ACCESS_AUD` (the app's AUD tag).
+   Without them `/admin` returns 403: it fails closed.
+4. DNS: tap4.ph is registered at **Namecheap** (as of 2026-09-26 it uses Namecheap BasicDNS: parked page + email forwarding).
+   Namecheap stays the registrar; only the nameservers move to Cloudflare (Free plan). Worker custom domains need that.
+   1. Cloudflare → Add a domain → `tap4.ph` → Free. Delete the imported parking records (A `192.64.119.225`, `www` → `parkingpage.namecheap.com`).
+   2. Add the Vercel records exactly as Vercel → Project → Domains shows them, set to **DNS only** (grey cloud).
+   3. Email: Namecheap forwarding stops when the nameservers leave Namecheap. Turn on Cloudflare Email Routing, which adds its own MX/SPF.
+      Then delete the `eforward*.registrar-servers.com` MX records and the old SPF TXT.
+   4. Namecheap → Domain List → tap4.ph → Nameservers → **Custom DNS**, and paste Cloudflare's two nameservers. Propagation takes minutes to 48 h.
+   5. Turn on **auto-renew** at Namecheap. Every chip depends on this domain.
+   6. `npm run deploy`: `wrangler.toml` attaches `go.tap4.ph` and `admin.tap4.ph` and creates their DNS records.
+5. Point an uptime monitor at one active device's `/t/<code>`.
+
+Verified locally:
+- Every redirect is a 302 with `no-store`.
+- A destination edit applies on the next tap.
+- `javascript:`/`http:` destinations are rejected.
+- Cross-site POSTs return 403 (CSRF).
+- HTML in names is escaped.
+- `/admin` returns 403 without a valid Access JWT, while taps keep working.
+- Bot taps are flagged; a double read within 10 s logs once.
+- A QC scan stamps "programmed" without counting as a tap.
+- No horizontal scroll at 375px.
