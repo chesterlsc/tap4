@@ -1,0 +1,5 @@
+# The landing site builds from the repo root into dist/. The Worker (platform/) deploys to Cloudflare.
+platform/
+docs/
+.claude/
+.env*
