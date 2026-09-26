@@ -233,18 +233,39 @@
         <div class="slots">${S.slots.map((id, i) => { const o = SLOT_OPTS.find(x => x[0] === id); return `<button type="button" class="slot" data-act="slot" data-arg="${i}"><span class="mono m3">TAP ${i + 1}</span><span class="slot__dot">${o[2] ? ic(id, o[2], 16) : '<b>↗</b>'}</span><b>${o[1]}</b><span class="mono lime">CHANGE ↻</span></button>`; }).join('')}</div>
         <div class="note">4 separate NFC chips, each programmed straight to one link. No page in between, no app, no subscription.</div></div>`;
     }
-    const urlField = (key, label, value, required) => `<label class="field">${esc(label)} URL${required ? ' (required)' : ' (optional)'}<input id="tf-url-${key}" type="url" inputmode="url" autocomplete="url" data-url="${key}" value="${esc(value || '')}" placeholder="https://…"${required ? ' required' : ''}></label>`;
+    const urlField = (key, label, value, required, plat) => `<label class="field">${esc(label)} URL${required ? ' (required)' : ' (optional)'}<input id="tf-url-${key}" type="url" inputmode="url" autocomplete="url" data-url="${key}" value="${esc(value || '')}" placeholder="${plat === 'google' ? 'https://g.page/r/…/review' : 'https://…'}"${required ? ' required' : ''}></label>${plat === 'google' ? googleHelp(value) : ''}`;
     if (d.isQuad) {
-      html += `<div class="stack-10">${S.slots.map((id, i) => urlField('zone-' + i, 'Tap ' + (i + 1) + ' · ' + d.slotName(id), S.slotLinks[i], true)).join('')}</div>`;
+      html += `<div class="stack-10">${S.slots.map((id, i) => urlField('zone-' + i, 'Tap ' + (i + 1) + ' · ' + d.slotName(id), S.slotLinks[i], true, id)).join('')}</div>`;
     } else if (d.isApp || S.dest === 'links') {
-      html += `<div class="stack-10">${d.activePl.map(([id, name]) => urlField(id, name, S.links[id], !d.isApp)).join('')}</div>`;
+      html += `<div class="stack-10">${d.activePl.map(([id, name]) => urlField(id, name, S.links[id], !d.isApp, id)).join('')}</div>`;
       if (d.isApp) html += '<div class="note">You can provide your links after checkout. Your app page address is assigned during setup.</div>';
     } else if (S.dest !== 'website') {
-      html += urlField(S.dest, d.dest.name, S.links[S.dest], true);
+      html += urlField(S.dest, d.dest.name, S.links[S.dest], true, S.dest);
     }
     if (!d.isApp) html += '<div class="note">Paste the exact destination links for programming. Your business name does not create these links.</div>';
     if (d.isDirect) html += '<div class="note">Pay once, yours forever — no account, no monthly fee. If you ever want a menu or tap stats, the same stand can be switched to the app.</div>';
     return html;
+  }
+
+  // Under every Google URL field: a 3-step guide (from Google's own help), a test link, and a hint
+  // when a Maps/profile link was pasted instead of the review link.
+  const GOOGLE_GUIDE = 'https://support.google.com/business/answer/16816815';
+  function googleHelp(value) {
+    const v = (value || '').trim();
+    let url = null;
+    try { url = new URL(v); if (!/^https?:$/.test(url.protocol)) url = null; } catch (_) {}
+    const isReview = url && (/\/review\/?$/.test(url.pathname) || /writereview/.test(url.pathname + url.search));
+    const isGoogle = url && /(^|\.)(google\.[a-z.]+|goo\.gl|g\.page|g\.co)$/.test(url.hostname);
+    return `${url ? `<div class="url-check${isReview ? ' ok' : ''}">${isReview ? '✓ Looks like a Google review link' : isGoogle ? '⚠ This opens your Google profile, not the review box. Use the link from “Get more reviews” — it ends in /review.' : '⚠ This isn’t a Google link. Use the link from “Get more reviews”.'}
+        <a href="${esc(url.href)}" target="_blank" rel="noopener">Test it ↗</a></div>` : ''}
+      <details class="guide"${S.guideOpen ? ' open' : ''}><summary><span class="guide__ic">?</span>How do I get my Google review link?<em>1 min</em></summary>
+        <ol class="guide__steps">
+          <li><b>Open your Business Profile.</b> On a computer, sign in with the Google account that manages your business and search <a href="https://www.google.com/search?q=my+business" target="_blank" rel="noopener">my business ↗</a></li>
+          <li>Click <b>Read reviews</b>, then <b>Get more reviews</b>.</li>
+          <li>Click <b>Copy</b> and paste it above. It looks like <code>https://g.page/r/…/review</code></li>
+        </ol>
+        <div class="guide__links"><a href="${GOOGLE_GUIDE}" target="_blank" rel="noopener">Google’s guide ↗</a><a href="https://business.google.com/en-all/business-profile/" target="_blank" rel="noopener">No profile yet? Create one free ↗</a><a href="mailto:${esc(TF.orderEmail || 'hello@tapfour.ph')}?subject=${encodeURIComponent('Help finding my Google review link')}">Stuck? Email us and we’ll help ↗</a></div>
+      </details>`;
   }
 
   const toggleRow = (f, on, act, priceLabel) => `<button type="button" class="feat${on ? ' on' : ''}" data-act="${act}" data-arg="${f.id || ''}" aria-pressed="${on}">
@@ -647,6 +668,7 @@
     S.error = '';
     render();
   });
+  document.addEventListener('toggle', e => { if (e.target.matches?.('.guide')) S.guideOpen = e.target.open; }, true);
   render();
 
   /* ---------- mobile: sticky order bar while configuring, hidden once the summary is on screen ---------- */
