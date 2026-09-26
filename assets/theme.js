@@ -81,7 +81,7 @@
     const activeFeats = isApp ? FEATS.filter(f => S.feats[f.id]) : [];
     const activeSvcs = SVCS.filter(v => S.svcs[v.id]);
     const DESTS = [
-      { id: 'google', name: 'Google review', icon: 'google', rec: true, url: S.links.google },
+      { id: 'google', name: 'Google review', icon: 'google', rec: true, url: googleOk(S.links.google) ? 'Your Google review box · set up from your Maps link' : S.links.google || '' },
       { id: 'facebook', name: 'Facebook', icon: 'facebook', url: S.links.facebook },
       { id: 'instagram', name: 'Instagram', icon: 'instagram', url: S.links.instagram },
       { id: 'tiktok', name: 'TikTok', icon: 'tiktok', url: S.links.tiktok },
@@ -99,7 +99,7 @@
     const monthly = (isApp ? (S.yearly ? 0 : priceOf(planItem(plan, false))) + activeFeats.reduce((a, f) => a + priceOf(f), 0) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
     const dueNow = oneTime + yearly + monthly;
     const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * S.qty : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
-    const destUrl = isQuad ? '4 direct taps · ' + S.slots.map(slotName).join(' / ') : isApp ? 'Your app page · set up after checkout' : dest.url || 'Enter your destination URL below';
+    const destUrl = isQuad ? '4 direct taps · ' + S.slots.map(slotName).join(' / ') : isApp ? 'Your app page · set up after checkout' : dest.url || (S.dest === 'google' ? 'Paste your Google Maps link below' : 'Enter your destination URL below');
     const summary = [
       S.qty + ' × ' + prod.name,
       hwMenuFee ? HW_MENU.name : null,
@@ -233,7 +233,7 @@
         <div class="slots">${S.slots.map((id, i) => { const o = SLOT_OPTS.find(x => x[0] === id); return `<button type="button" class="slot" data-act="slot" data-arg="${i}"><span class="mono m3">TAP ${i + 1}</span><span class="slot__dot">${o[2] ? ic(id, o[2], 16) : '<b>↗</b>'}</span><b>${o[1]}</b><span class="mono lime">CHANGE ↻</span></button>`; }).join('')}</div>
         <div class="note">4 separate NFC chips, each programmed straight to one link. No page in between, no app, no subscription.</div></div>`;
     }
-    const urlField = (key, label, value, required, plat) => `<label class="field">${esc(label)} URL${required ? ' (required)' : ' (optional)'}<input id="tf-url-${key}" type="url" inputmode="url" autocomplete="url" data-url="${key}" value="${esc(value || '')}" placeholder="${plat === 'google' ? 'https://g.page/r/…/review' : 'https://…'}"${required ? ' required' : ''}></label>${plat === 'google' ? googleHelp(value) : ''}`;
+    const urlField = (key, label, value, required, plat) => `<label class="field">${esc(plat === 'google' ? label.replace(/Google( review)?$/, 'Google') + ' Maps link' : label + ' URL')}${required ? ' (required)' : ' (optional)'}<input id="tf-url-${key}" type="url" inputmode="url" autocomplete="url" data-url="${key}" value="${esc(value || '')}" placeholder="${plat === 'google' ? 'https://maps.app.goo.gl/…' : 'https://…'}"${required ? ' required' : ''}></label>${plat === 'google' ? googleHelp(value) : ''}`;
     if (d.isQuad) {
       html += `<div class="stack-10">${S.slots.map((id, i) => urlField('zone-' + i, 'Tap ' + (i + 1) + ' · ' + d.slotName(id), S.slotLinks[i], true, id)).join('')}</div>`;
     } else if (d.isApp || S.dest === 'links') {
@@ -247,24 +247,25 @@
     return html;
   }
 
-  // Under every Google URL field: a 3-step guide (from Google's own help), a test link, and a hint
-  // when a Maps/profile link was pasted instead of the review link.
-  const GOOGLE_GUIDE = 'https://support.google.com/business/answer/16816815';
+  // Customers paste their Google Maps link; tapfour staff turn it into the review link in the admin.
+  const isGoogleLink = url => /(^|\.)(google\.[a-z.]+|goo\.gl|g\.page|g\.co|share\.google)$/.test(url.hostname);
+  const googleOk = v => { try { const u = new URL(String(v || '').trim()); return /^https?:$/.test(u.protocol) && isGoogleLink(u); } catch (_) { return false; } };
+
+  // Under every Google field: a Maps-link check, a test link and a short "find your Maps link" guide.
   function googleHelp(value) {
-    const v = (value || '').trim();
     let url = null;
-    try { url = new URL(v); if (!/^https?:$/.test(url.protocol)) url = null; } catch (_) {}
-    const isReview = url && (/\/review\/?$/.test(url.pathname) || /writereview/.test(url.pathname + url.search));
-    const isGoogle = url && /(^|\.)(google\.[a-z.]+|goo\.gl|g\.page|g\.co)$/.test(url.hostname);
-    return `${url ? `<div class="url-check${isReview ? ' ok' : ''}">${isReview ? '✓ Looks like a Google review link' : isGoogle ? '⚠ This opens your Google profile, not the review box. Use the link from “Get more reviews” — it ends in /review.' : '⚠ This isn’t a Google link. Use the link from “Get more reviews”.'}
-        <a href="${esc(url.href)}" target="_blank" rel="noopener">Test it ↗</a></div>` : ''}
-      <details class="guide"${S.guideOpen ? ' open' : ''}><summary><span class="guide__ic">?</span>How do I get my Google review link?<em>1 min</em></summary>
+    try { url = new URL((value || '').trim()); if (!/^https?:$/.test(url.protocol)) url = null; } catch (_) {}
+    const ok = url && isGoogleLink(url);
+    return `${url ? `<div class="url-check${ok ? ' ok' : ''}">${ok ? '✓ Got it — we’ll turn this into your Google review link' : '⚠ This isn’t a Google Maps link. In Google Maps, open your business and tap Share → Copy link.'}
+        <a href="${esc(url.href)}" target="_blank" rel="noopener">Open it ↗</a></div>` : ''}
+      <details class="guide"${S.guideOpen ? ' open' : ''}><summary><span class="guide__ic">?</span>How do I find my Google Maps link?<em>30 sec</em></summary>
         <ol class="guide__steps">
-          <li><b>Open your Business Profile.</b> On a computer, sign in with the Google account that manages your business and search <a href="https://www.google.com/search?q=my+business" target="_blank" rel="noopener">my business ↗</a></li>
-          <li>Click <b>Read reviews</b>, then <b>Get more reviews</b>.</li>
-          <li>Click <b>Copy</b> and paste it above. It looks like <code>https://g.page/r/…/review</code></li>
+          <li>Open <a href="https://www.google.com/maps" target="_blank" rel="noopener">Google Maps ↗</a> and search your <b>business name</b>.</li>
+          <li>Tap your business, then tap <b>Share</b>.</li>
+          <li>Tap <b>Copy link</b> and paste it above. It looks like <code>https://maps.app.goo.gl/…</code></li>
         </ol>
-        <div class="guide__links"><a href="${GOOGLE_GUIDE}" target="_blank" rel="noopener">Google’s guide ↗</a><a href="https://business.google.com/en-all/business-profile/" target="_blank" rel="noopener">No profile yet? Create one free ↗</a><a href="mailto:${esc(TF.orderEmail || 'hello@tapfour.ph')}?subject=${encodeURIComponent('Help finding my Google review link')}">Stuck? Email us and we’ll help ↗</a></div>
+        <p class="guide__note">That’s all we need — our team sets up the review link your stand opens.</p>
+        <div class="guide__links"><a href="https://business.google.com/en-all/business-profile/" target="_blank" rel="noopener">Not on Google Maps yet? Add your business free ↗</a><a href="mailto:${esc(TF.orderEmail || 'hello@tapfour.ph')}?subject=${encodeURIComponent('Help finding my Google Maps link')}">Stuck? Email us ↗</a></div>
       </details>`;
   }
 
@@ -369,18 +370,20 @@
     if (d.isDirect && S.dest === 'links' && d.activePl.length < 2) return reject('Choose at least two apps for your multi-link page.');
     if (d.isApp && S.feats.order && !S.feats.menu) return reject('Table ordering requires the live QR menu.');
     const destinations = d.isQuad
-      ? S.slots.map((id, i) => ({ label: 'Tap ' + (i + 1) + ' · ' + d.slotName(id), value: S.slotLinks[i], input: 'tf-url-zone-' + i }))
+      ? S.slots.map((id, i) => ({ label: 'Tap ' + (i + 1) + ' · ' + d.slotName(id), plat: id, value: S.slotLinks[i], input: 'tf-url-zone-' + i }))
       : d.isApp || S.dest === 'links'
-        ? d.activePl.map(([id, label]) => ({ label, value: S.links[id], input: 'tf-url-' + id, optional: d.isApp }))
-        : [{ label: d.dest.name, value: S.dest === 'website' ? S.website : S.links[S.dest], input: S.dest === 'website' ? 'tf-website' : 'tf-url-' + S.dest }];
+        ? d.activePl.map(([id, label]) => ({ label, plat: id, value: S.links[id], input: 'tf-url-' + id, optional: d.isApp }))
+        : [{ label: d.dest.name, plat: S.dest, value: S.dest === 'website' ? S.website : S.links[S.dest], input: S.dest === 'website' ? 'tf-website' : 'tf-url-' + S.dest }];
+    destinations.forEach(dest => { if (dest.plat === 'google') dest.label = d.isQuad ? dest.label + ' Maps' : 'Google Maps'; });
     for (const dest of destinations) {
       dest.value = (dest.value || '').trim();
       if (!dest.value && dest.optional) continue;
       try {
         const url = new URL(dest.value);
         if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) throw new Error('Invalid URL');
+        if (dest.plat === 'google' && !isGoogleLink(url)) return reject((d.isQuad ? dest.label + ': paste' : 'Paste') + ' your Google Maps link (in Google Maps: Share → Copy link).', dest.input);
       } catch (_) {
-        return reject('Enter a valid http:// or https:// URL for ' + dest.label + '.', dest.input);
+        return reject(dest.plat === 'google' ? 'Paste your Google Maps link (in Google Maps: Share → Copy link).' : 'Enter a valid http:// or https:// URL for ' + dest.label + '.', dest.input);
       }
     }
     const add = (it, qty, props, recurring = false) => {
@@ -399,7 +402,8 @@
       props['Tap opens'] = d.dest.name;
       if (S.dest === 'links') props['4-in-1 apps'] = d.activePl.map(p => p[1]).join(', ');
     }
-    destinations.forEach(dest => { props[dest.label + ' URL'] = dest.value || 'To be provided after checkout'; });
+    destinations.forEach(dest => { props[dest.label + (dest.plat === 'google' ? ' link' : ' URL')] = dest.value || 'To be provided after checkout'; });
+    if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
 
     add(d.prod, S.qty, props);
     if (!d.isApp && S.hw.menu) add(HW_MENU, 1);

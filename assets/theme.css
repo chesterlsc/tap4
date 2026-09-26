@@ -955,3 +955,4 @@ section[id] { scroll-margin-top: 84px; }
 .guide__links { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 14px; }
 .guide__links a { padding: 7px 11px; border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--m1); box-shadow: inset 0 0 0 1px var(--l4); transition: box-shadow .2s, color .2s; }
 .guide__links a:hover { color: var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+.guide__note { margin: 10px 16px 0; font-size: 12.5px; line-height: 1.5; color: var(--m3); }

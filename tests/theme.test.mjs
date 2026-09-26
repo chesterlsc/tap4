@@ -27,9 +27,9 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   $('[data-act="preset"][data-arg="menu"]').click();
   assert.match($('#tf-summary').textContent, /₱1,398/);
   $('[data-act="order"]').click();
-  assert.match($('#tf-summary').textContent, /valid http/, 'blocks ordering without a real review link');
+  assert.match($('#tf-summary').textContent, /Google Maps link/, 'blocks ordering without the Google Maps link');
   const url = $('#tf-url-google');
-  url.value = 'https://g.page/r/kapenorte/review';
+  url.value = 'https://maps.app.goo.gl/KapeNorte123';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
   assert.ok(!$('#tf-checkout').hidden, 'checkout panel opens');
@@ -46,7 +46,8 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   assert.equal(sent.url, '/cart/add.js');
   assert.deepEqual(sent.body.items.map(i => i.id), [id('acrylic-glass-stand'), id('printed-qr-menu')]);
   assert.equal(sent.body.items[0].properties['Business name'], 'Kape Norte');
-  assert.equal(sent.body.items[0].properties['Google review URL'], 'https://g.page/r/kapenorte/review');
+  assert.equal(sent.body.items[0].properties['Google Maps link'], 'https://maps.app.goo.gl/KapeNorte123');
+  assert.equal(sent.body.items[0].properties['Google review link'], 'tapfour sets it up from the Maps link');
   assert.equal(sent.body.items[0].properties['Menu link'], 'https://drive.google.com/menu');
 });
 
@@ -66,7 +67,7 @@ test('static site (tap4.ph) sends the order by email', async t => {
   const $ = s => w.document.querySelector(s);
   $('[data-act="preset"][data-arg="menu"]').click();
   const url = $('#tf-url-google');
-  url.value = 'https://g.page/r/kapenorte/review';
+  url.value = 'https://maps.app.goo.gl/KapeNorte123';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
   $('.co-cta').click(); // review -> menu
@@ -86,7 +87,8 @@ test('static site (tap4.ph) sends the order by email', async t => {
   assert.match(opened, /^mailto:orders@example\.com\?subject=/);
   const body = decodeURIComponent(opened.split('&body=')[1]);
   assert.match(body, /Business name: Kape Norte/);
-  assert.match(body, /Google review URL: https:\/\/g\.page\/r\/kapenorte\/review/);
+  assert.match(body, /Google Maps link: https:\/\/maps\.app\.goo\.gl\/KapeNorte123/);
+  assert.match(body, /Google review link: tapfour sets it up from the Maps link/);
   assert.match(body, /One-time: ₱1,398/);
   assert.match(body, /Mobile: 0917 123 4567/);
   assert.match(body, /Deliver to: 12 Session Rd, Baguio/);
@@ -110,7 +112,7 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   const tick = () => new Promise(r => setTimeout(r, 0));
 
   $('[data-act="preset"][data-arg="menu"]').click();
-  input($('#tf-url-google'), 'https://g.page/r/kapenorte/review');
+  input($('#tf-url-google'), 'https://maps.app.goo.gl/KapeNorte123');
   $('[data-act="order"]').click();
   $('.co-cta').click(); // review -> menu
   const files = $('#co-menuFiles');
