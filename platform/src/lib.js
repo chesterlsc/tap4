@@ -132,3 +132,16 @@ export function safeNext(next, prefix) {
   const s = String(next || '');
   return (s === prefix || s.startsWith(prefix + '/')) && !s.includes('//') && !s.includes('\\') ? s : prefix;
 }
+
+// Menu uploads: trust the file's bytes, never its name or declared type, so nothing
+// scriptable (HTML, SVG) can be hosted under our domain. Returns [mime, ext] or null.
+export function sniffMenuFile(b) {
+  const at = (i, ...xs) => xs.every((x, k) => b[i + k] === x);
+  const ascii = (i, s) => at(i, ...[...s].map(ch => ch.charCodeAt(0)));
+  if (ascii(0, '%PDF-')) return ['application/pdf', 'pdf'];
+  if (at(0, 0xff, 0xd8, 0xff)) return ['image/jpeg', 'jpg'];
+  if (at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return ['image/png', 'png'];
+  if (ascii(0, 'RIFF') && ascii(8, 'WEBP')) return ['image/webp', 'webp'];
+  if (ascii(4, 'ftyp') && ['heic', 'heix', 'mif1', 'msf1', 'hevc'].some(t => ascii(8, t))) return ['image/heic', 'heic'];
+  return null;
+}

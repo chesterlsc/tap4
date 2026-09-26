@@ -413,7 +413,7 @@
   }
 
   /* ---------- checkout panel ---------- */
-  const CO = { open: false, step: 1, done: false, opener: null, error: '', info: { name: '', phone: '', email: '', address: '', city: '', pay: 'GCash', note: '', menuLink: '', menuText: '', menuAttach: false } };
+  const CO = { open: false, step: 1, done: false, opener: null, error: '', info: { name: '', phone: '', email: '', address: '', city: '', pay: 'GCash', note: '', menuLink: '', menuText: '', menuAttach: false, menuFiles: [] } };
   const PAY = ['GCash', 'Maya', 'Bank transfer', 'Cash on delivery'];
   const coRoot = $('#tf-checkout');
   // A menu step appears whenever we have to build a menu: printed QR menu, the app's live menu, or Menu setup.
@@ -423,12 +423,14 @@
   function checkMenu() {
     const i = CO.info, link = i.menuLink.trim();
     if (link) { try { if (!/^https?:$/.test(new URL(link).protocol)) throw 0; } catch (_) { return ['Menu link must start with http:// or https://', 'co-menuLink']; } }
-    if (!link && !i.menuText.trim() && !i.menuAttach) return ['Add your menu: a link, the items, or tick “attach photos”.', 'co-menuLink'];
+    if (i.menuFiles.some(f => f.status === 'uploading')) return ['Wait a moment — your menu is still uploading.', 'co-menuFiles'];
+    if (!link && !i.menuText.trim() && !i.menuAttach && !i.menuFiles.some(f => f.url)) return [TF.menuUploadUrl ? 'Add your menu: upload a file, paste a link, or type the items.' : 'Add your menu: a link, the items, or tick “attach photos”.', TF.menuUploadUrl ? 'co-menuFiles' : 'co-menuLink'];
     return null;
   }
   const menuLines = () => {
     const i = CO.info;
-    return [i.menuLink.trim() ? 'Menu link: ' + i.menuLink.trim() : null, i.menuText.trim() ? 'Menu items:\n' + i.menuText.trim() : null, i.menuAttach ? 'Menu photos: attached to this email' : null].filter(Boolean);
+    const files = i.menuFiles.filter(f => f.url);
+    return [files.length ? 'Menu files:\n' + files.map(f => f.name + ' — ' + f.url).join('\n') : null, i.menuLink.trim() ? 'Menu link: ' + i.menuLink.trim() : null, i.menuText.trim() ? 'Menu items:\n' + i.menuText.trim() : null, i.menuAttach ? 'Menu photos: attached to this email' : null].filter(Boolean);
   };
   function openCheckout() {
     if (!coRoot) return;
@@ -485,9 +487,14 @@
     } else if (cur === 'Menu') {
       body = `<div class="co-form">
         <div class="co-menu-intro"><span class="co-menu-intro__qr">${QR}</span><div><b>Send us your menu</b><span>We type it up, build your mobile menu${d.menuOn && !d.isApp ? ' and print its QR on your stand' : ' and pair it with your stand'}.${S.svcs['menu-setup'] ? ' Menu setup is included, so we also price and photograph it.' : ''}</span></div></div>
-        ${field('menuLink', 'Menu link · Google Drive, website, Facebook photos…', 'url', 'inputmode="url" placeholder="https://"')}
+        ${TF.menuUploadUrl ? `<label class="co-drop"><input type="file" id="co-menuFiles" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/*" multiple>
+          <span class="co-drop__ic">↑</span><b>Upload your menu</b><small>PDF, JPG, PNG or HEIC · up to 10 MB each · drop files here</small></label>
+          ${i.menuFiles.length ? `<div class="co-files">${i.menuFiles.map(f => `<div class="co-file is-${f.status}"><span class="co-file__ic">${esc((f.name.split('.').pop() || 'file').slice(0, 4).toUpperCase())}</span>
+            <span class="co-file__n"><b>${esc(f.name)}</b><small>${f.status === 'uploading' ? 'Uploading…' : f.status === 'done' ? '✓ Uploaded · ' + (f.size < 1048576 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB') : esc(f.error)}</small></span>
+            <button type="button" data-co-rm="${f.id}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}</div>` : ''}` : ''}
+        ${field('menuLink', (TF.menuUploadUrl ? 'Or a menu link' : 'Menu link') + ' · Google Drive, website, Facebook photos…', 'url', 'inputmode="url" placeholder="https://"')}
         <label class="field co-field">Or paste / type your menu<textarea id="co-menuText" data-co="menuText" rows="6" placeholder="COFFEE&#10;Sagada Latte — ₱165&#10;Ube Cold Brew — ₱190&#10;&#10;PASTRY&#10;Ensaymada — ₱95">${esc(i.menuText)}</textarea></label>
-        <label class="co-check"><input type="checkbox" id="co-menuAttach" data-co="menuAttach"${i.menuAttach ? ' checked' : ''}><span></span>I’ll attach photos of my menu to the order email</label>
+        ${TF.menuUploadUrl ? '' : `<label class="co-check"><input type="checkbox" id="co-menuAttach" data-co="menuAttach"${i.menuAttach ? ' checked' : ''}><span></span>I’ll attach photos of my menu to the order email</label>`}
         <p class="co-hint">Any one of these works. You can send changes any time before we print.</p></div>`;
     } else if (cur === 'Details') {
       body = `<div class="co-form">${field('name', 'Full name', 'text', 'autocomplete="name"')}${field('phone', 'Mobile number', 'tel', 'autocomplete="tel" inputmode="tel" placeholder="09XX XXX XXXX"')}
@@ -540,7 +547,7 @@
     }
     const m = CO.info;
     if (needsMenu() && items[0]?.properties) Object.assign(items[0].properties,
-      m.menuLink.trim() ? { 'Menu link': m.menuLink.trim() } : {}, m.menuText.trim() ? { 'Menu items': m.menuText.trim() } : {}, m.menuAttach ? { 'Menu photos': 'Customer will email photos' } : {});
+      m.menuFiles.some(f => f.url) ? { 'Menu files': m.menuFiles.filter(f => f.url).map(f => f.url).join(' ') } : {}, m.menuLink.trim() ? { 'Menu link': m.menuLink.trim() } : {}, m.menuText.trim() ? { 'Menu items': m.menuText.trim() } : {}, m.menuAttach ? { 'Menu photos': 'Customer will email photos' } : {});
     set({ ordering: true });
     renderCheckout();
     try {
@@ -556,12 +563,40 @@
   if (coRoot) {
     coRoot.addEventListener('click', e => {
       if (e.target.closest('[data-co-close]')) return closeCheckout();
+      const rm = e.target.closest('[data-co-rm]');
+      if (rm) { CO.info.menuFiles = CO.info.menuFiles.filter(f => f.id !== +rm.dataset.coRm); return renderCheckout(); }
       if (e.target.closest('[data-co-edit]')) { closeCheckout(); return scrollTo('build'); }
       const stepBtn = e.target.closest('[data-co-step]');
       if (stepBtn) return goStep(+stepBtn.dataset.coStep);
       if (e.target.closest('[data-co-submit]')) return submit();
     });
     const keep = e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; };
+    let fileSeq = 0;
+    async function uploadMenu(file) {
+      const entry = { id: ++fileSeq, name: file.name || 'menu', size: file.size, status: 'uploading', url: '', error: '' };
+      CO.info.menuFiles.push(entry);
+      if (file.size > 10 * 1048576) Object.assign(entry, { status: 'error', error: 'Over 10 MB — try a smaller file or a link.' });
+      else {
+        try {
+          const body = new FormData();
+          body.append('file', file);
+          const res = await fetch(TF.menuUploadUrl, { method: 'POST', body });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.url) throw new Error(data.error || 'Upload failed — try again or paste a link.');
+          Object.assign(entry, { status: 'done', url: data.url, size: data.size || file.size });
+        } catch (err) { Object.assign(entry, { status: 'error', error: err.message || 'Upload failed — try again or paste a link.' }); }
+      }
+      if (CO.error && entry.status === 'done') CO.error = '';
+      renderCheckout();
+    }
+    coRoot.addEventListener('change', e => {
+      if (e.target.id !== 'co-menuFiles') return;
+      const room = 6 - CO.info.menuFiles.length;
+      const picked = [...e.target.files].slice(0, Math.max(0, room));
+      if (e.target.files.length > picked.length) CO.error = 'Up to 6 menu files per order.';
+      picked.forEach(uploadMenu);
+      renderCheckout();
+    });
     coRoot.addEventListener('input', keep);
     coRoot.addEventListener('change', keep);
     document.addEventListener('keydown', e => { if (CO.open && e.key === 'Escape') closeCheckout(); });

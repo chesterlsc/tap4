@@ -92,3 +92,36 @@ test('static site (tap4.ph) sends the order by email', async t => {
   assert.match(body, /Deliver to: 12 Session Rd, Baguio/);
   assert.match(body, /Menu items:\nSagada Latte — ₱165/);
 });
+
+test('checkout uploads a menu file and puts its link in the order email', async t => {
+  const preview = await createPreview({ orderEmail: 'orders@example.com', menuUploadUrl: 'https://go.example/upload/menu' });
+  const { html } = await preview.renderPage('/');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let opened, uploadedTo;
+  w.TF.open = url => { opened = url; };
+  w.fetch = async (url, options) => { uploadedTo = url; assert.ok(options.body instanceof w.FormData); return { ok: true, json: async () => ({ url: 'https://go.example/m/abc', size: 2048 }) }; };
+  w.structuredClone ??= structuredClone;
+  w.scrollTo = () => {};
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+  const tick = () => new Promise(r => setTimeout(r, 0));
+
+  $('[data-act="preset"][data-arg="menu"]').click();
+  input($('#tf-url-google'), 'https://g.page/r/kapenorte/review');
+  $('[data-act="order"]').click();
+  $('.co-cta').click(); // review -> menu
+  const files = $('#co-menuFiles');
+  Object.defineProperty(files, 'files', { value: [new w.File(['%PDF-1.4'], 'menu.pdf', { type: 'application/pdf' })] });
+  files.dispatchEvent(new w.Event('change', { bubbles: true }));
+  await tick(); await tick();
+  assert.equal(uploadedTo, 'https://go.example/upload/menu');
+  assert.match($('.co-files').textContent, /Uploaded/);
+  $('.co-cta').click(); // menu -> details
+  input($('#co-name'), 'Ana Reyes'); input($('#co-phone'), '0917 000 0001'); input($('#co-address'), 'Maginhawa St, QC');
+  $('.co-cta').click(); // details -> confirm
+  $('[data-co-submit]').click();
+  assert.match(decodeURIComponent(opened.split('&body=')[1]), /Menu files:\nmenu\.pdf — https:\/\/go\.example\/m\/abc/);
+});

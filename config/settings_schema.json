@@ -48,6 +48,12 @@
         "id": "order_email",
         "label": "Order by email",
         "info": "Set this to take orders by email instead of the Shopify cart (used by the static tap4.ph site). Leave empty on Shopify."
+      },
+      {
+        "type": "text",
+        "id": "menu_upload_url",
+        "label": "Menu upload endpoint",
+        "info": "Where checkout uploads menu files (PDF/JPG/PNG), e.g. https://go.tap4.ph/upload/menu. Empty hides the upload box."
       }
     ]
   }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext } from '../src/lib.js';
+import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile } from '../src/lib.js';
 
 const tap = { code: 'K7M2QX', slot: 'main', source: 'nfc' };
 const live = { status: 'active', business_id: 1, link_key: 'google', url: 'https://g.page/r/x/review', slug: 'kape-norte' };
@@ -80,4 +80,16 @@ test('safeNext keeps redirects inside the area', () => {
   assert.equal(safeNext('/admin/b/3', '/admin'), '/admin/b/3');
   assert.equal(safeNext('/admin', '/admin'), '/admin');
   for (const bad of ['https://evil.example', '//evil.example', '/app/destinations', '/admin//evil', '/adminx', '/admin/\\evil', '', null]) assert.equal(safeNext(bad, '/admin'), '/admin', String(bad));
+});
+
+test('sniffMenuFile: accepts real menus by their bytes, rejects anything scriptable', () => {
+  const bytes = s => Uint8Array.from([...s].map(ch => ch.charCodeAt(0)));
+  assert.deepEqual(sniffMenuFile(bytes('%PDF-1.7 ...')), ['application/pdf', 'pdf']);
+  assert.deepEqual(sniffMenuFile(Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 0])), ['image/jpeg', 'jpg']);
+  assert.deepEqual(sniffMenuFile(Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])), ['image/png', 'png']);
+  assert.deepEqual(sniffMenuFile(bytes('RIFF\0\0\0\0WEBPVP8 ')), ['image/webp', 'webp']);
+  assert.deepEqual(sniffMenuFile(bytes('\0\0\0\x18ftypheic')), ['image/heic', 'heic']);
+  assert.equal(sniffMenuFile(bytes('<svg onload=alert(1)>')), null);
+  assert.equal(sniffMenuFile(bytes('<!doctype html><script>')), null);
+  assert.equal(sniffMenuFile(new Uint8Array()), null);
 });

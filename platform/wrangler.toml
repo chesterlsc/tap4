@@ -30,6 +30,8 @@ APP_HOST = "dashboard.tap4.ph"
 PREVIEW_HOST = "tapfour-platform.chesterlsc.workers.dev"
 # Where a bare visit to "/" on go.tap4.ph goes (the Vercel site).
 SITE_URL = "https://tap4.ph"
+# Storefront origins allowed to upload menu files at checkout (POST /upload/menu).
+UPLOAD_ORIGINS = "https://tap4.ph,https://www.tap4.ph"
 # Secret, set via `wrangler secret put HASH_SECRET`: salts the daily visitor hash.
 
 [[d1_databases]]
@@ -37,6 +39,11 @@ binding = "DB"
 database_name = "tapfour"
 database_id = "866f21ca-48bd-48dd-8428-f8a63e4dc059"
 migrations_dir = "migrations"
+
+# Menu files customers upload at checkout (expire after 180 days).
+[[kv_namespaces]]
+binding = "MENUS"
+id = "97df2b468ee14886b79409002c669db6"
 
 [observability]
 enabled = true

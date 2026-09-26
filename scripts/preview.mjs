@@ -85,7 +85,7 @@ function previewNotice(emptyProducts) {
   return `<aside style="padding:9px 18px;background:#e4ff79;color:#101010;text-align:center;font:600 12px/1.5 system-ui" role="note">Local theme preview · ${emptyProducts ? 'No catalog products' : 'Sample catalog from products.csv; simulated variant IDs'} · Cart and checkout are disabled. <a style="color:inherit;text-decoration:underline" href="/collections/all">Products</a> · <a style="color:inherit;text-decoration:underline" href="/cart?sample=1">Sample cart</a> · <a style="color:inherit;text-decoration:underline" href="/search?q=stand">Search</a></aside>`;
 }
 
-export async function createPreview({ emptyProducts = false, orderEmail = '' } = {}) {
+export async function createPreview({ emptyProducts = false, orderEmail = '', menuUploadUrl = '' } = {}) {
   const catalog = await createCatalog();
   const allProducts = emptyProducts ? {} : catalog;
   const productList = Object.values(allProducts);
@@ -93,7 +93,7 @@ export async function createPreview({ emptyProducts = false, orderEmail = '' } =
   const stored = await readJSON('config/settings_data.json');
   const defaults = Object.fromEntries(schema.flatMap(group => group.settings || []).filter(s => s.id).map(s => [s.id, s.default]));
   const saved = typeof stored.current === 'string' ? stored.presets?.[stored.current] : stored.current;
-  const settings = { ...defaults, ...saved, ...(orderEmail && { order_email: orderEmail }) };
+  const settings = { ...defaults, ...saved, ...(orderEmail && { order_email: orderEmail }), ...(menuUploadUrl && { menu_upload_url: menuUploadUrl }) };
   const money = cents => '₱' + (Number(cents || 0) / 100).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const engine = new Liquid({ root: [path.join(ROOT, 'snippets')], extname: '.liquid', strictFilters: true });
   // Content fingerprint (like Shopify's ?v=) so browsers fetch fresh CSS/JS after every deploy.
@@ -209,7 +209,7 @@ async function main() {
   const emptyProducts = process.env.EMPTY === '1';
   if (process.argv.includes('--static')) {
     // Production site for Vercel (tap4.ph): homepage + 404, orders go out by email, no Shopify cart.
-    const preview = await createPreview({ orderEmail: process.env.ORDER_EMAIL || 'hello@tapfour.ph' });
+    const preview = await createPreview({ orderEmail: process.env.ORDER_EMAIL || 'hello@tapfour.ph', menuUploadUrl: process.env.MENU_UPLOAD_URL ?? 'https://go.tap4.ph/upload/menu' });
     const output = path.join(ROOT, 'dist');
     await fs.rm(output, { recursive: true, force: true });
     await fs.cp(path.join(ROOT, 'assets'), path.join(output, 'assets'), { recursive: true });

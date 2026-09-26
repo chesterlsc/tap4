@@ -3,6 +3,7 @@ import { CODE_RE, SLOT_RE, normalizeCode, isBot, resolve } from './lib.js';
 import { hostUrl } from './common.js';
 import { admin } from './admin.js';
 import { owner } from './owner.js';
+import { uploads } from './uploads.js';
 import * as V from './views.js';
 
 const app = new Hono();
@@ -91,6 +92,7 @@ app.get('/p/:slug/go/:key', async c => {
 
 app.get('/', c => c.env.SITE_URL ? c.redirect(c.env.SITE_URL, 302) : c.html(V.messagePage('notfound'), 404));
 
+app.route('/', uploads);
 app.route('/admin', admin);
 app.route('/app', owner);
 export default app;
