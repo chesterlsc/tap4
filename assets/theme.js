@@ -29,7 +29,7 @@
   const HW = [
     { id: 'acrylic', handle: 'acrylic-glass-stand', name: 'Acrylic Glass Stand', desc: 'Glowing edge, weighted NFC base', price: 899, was: 1499 },
     { id: 'l', handle: 'l-stand', name: 'L-Stand', desc: 'Slim acrylic L, NFC on the face', price: 549, was: 919 },
-    { id: 'pvc', handle: 'pvc-triangle-stand', name: 'PVC Triangle Stand', desc: 'Tent-style table stand, review tap + menu QR', price: 449, was: 749 },
+    { id: 'pvc', handle: 'pvc-triangle-stand', name: 'PVC Triangle Stand', desc: 'Tent-style table stand with review tap', price: 449, was: 749 },
     { id: 'card', handle: 'nfc-card-4-in-1', name: '4-in-1 NFC Card', desc: 'Matte black PVC, CR80 size', price: 249, was: 419 }
   ];
   const BAR = { id: 'bar', handle: '4-tap-bar', name: '4-Tap Bar', desc: 'Long acrylic bar · 4 NFC zones', price: 1490, was: 2479 };
@@ -156,14 +156,7 @@
     const combo = d.isApp && d.prod.id === 'acrylic';
     const ph = shotFor(d.prod.id, d);
     let stage = '<div class="pv-glow"></div>';
-    if (!d.isQuad) {
-      stage += `<div class="pv-photo" style="transform:translateX(${shift})"><img src="${ph.src}" alt="${esc(d.prod.name)} sample" style="object-position:${ph.pos}"><span class="pv-cap">${combo ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>${ph.note ? `<span class="pv-note">ⓘ ${esc(ph.note)}</span>` : ''}`;
-    } else {
-      stage += `<div class="quad" style="transform:translateX(${shift})"><div class="quad__face"><div class="shine"></div>
-        <div class="row-between rel"><div class="quad__id"><span class="ring ring--sm">${esc(d.initials)}</span><span class="quad__name">${esc(S.name.toUpperCase())}</span></div><span class="quad__tap">TAP ONE ))) </span></div>
-        <div class="quad__zones rel">${S.slots.map((id, i) => { const o = SLOT_OPTS.find(x => x[0] === id); return `<div class="zone"><span class="zone__dot">${o[2] ? ic(id, o[2], 22) : '<b>↗</b>'}</span><b>${o[1]}</b><span class="mono">TAP ${i + 1}</span></div>`; }).join('')}</div>
-        <div class="powered rel">POWERED BY <b>tapfour</b></div></div><div class="quad__base"></div></div>`;
-    }
+    stage += `<div class="pv-photo${ph.wide ? ' pv-photo--wide' : ''}" style="transform:translateX(${shift})"><img src="${ph.src}" alt="${esc(d.prod.name)} sample" style="object-position:${ph.pos}"><span class="pv-cap">${combo ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>${ph.note ? `<span class="pv-note">ⓘ ${esc(ph.note)}</span>` : ''}`;
     if (d.menuOn) {
       const ordering = d.isApp && S.feats.order;
       stage += `<div class="pv-phone"><div class="pv-phone__screen">
@@ -180,21 +173,19 @@
 
   // Best-matching photo for the current setup. `pos` keeps the product in frame when a 4:3 or square
   // photo is cropped to 4:5; `note` says honestly when the sample print differs from the customer's.
-  const FOCUS = { standAcrylic: '34% 55%', standL: '52% 55%', standLLinks: '50% 55%', cardNfc: '50% 58%', cardPersonal: '48% 58%' };
-  const shot = (key, note = '') => ({ src: TF.img[key], pos: FOCUS[key] || '50% 50%', note });
+  const FOCUS = { standLLinks: '50% 55%' };
+  const WIDE = ['bar4tap', 'cardKapeNorte']; // 3:2 shots get a wider preview frame instead of a crop
+  const shot = (key, note = '') => ({ src: TF.img[key], pos: FOCUS[key] || '50% 50%', note, wide: WIDE.includes(key) });
   function shotFor(id, d) {
     const single = d.isDirect && S.dest !== 'links';
-    const only = single ? 'Sample print · yours shows ' + d.dest.name + ' only' : '';
-    // Acrylic Glass Stand: standard = Google review only; QR-menu model; 4-in-1 model; app combo.
-    if (id === 'acrylic') {
-      if (d.isApp) return shot('standCombo');
-      if (d.menuOn) return shot('standAcrylicKn', single && S.dest !== 'google' ? only + ' + menu QR' : '');
-      if (S.dest === 'links') return shot('standAcrylicLinks');
-      return TF.img.standAcrylicGoogle ? shot('standAcrylicGoogle', S.dest !== 'google' ? only : '') : shot('standAcrylicLinks', only);
-    }
-    if (id === 'l') return d.menuOn || d.isApp ? shot('standLKn', single && S.dest !== 'google' ? only + ' + menu QR' : '') : S.dest === 'links' ? shot('standLLinks') : shot('standL', only);
-    if (id === 'pvc') return shot('standPvcMenu', d.menuOn || d.isApp ? (single && S.dest !== 'google' ? only + ' + menu QR' : '') : 'Sample print · yours prints without the menu QR');
-    if (id === 'card') return d.isApp || S.dest === 'links' ? shot('cardNfc') : shot('cardPersonal', 'Sample print · yours carries your business name');
+    const other = single && S.dest !== 'google' ? 'Sample print · yours shows ' + d.dest.name + ' only' : '';
+    const plusMenu = other && other + ' + menu QR';
+    const menuModel = d.menuOn || d.isApp;
+    if (id === 'acrylic') return d.isApp ? shot('standCombo') : d.menuOn ? shot('standAcrylicKn', plusMenu) : S.dest === 'links' ? shot('standAcrylicLinks') : shot('standAcrylicGoogle', other);
+    if (id === 'l') return menuModel ? shot('standLKn', plusMenu) : S.dest === 'links' ? shot('standLLinks') : shot('standLGoogle', other);
+    if (id === 'pvc') return menuModel ? shot('standPvcMenu', plusMenu) : shot('standPvcGoogle', S.dest === 'links' ? 'Sample print · yours shows your 4-in-1 apps' : other);
+    if (id === 'card') return shot('cardKapeNorte', single ? 'Sample print · yours opens ' + d.dest.name + ' only' : '');
+    if (id === 'bar') return shot('bar4tap', S.slots.join() === 'google,facebook,instagram,tiktok' ? '' : 'Sample print · yours: ' + S.slots.map(d.slotName).join(' / '));
     return null;
   }
 
@@ -491,7 +482,7 @@
     const r = prepare();
     if (r.error) { closeCheckout(); return set({ error: r.error }); }
     const { d } = r, st = steps(), i = CO.info;
-    const ph = shotFor(d.prod.id, d) || (d.isQuad ? null : shot('standAcrylic'));
+    const ph = shotFor(d.prod.id, d);
     const line = (name, price, sub = '') => `<div class="co-line"><span><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><em>${price}</em></div>`;
     const extras = [
       d.hwMenuFee ? line(HW_MENU.name, peso(d.hwMenuFee)) : '',
