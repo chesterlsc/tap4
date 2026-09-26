@@ -3,7 +3,7 @@
   if s.image
     assign img = s.image | image_url: width: 900
   else
-    assign img = 'stand-combo.jpg' | asset_url
+    assign img = 'tapfour-l-white-menu.jpg' | asset_url
   endif
 -%}
 <section id="app" class="sec">
@@ -40,7 +40,7 @@
       <div class="app-card__txt"><h3>{{ s.card2_title | escape }}</h3><p>{{ s.card2_text | escape }}</p></div>
     </div>
     <div class="app-photo">
-      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="1100" height="1430">
+      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="1122" height="1402">
       <div class="app-photo__txt"><h3>{{ s.card3_title | escape }}</h3><p>{{ s.card3_text | escape }}</p></div>
     </div>
   </div>
@@ -59,7 +59,7 @@
     { "type": "text", "id": "card2_text", "label": "Card 2 text", "default": "One tap opens a 4-in-1 page. Customers pick where to review, like, follow or watch." },
     { "type": "image_picker", "id": "image", "label": "Card 3 photo" },
     { "type": "text", "id": "card3_title", "label": "Card 3 title", "default": "Both on one stand" },
-    { "type": "text", "id": "card3_text", "label": "Card 3 text", "default": "NFC in the center, menu QR on the face. Guests use whichever they like." }
+    { "type": "text", "id": "card3_text", "label": "Card 3 text", "default": "Tap zone for reviews, QR for your menu. Guests use whichever they like." }
   ],
   "presets": [{ "name": "App showcase" }]
 }

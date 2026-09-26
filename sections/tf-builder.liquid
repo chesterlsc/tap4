@@ -20,15 +20,14 @@
 
     <div class="stack-14">
       <div class="panel">
-        <div class="panel__head"><span>A · YOUR BUSINESS</span><span>PRINTED ON THE FACE</span></div>
+        <div class="panel__head"><span>A · YOUR BUSINESS</span><span>FOR YOUR ORDER · NOT PRINTED</span></div>
         <div class="fields">
           <label class="field">Business name<input id="tf-name" value="Kape Norte" maxlength="40" autocomplete="organization"></label>
-          <label class="field">Headline<input id="tf-headline" value="Leave us a review" maxlength="40"></label>
         </div>
       </div>
 
       <div class="panel">
-        <div class="panel__head"><span>B · HARDWARE</span><span>NFC + QR BACKUP</span></div>
+        <div class="panel__head"><span>B · HARDWARE</span><span id="tf-hw-tag">TAP4.1 L-STAND · CHOOSE A FINISH</span></div>
         <div class="hw-grid" id="tf-hw"></div>
         <div class="row-between">
           <div class="m2" style="font-size:14px">Quantity</div>
@@ -43,7 +42,6 @@
       <div class="panel">
         <div class="panel__head"><span>C · WHAT THE TAP OPENS</span><span id="tf-mode-tag"></span></div>
         <div id="tf-mode"></div>
-        <input id="tf-website" class="field__in mono" value="" placeholder="https://example.com" type="url" aria-label="Website" hidden>
         <div id="tf-mode-after"></div>
       </div>
 

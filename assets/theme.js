@@ -26,15 +26,21 @@
   const priceOf = it => { const v = variant(it.handle, it.variant); return v ? v.price / 100 : it.price; };
   const wasOf = it => { const v = variant(it.handle, it.variant); return v ? (v.compare > v.price ? v.compare / 100 : 0) : it.was || 0; };
 
-  const HW = [
-    { id: 'acrylic', handle: 'acrylic-glass-stand', name: 'Acrylic Glass Stand', desc: 'Glowing edge, weighted NFC base', price: 899, was: 1499 },
-    { id: 'l', handle: 'l-stand', name: 'L-Stand', desc: 'Slim acrylic L, NFC on the face', price: 549, was: 919 },
-    { id: 'pvc', handle: 'pvc-triangle-stand', name: 'PVC Triangle Stand', desc: 'Tent-style table stand with review tap', price: 449, was: 749 },
-    { id: 'card', handle: 'nfc-card-4-in-1', name: '4-in-1 NFC Card', desc: 'Matte black PVC, CR80 size', price: 249, was: 419 }
+  // One hardware product: the TAP4.1 L-Stand. Finish = Shopify variant; design = what's printed (no business branding).
+  const FINISHES = [
+    { id: 'black', name: 'Glossy Black', desc: 'Black acrylic · white print' },
+    { id: 'white', name: 'Glossy White', desc: 'White acrylic · dark print' }
   ];
+  const standItem = fin => { const f = FINISHES.find(x => x.id === fin) || FINISHES[0]; return { id: 'stand', handle: 'tap4-l-stand', variant: f.name, name: 'TAP4.1 L-Stand · ' + f.name, price: 899, was: 1499 }; };
   const BAR = { id: 'bar', handle: '4-tap-bar', name: '4-Tap Bar', desc: 'Long acrylic bar · 4 NFC zones', price: 1490, was: 2479 };
   const HW_MENU = { handle: 'printed-qr-menu', name: 'Printed QR menu', price: 499, was: 829, badge: 'RECOMMENDED', desc: 'We build your mobile menu and print its QR right on the stand.', points: ['Send your menu at checkout — we type it up', 'QR printed on the stand face', '1 free price update per year'] };
   const LINKS = { handle: 'multi-link-page', name: '4-in-1 links page', price: 350, was: 579 };
+  const DESIGNS = [
+    { id: 'review', name: 'Google Review', desc: '“Leave us a review” · tap opens your Google review box' },
+    { id: 'menu', name: 'Review + QR menu', desc: 'Tap to review, scan to see your menu', add: HW_MENU },
+    { id: 'links', name: 'Socials 4-in-1', desc: 'Google, Facebook, Instagram & TikTok from one tap', add: LINKS }
+  ];
+  const designOf = () => S.dest === 'links' ? 'links' : S.hw.menu ? 'menu' : 'review';
   const PL = [['google', 'Google', '4285F4'], ['facebook', 'Facebook', '0866FF'], ['instagram', 'Instagram', 'FF0069'], ['tiktok', 'TikTok', '000000']];
   const SLOT_OPTS = [...PL, ['website', 'Website', null]];
   const ADD = 'tapfour-app-add-ons';
@@ -56,19 +62,19 @@
   ];
   const ALL_PLATS = { google: true, facebook: true, instagram: true, tiktok: true };
   const PRESETS = [
-    { id: 'google', tag: 'QUICK START', name: 'Google review stand', desc: 'Acrylic stand · tap goes straight to your review box', set: { mode: 'direct', dest: 'google', product: 'acrylic', qty: 1, headline: 'Leave us a review', hw: { menu: false } } },
-    { id: 'menu', tag: 'BEST FOR CAFÉS', badge: 'RECOMMENDED', name: 'Review stand + QR menu', desc: 'Tap to review, scan for your menu — pay once', set: { mode: 'direct', dest: 'google', product: 'acrylic', qty: 1, headline: 'Menu & reviews', hw: { menu: true } } },
-    { id: 'links', tag: 'FOR OWNERS & STAFF', name: '4-in-1 card', desc: 'NFC card · Google, FB, IG, TikTok — no app needed', set: { mode: 'direct', dest: 'links', product: 'card', qty: 1, headline: 'Find us everywhere', plats: ALL_PLATS, slots: ['google', 'facebook', 'instagram', 'tiktok'], hw: { menu: false } } },
-    { id: 'app', tag: 'WITH APP · COMBO', name: 'Live orders', desc: 'Guests order from the table · QR menu, reviews & dashboard', set: { mode: 'app', product: 'acrylic', qty: 1, plan: 'solo', feats: { reviews: true, menu: true, order: true, crm: false, wifi: false }, hw: { menu: false }, headline: 'Order from your table' } }
+    { id: 'google', tag: 'QUICK START', name: 'Google review stand', desc: 'TAP4.1 L-Stand · tap opens your Google review box', set: { mode: 'direct', dest: 'google', qty: 1, hw: { menu: false } } },
+    { id: 'menu', tag: 'BEST FOR CAFÉS', badge: 'RECOMMENDED', name: 'Review stand + QR menu', desc: 'Tap to review, scan for your menu — pay once', set: { mode: 'direct', dest: 'google', qty: 1, hw: { menu: true } } },
+    { id: 'links', tag: 'ALL YOUR SOCIALS', name: 'Socials 4-in-1 stand', desc: 'Google, FB, IG & TikTok from one tap — no app needed', set: { mode: 'direct', dest: 'links', qty: 1, plats: ALL_PLATS, hw: { menu: false } } },
+    { id: 'app', tag: 'WITH APP · COMBO', name: 'Live orders', desc: 'Guests order from the table · QR menu, reviews & dashboard', set: { mode: 'app', qty: 1, plan: 'solo', feats: { reviews: true, menu: true, order: true, crm: false, wifi: false }, hw: { menu: false } } }
   ];
   const MODES = [
-    { id: 'direct', name: 'Hardware only', tag: 'HARDWARE ONLY', desc: 'Tap opens one link or a 4-in-1 of your apps. No account, no subscription.', points: ['Direct to Google review, FB, IG, TikTok or website', '4-in-1 links page — one flat fee for 2–4 apps', 'Optional printed QR menu', 'Pay once — works forever'] },
+    { id: 'direct', name: 'Hardware only', tag: 'HARDWARE ONLY', desc: 'One TAP4.1 L-Stand, three designs. No account, no subscription.', points: ['Google Review, Review + QR menu or Socials 4-in-1', 'Glossy Black or Glossy White acrylic', 'Clean tap4 design — no business branding to approve', 'Pay once — works forever'] },
     { id: 'quad', name: '4-Tap Bar', tag: '4 DIRECT TAPS', desc: 'One long stand with 4 NFC zones — each tap goes straight to its own app.', points: ['4 chips: Google, FB, IG, TikTok or website', 'No page in between — fastest for guests', 'Pick the app for each zone', 'Pay once — works forever'] },
     { id: 'app', name: 'tapfour app', tag: 'APP + DASHBOARD', desc: 'Run the counter from your phone — menu, orders, reviews and customer data in one dashboard.', points: ['Dashboard: taps, reviews, followers, menu views', 'Customer in / out: visits, stay time, returning guests', 'Table ordering straight to your staff phone — no lines', 'Live menu edits & sold-out toggles', 'Change links anytime, no reprint'] }
   ];
 
   const S = {
-    name: 'Kape Norte', headline: 'Leave us a review', product: 'acrylic', qty: 1, mode: 'direct', dest: 'google', website: '',
+    name: 'Kape Norte', finish: 'black', qty: 1, mode: 'direct', dest: 'google',
     menuCat: 0, preset: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
     feats: { reviews: true, menu: true, order: false, crm: false, wifi: false }, hw: { menu: false }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
@@ -76,17 +82,13 @@
 
   function derive() {
     const isQuad = S.mode === 'quad', isApp = S.mode === 'app', isDirect = S.mode === 'direct';
-    const prod = isQuad ? BAR : HW.find(p => p.id === S.product);
+    const prod = isQuad ? BAR : standItem(S.finish);
     const plan = PLANS.find(p => p.id === S.plan) || PLANS[0];
     const activeFeats = isApp ? FEATS.filter(f => S.feats[f.id]) : [];
     const activeSvcs = SVCS.filter(v => S.svcs[v.id]);
     const DESTS = [
       { id: 'google', name: 'Google review', icon: 'google', rec: true, url: googleOk(S.links.google) ? 'Your Google review box · set up from your Maps link' : S.links.google || '' },
-      { id: 'facebook', name: 'Facebook', icon: 'facebook', url: S.links.facebook },
-      { id: 'instagram', name: 'Instagram', icon: 'instagram', url: S.links.instagram },
-      { id: 'tiktok', name: 'TikTok', icon: 'tiktok', url: S.links.tiktok },
-      { id: 'links', name: 'Multi-link page', tap4: true, rec: true, url: 'Your links page · set up after checkout' },
-      { id: 'website', name: 'Website', mark: '↗', url: S.website }
+      { id: 'links', name: 'Multi-link page', tap4: true, rec: true, url: 'Your links page · set up after checkout' }
     ];
     const dest = DESTS.find(d => d.id === S.dest);
     const slotName = id => SLOT_OPTS.find(o => o[0] === id)[1];
@@ -99,11 +101,11 @@
     const monthly = (isApp ? (S.yearly ? 0 : priceOf(planItem(plan, false))) + activeFeats.reduce((a, f) => a + priceOf(f), 0) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
     const dueNow = oneTime + yearly + monthly;
     const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * S.qty : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
-    const destUrl = isQuad ? '4 direct taps · ' + S.slots.map(slotName).join(' / ') : isApp ? 'Your app page · set up after checkout' : dest.url || (S.dest === 'google' ? 'Paste your Google Maps link below' : 'Enter your destination URL below');
+    const destUrl = isQuad ? '4 direct taps · ' + S.slots.map(slotName).join(' / ') : isApp ? 'Your app page · set up after checkout' : dest.url || 'Paste your Google Maps link below';
     const summary = [
       S.qty + ' × ' + prod.name,
-      hwMenuFee ? HW_MENU.name : null,
-      isApp ? null : isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : 'Tap → ' + (S.dest === 'links' ? '4-in-1 (' + activePl.map(p => p[1]).join(', ') + ')' : dest.name),
+      hwMenuFee && isQuad ? HW_MENU.name : null,
+      isApp ? null : isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : DESIGNS.find(x => x.id === designOf()).name + ' design' + (S.dest === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
       ...activeFeats.map(f => f.name), isApp ? plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, ...activeSvcs.map(v => v.name)
     ].filter(Boolean).join(' · ');
     const initials = (S.name.trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2) || 'TF').toUpperCase();
@@ -131,14 +133,13 @@
       <span class="sc-tag">TAP → REVIEW</span></span>`;
     if (id === 'menu') return `<span class="sc sc--menu"><span class="sc-tile sc-tile--qr">${QR}<small>SCAN · MENU</small></span><span class="sc-plus">+</span>
       <span class="sc-tile sc-tile--tap"><span class="sc-nfc">)))</span>${ic('google', '4285F4', 16)}<small>TAP · REVIEW</small></span></span>`;
-    if (id === 'links') return `<span class="sc sc--links"><span class="sc-nfccard"><span class="sc-nfccard__top"><span class="ring ring--xs">${esc(derive().initials)}</span><b>${name}</b><span>)))</span></span></span>
-      <span class="sc-fan">${PL.map(([pid, , col]) => `<span class="sc-dot">${ic(pid, col, 16)}</span>`).join('')}</span></span>`;
+    if (id === 'links') return `<span class="sc sc--links"><span class="sc-mini"><b>Connect with us</b><span class="sc-mini__grid">${PL.map(([pid, , col]) => `<span class="sc-dot">${ic(pid, col, 15)}</span>`).join('')}</span><small>POWERED BY tapfour</small></span></span>`;
     return `<span class="sc sc--app"><span class="sc-ticket"><small>TABLE 4 · 2 ITEMS</small><span><b>Sagada Latte</b><em>₱165</em></span><span><b>Ube Cold Brew</b><em>₱190</em></span><span class="sc-ticket__btn">Send to staff · ₱355</span></span>
       <span class="sc-bars">${[40, 62, 48, 80, 100].map(h => `<i style="height:${h}%"></i>`).join('')}</span></span>`;
   }
   function viewPresets() {
     return PRESETS.map(p => {
-      const on = S.preset === p.id, hw = HW.find(x => x.id === p.set.product), isAppP = p.set.mode === 'app';
+      const on = S.preset === p.id, hw = standItem(S.finish), isAppP = p.set.mode === 'app';
       const parts = [hw, !isAppP && p.set.hw.menu ? HW_MENU : null, p.set.dest === 'links' ? LINKS : null].filter(Boolean);
       const one = parts.reduce((a, x) => a + priceOf(x), 0), was = parts.reduce((a, x) => a + (wasOf(x) || priceOf(x)), 0);
       const mo = isAppP ? '+ ' + peso(priceOf(planItem(PLANS[0], false)) + priceOf(FEATS[1]) + priceOf(FEATS[2])) + '/mo · cancel anytime' : 'No subscription';
@@ -173,29 +174,21 @@
 
   // Best-matching photo for the current setup. `pos` keeps the product in frame when a 4:3 or square
   // photo is cropped to 4:5; `note` says honestly when the sample print differs from the customer's.
-  const FOCUS = { standLLinks: '50% 55%' };
-  const WIDE = ['bar4tap', 'cardKapeNorte']; // 3:2 shots get a wider preview frame instead of a crop
-  const shot = (key, note = '') => ({ src: TF.img[key], pos: FOCUS[key] || '50% 50%', note, wide: WIDE.includes(key) });
-  function shotFor(id, d) {
-    const single = d.isDirect && S.dest !== 'links';
-    const other = single && S.dest !== 'google' ? 'Sample print · yours shows ' + d.dest.name + ' only' : '';
-    const plusMenu = other && other + ' + menu QR';
-    const menuModel = d.menuOn || d.isApp;
-    if (id === 'acrylic') return d.isApp ? shot('standCombo') : d.menuOn ? shot('standAcrylicKn', plusMenu) : S.dest === 'links' ? shot('standAcrylicLinks') : shot('standAcrylicGoogle', other);
-    if (id === 'l') return menuModel ? shot('standLKn', plusMenu) : S.dest === 'links' ? shot('standLLinks') : shot('standLGoogle', other);
-    if (id === 'pvc') return menuModel ? shot('standPvcMenu', plusMenu) : shot('standPvcGoogle', S.dest === 'links' ? 'Sample print · yours shows your 4-in-1 apps' : other);
-    if (id === 'card') return shot('cardKapeNorte', single ? 'Sample print · yours opens ' + d.dest.name + ' only' : '');
+  const shot = (key, note = '') => ({ src: TF.img[key], pos: '50% 50%', note, wide: key === 'bar4tap' });
+  // Stand photo for a finish + design (defaults to the current setup). App mode shows the menu or 4-in-1 face.
+  const designFor = d => d.isApp ? (S.feats.menu ? 'menu' : 'links') : designOf();
+  function shotFor(id, d, design = designFor(d), finish = S.finish) {
     if (id === 'bar') return shot('bar4tap', S.slots.join() === 'google,facebook,instagram,tiktok' ? '' : 'Sample print · yours: ' + S.slots.map(d.slotName).join(' / '));
-    return null;
+    const few = design === 'links' && d.activePl.length < 4;
+    return shot(`l-${finish}-${design}`, few ? 'Printed face shows all 4 icons · your page shows ' + d.activePl.map(p => p[1]).join(', ') : '');
   }
 
   function viewHardware(d) {
-    return (d.isQuad ? [BAR] : HW).map(p => {
-      const on = d.prod.id === p.id, was = wasOf(p);
-      const img = shotFor(p.id, d);
-      return `<button type="button" class="opt${on ? ' on' : ''}${img ? ' opt--img' : ''}" ${p.id === 'bar' ? 'disabled' : `data-act="product" data-arg="${p.id}"`} aria-pressed="${on}">
-        ${img ? `<img class="opt__img" src="${img.src}" alt="" loading="lazy" style="object-position:${img.pos}">` : ''}<b>${p.name}</b><span>${p.desc}</span><span class="opt__price"><em>${peso(priceOf(p))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`;
-    }).join('');
+    const card = (on, attrs, img, name, desc, item) => { const was = wasOf(item);
+      return `<button type="button" class="opt opt--img${on ? ' on' : ''}" ${attrs} aria-pressed="${on}"><img class="opt__img" src="${img.src}" alt="" loading="lazy" style="object-position:${img.pos}">
+        <b>${name}</b><span>${desc}</span><span class="opt__price"><em>${peso(priceOf(item))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`; };
+    if (d.isQuad) return card(true, 'disabled', shotFor('bar', d), BAR.name, BAR.desc, BAR);
+    return FINISHES.map(f => card(S.finish === f.id, `data-act="finish" data-arg="${f.id}"`, shotFor('stand', d, undefined, f.id), f.name, f.desc, standItem(f.id))).join('');
   }
 
   function viewMode(d) {
@@ -208,10 +201,10 @@
     let html = `<div class="modes">${modes}</div>
       <div class="mode-info"><p>${mode.desc}</p><div class="points">${mode.points.map(p => `<div><span class="lime">✓</span>${p}</div>`).join('')}</div></div>`;
     if (d.isDirect) {
-      html += `<div class="stack-10"><div class="lbl">Send every tap to</div><div class="chips-row">${d.DESTS.map(x => {
-        const on = S.dest === x.id;
-        const icon = x.icon ? ic(x.icon, on ? '0a0a0b' : 'b5b3ad', 15) : x.tap4 ? leaf(15, on ? '#0a0a0b' : '') : `<span>${x.mark}</span>`;
-        return `<button type="button" class="dchip${on ? ' on' : ''}" data-act="dest" data-arg="${x.id}" aria-pressed="${on}">${icon}${x.name}${x.rec ? '<span class="dchip__rec">★ RECOMMENDED</span>' : ''}</button>`;
+      html += `<div class="stack-10"><div class="lbl">Choose your design</div><div class="designs">${DESIGNS.map(x => {
+        const on = designOf() === x.id, img = shotFor('stand', d, x.id);
+        return `<button type="button" class="design${on ? ' on' : ''}" data-act="design" data-arg="${x.id}" aria-pressed="${on}"><img src="${img.src}" alt="" loading="lazy">
+          <b>${x.name}</b><span>${x.desc}</span><em>${x.add ? '+' + peso(priceOf(x.add)) : 'Included'}</em>${on ? '<span class="check">✓</span>' : ''}</button>`;
       }).join('')}</div></div>`;
     }
     return html;
@@ -221,7 +214,7 @@
     let html = '';
     if (d.isApp || (d.isDirect && S.dest === 'links')) {
       const count = PL.filter(p => S.plats[p[0]]).length;
-      html += `<div class="stack-10"><div class="lbl">${d.isApp ? 'On your 4-in-1 page' : 'Pick the apps on your 4-in-1 — plain links, no app or dashboard'} · ${count} OF 4</div>
+      html += `<div class="stack-10"><div class="lbl">${d.isApp ? 'On your 4-in-1 page' : 'Apps on your 4-in-1 page — plain links, no app or dashboard'} · ${count} OF 4</div>
         ${d.isDirect ? `<div class="flat"><div><b>One flat price — 2, 3 or 4 apps</b><span>Hosted 4-in-1 page, one-time. Links stay live for life.</span></div><div class="flat__p"><b>+${peso(priceOf(LINKS))}</b><span>ONE-TIME</span></div></div>` : ''}
         <div class="chips-row">${PL.map(([id, name]) => { const on = S.plats[id]; return `<button type="button" class="pchip${on ? ' on' : ''}" data-act="plat" data-arg="${id}" aria-pressed="${!!on}">${ic(id, on ? '0a0a0b' : '8a8883', 16)}${name}</button>`; }).join('')}</div></div>`;
     }
@@ -236,8 +229,8 @@
     } else if (d.isApp || S.dest === 'links') {
       html += `<div class="stack-10">${d.activePl.map(([id, name]) => urlField(id, name, S.links[id], !d.isApp, id)).join('')}</div>`;
       if (d.isApp) html += '<div class="note">You can provide your links after checkout. Your app page address is assigned during setup.</div>';
-    } else if (S.dest !== 'website') {
-      html += urlField(S.dest, d.dest.name, S.links[S.dest], true, S.dest);
+    } else {
+      html += urlField('google', d.dest.name, S.links.google, true, 'google');
     }
     if (!d.isApp) html += '<div class="note">Paste the exact destination links for programming. Your business name does not create these links.</div>';
     if (d.isDirect) html += '<div class="note">Pay once, yours forever — no account, no monthly fee. If you ever want a menu or tap stats, the same stand can be switched to the app.</div>';
@@ -273,6 +266,7 @@
       <span class="feat__p">${priceLabel}</span></button>`;
 
   function viewExtra(d) {
+    if (d.isDirect) return '';
     if (!d.isApp) {
       return `<div class="panel__head"><span>D · ADD-ONS</span><span>ONE-TIME</span></div>${toggleRow(HW_MENU, S.hw.menu, 'hwMenu', '+' + peso(priceOf(HW_MENU)))}`;
     }
@@ -337,13 +331,14 @@
     $('#tf-qty').textContent = S.qty;
     $('#tf-mode-tag').textContent = MODES.find(m => m.id === S.mode).tag;
     $('#tf-mode').innerHTML = viewMode(d);
-    $('#tf-website').hidden = !(d.isDirect && S.dest === 'website');
+    $('#tf-hw-tag').textContent = d.isQuad ? '4 NFC ZONES' : 'TAP4.1 L-STAND · CHOOSE A FINISH';
     $('#tf-mode-after').innerHTML = viewModeAfter(d);
     $('#tf-extra').innerHTML = viewExtra(d);
+    $('#tf-extra').hidden = d.isDirect;
     $('#tf-summary').innerHTML = viewSummary(d);
     renderCheckout();
     $('#tf-bar-total').textContent = peso(d.oneTime) + (d.monthly ? ' + ' + peso(d.monthly) + '/mo' : '');
-    for (const [id, key] of [['tf-name', 'name'], ['tf-headline', 'headline'], ['tf-website', 'website']]) {
+    for (const [id, key] of [['tf-name', 'name']]) {
       const el = document.getElementById(id);
       if (el !== document.activeElement) el.value = S[key];
     }
@@ -370,7 +365,7 @@
       ? S.slots.map((id, i) => ({ label: 'Tap ' + (i + 1) + ' · ' + d.slotName(id), plat: id, value: S.slotLinks[i], input: 'tf-url-zone-' + i }))
       : d.isApp || S.dest === 'links'
         ? d.activePl.map(([id, label]) => ({ label, plat: id, value: S.links[id], input: 'tf-url-' + id, optional: d.isApp }))
-        : [{ label: d.dest.name, plat: S.dest, value: S.dest === 'website' ? S.website : S.links[S.dest], input: S.dest === 'website' ? 'tf-website' : 'tf-url-' + S.dest }];
+        : [{ label: d.dest.name, plat: 'google', value: S.links.google, input: 'tf-url-google' }];
     destinations.forEach(dest => { if (dest.plat === 'google') dest.label = d.isQuad ? dest.label + ' Maps' : 'Google Maps'; });
     for (const dest of destinations) {
       dest.value = (dest.value || '').trim();
@@ -392,7 +387,8 @@
       if (recurring) line.selling_plan = v.sp;
       items.push(line);
     };
-    const props = { 'Business name': S.name.trim(), Headline: S.headline.trim(), Setup: MODES.find(m => m.id === S.mode).name };
+    const props = { 'Business name': S.name.trim(), Setup: MODES.find(m => m.id === S.mode).name };
+    if (!d.isQuad) Object.assign(props, { Finish: FINISHES.find(x => x.id === S.finish).name, Design: DESIGNS.find(x => x.id === designFor(d)).name });
     if (d.isQuad) props['Tap zones'] = S.slots.map(d.slotName).join(', ');
     else if (d.isApp) { props['App page'] = 'Assigned during setup after checkout'; props['4-in-1 apps'] = d.activePl.map(p => p[1]).join(', '); }
     else {
@@ -403,7 +399,7 @@
     if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
 
     add(d.prod, S.qty, props);
-    if (!d.isApp && S.hw.menu) add(HW_MENU, 1);
+    if (!d.isApp && S.hw.menu && !(d.isDirect && S.dest === 'links')) add(HW_MENU, 1);
     if (d.isDirect && S.dest === 'links') add(LINKS, 1);
     if (d.isApp) {
       add(planItem(d.plan, S.yearly), 1, null, true);
@@ -501,7 +497,7 @@
         <button type="button" class="btn btn--light btn--block" data-co-close>Back to the site</button></div>`;
     } else if (cur === 'Review') {
       body = `<div class="co-item">${ph ? `<img src="${ph.src}" alt="" style="object-position:${ph.pos}">` : '<span class="co-item__ph">4×</span>'}
-          <div class="co-item__txt"><b>${esc(d.prod.name)}</b><small>${esc(S.name.trim())} · “${esc(S.headline.trim())}”</small><small class="lime">${esc(d.destUrl)}</small>
+          <div class="co-item__txt"><b>${esc(d.prod.name)}</b><small>${esc(d.isQuad ? S.name.trim() : DESIGNS.find(x => x.id === designFor(d)).name + ' design · for ' + S.name.trim())}</small><small class="lime">${esc(d.destUrl)}</small>
             <div class="qty qty--sm"><button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button><output>${S.qty}</output><button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button></div></div>
           <em>${peso(priceOf(d.prod) * S.qty)}</em></div>
         ${extras ? `<div class="co-lines">${extras}</div>` : ''}${totals}
@@ -628,10 +624,10 @@
   const scrollTo = id => { const el = document.getElementById(id); if (el) window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 70, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
   const ACTS = {
     preset: id => { const p = PRESETS.find(x => x.id === id); set({ ...structuredClone(p.set), preset: id }); },
-    product: id => set({ product: id, preset: null }),
+    finish: id => set({ finish: id, preset: null }),
+    design: id => set({ dest: id === 'links' ? 'links' : 'google', hw: { ...S.hw, menu: id === 'menu' }, plats: id === 'links' ? { ...ALL_PLATS } : S.plats, preset: null }),
     qty: n => set({ qty: Math.max(1, S.qty + +n) }),
     mode: id => set({ mode: id, preset: null }),
-    dest: id => set({ dest: id, preset: null }),
     plat: id => {
       if (S.mode === 'direct' && S.dest === 'links' && S.plats[id] && PL.filter(p => S.plats[p[0]]).length <= 2) return set({ error: 'Choose at least two apps for your multi-link page.' });
       set({ plats: { ...S.plats, [id]: !S.plats[id] } });
@@ -657,7 +653,7 @@
     ACTS[el.dataset.act](el.dataset.arg, el);
     if (el.dataset.scroll) scrollTo(el.dataset.scroll);
   });
-  [['tf-name', 'name'], ['tf-headline', 'headline'], ['tf-website', 'website']].forEach(([id, key]) => {
+  [['tf-name', 'name']].forEach(([id, key]) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', () => { if (S.ordering) { el.value = S[key]; return; } S[key] = el.value; S.error = ''; render(); });
   });

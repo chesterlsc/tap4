@@ -8,7 +8,7 @@
         "a": { "type": "item", "settings": { "text": "TAP FOR REVIEWS · SCAN FOR YOUR MENU" } },
         "b": { "type": "item", "settings": { "text": "PRINTED FOR YOUR BUSINESS" } },
         "c": { "type": "item", "settings": { "text": "CHOOSE YOUR SETUP BELOW" } },
-        "d": { "type": "item", "settings": { "text": "NFC STANDS & CARDS" } },
+        "d": { "type": "item", "settings": { "text": "GLOSSY BLACK & WHITE STANDS" } },
         "e": { "type": "item", "settings": { "text": "WE SHIP NATIONWIDE" } },
         "f": { "type": "item", "settings": { "text": "LUZON · VISAYAS · MINDANAO" } }
       },

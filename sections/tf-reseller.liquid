@@ -8,12 +8,12 @@
   if s.image
     assign img = s.image | image_url: width: 1600
   else
-    assign img = 'stand-acrylic.jpg' | asset_url
+    assign img = 'tapfour-l-black-links.jpg' | asset_url
   endif
 -%}
 <section class="sec sec--tight">
   <div class="reseller">
-    <img src="{{ img }}" alt="" loading="lazy" width="1448" height="1086">
+    <img src="{{ img }}" alt="" loading="lazy" width="1122" height="1402">
     <div class="reseller__shade"></div>
     <div class="reseller__in">
       <h2 class="h2">{{ s.title | escape }}</h2>

@@ -44,7 +44,9 @@ test('builder sends the configured setup to /cart/add.js', async t => {
 
   const id = handle => catalog[handle].variants[0].id;
   assert.equal(sent.url, '/cart/add.js');
-  assert.deepEqual(sent.body.items.map(i => i.id), [id('acrylic-glass-stand'), id('printed-qr-menu')]);
+  assert.deepEqual(sent.body.items.map(i => i.id), [id('tap4-l-stand'), id('printed-qr-menu')]); // Glossy Black is the first variant
+  assert.equal(sent.body.items[0].properties.Finish, 'Glossy Black');
+  assert.equal(sent.body.items[0].properties.Design, 'Review + QR menu');
   assert.equal(sent.body.items[0].properties['Business name'], 'Kape Norte');
   assert.equal(sent.body.items[0].properties['Google Maps link'], 'https://maps.app.goo.gl/KapeNorte123');
   assert.equal(sent.body.items[0].properties['Google review link'], 'tapfour sets it up from the Maps link');
@@ -90,6 +92,8 @@ test('static site (tap4.ph) sends the order by email', async t => {
   assert.match(body, /Google Maps link: https:\/\/maps\.app\.goo\.gl\/KapeNorte123/);
   assert.match(body, /Google review link: tapfour sets it up from the Maps link/);
   assert.match(body, /One-time: ₱1,398/);
+  assert.match(body, /Finish: Glossy Black/);
+  assert.match(body, /Design: Review \+ QR menu/);
   assert.match(body, /Mobile: 0917 123 4567/);
   assert.match(body, /Deliver to: 12 Session Rd, Baguio/);
   assert.match(body, /Menu items:\nSagada Latte — ₱165/);
@@ -126,4 +130,42 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   $('.co-cta').click(); // details -> confirm
   $('[data-co-submit]').click();
   assert.match(decodeURIComponent(opened.split('&body=')[1]), /Menu files:\nmenu\.pdf — https:\/\/go\.example\/m\/abc/);
+});
+
+test('TAP4.1: finish switches the variant and photos, designs set the add-ons', async t => {
+  const { pages, catalog } = await site;
+  const dom = new JSDOM(pages.get('/'), { runScripts: 'dangerously', url: 'http://localhost/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let sent;
+  w.fetch = async (url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({}) }; };
+  w.structuredClone ??= structuredClone;
+  w.scrollTo = () => {};
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  const photo = () => $('.pv-photo img').getAttribute('src');
+
+  assert.match(photo(), /tapfour-l-black-review/);
+  $('[data-act="finish"][data-arg="white"]').click();
+  assert.match(photo(), /tapfour-l-white-review/);
+  $('[data-act="design"][data-arg="links"]').click();
+  assert.match(photo(), /tapfour-l-white-links/);
+  assert.match($('#tf-summary').textContent, /₱1,249/); // 899 + 350 links page
+  $('[data-act="design"][data-arg="menu"]').click();
+  assert.match(photo(), /tapfour-l-white-menu/);
+  assert.match($('#tf-summary').textContent, /₱1,398/); // 899 + 499 menu
+
+  const url = $('#tf-url-google');
+  url.value = 'https://maps.app.goo.gl/KapeNorte123';
+  url.dispatchEvent(new w.Event('input', { bubbles: true }));
+  $('[data-act="order"]').click();
+  $('.co-cta').click();
+  const menu = $('#co-menuLink');
+  menu.value = 'https://drive.google.com/menu';
+  menu.dispatchEvent(new w.Event('input', { bubbles: true }));
+  $('[data-co-submit]').click();
+  await new Promise(r => setTimeout(r, 0));
+  const white = catalog['tap4-l-stand'].variants.find(v => v.title === 'Glossy White').id;
+  assert.equal(sent.items[0].id, white);
+  assert.equal(sent.items[0].properties.Finish, 'Glossy White');
 });
