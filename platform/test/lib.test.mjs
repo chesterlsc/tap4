@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile } from '../src/lib.js';
+import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile, hasChip, hasQr, csvCell } from '../src/lib.js';
 
 const tap = { code: 'K7M2QX', slot: 'main', source: 'nfc' };
 const live = { status: 'active', business_id: 1, link_key: 'google', url: 'https://g.page/r/x/review', slug: 'kape-norte' };
@@ -92,4 +92,19 @@ test('sniffMenuFile: accepts real menus by their bytes, rejects anything scripta
   assert.equal(sniffMenuFile(bytes('<svg onload=alert(1)>')), null);
   assert.equal(sniffMenuFile(bytes('<!doctype html><script>')), null);
   assert.equal(sniffMenuFile(new Uint8Array()), null);
+});
+
+test('supplier files: which parts get a chip or a printed QR', () => {
+  assert.ok(hasChip('main') && hasChip('z3') && !hasChip('menu'));
+  assert.ok(hasQr('TF-STAND-ACR', 'main'), 'acrylic has a QR backup');
+  assert.ok(!hasQr('TF-CARD', 'main') && !hasQr('TF-BAR', 'z1'), 'cards and bar zones are chip-only');
+  assert.ok(hasQr('TF-STAND-PVC', 'menu'), 'menu is a printed QR');
+});
+
+test('csvCell quotes and blocks spreadsheet formulas', () => {
+  assert.equal(csvCell('Kape Norte'), 'Kape Norte');
+  assert.equal(csvCell('Café, "Anino"'), '"Café, ""Anino"""');
+  assert.equal(csvCell('=HYPERLINK("x")'), `"'=HYPERLINK(""x"")"`);
+  assert.equal(csvCell('+639170000'), "'+639170000");
+  assert.equal(csvCell(null), '');
 });

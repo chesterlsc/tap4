@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
 import qrcode from 'qrcode-generator';
-import { CODE_RE, SLOT_RE, LINK_KEYS, PRODUCTS, newCode, normalizeCode, cleanUrl, slugify, initials, checklist, hashPassword, tempPassword } from './lib.js';
+import { CODE_RE, SLOT_RE, LINK_KEYS, PRODUCTS, newCode, normalizeCode, cleanUrl, slugify, initials, checklist, hashPassword, tempPassword, hasChip, hasQr, csvCell, productName } from './lib.js';
 import { tapUrl, hostUrl, back, audit, flashQ, text, getBusiness, linksOf, devicesOf, stats, RECENT, saveLinks } from './common.js';
 import { loginRoutes, requireRole, accountRoutes, setupRoutes } from './auth.js';
 import * as V from './views.js';
@@ -43,23 +43,28 @@ admin.get('/businesses', async c => {
   return page(c, 'businesses', 'Clients', V.businessesView({ rows: results, q: flashQ(c) }));
 });
 
-admin.post('/businesses', async c => {
-  const f = await c.req.parseBody();
-  const name = text(f.name, 60);
-  if (!name) return back(c, '/admin/businesses', 'err', 'Business name is required.');
+// Creates the client with a unique links-page address (kape-norte, kape-norte-2, …).
+async function createBusiness(c, name, f) {
   const base = slugify(name);
   for (let i = 1; i < 20; i++) {
-    const slug = i === 1 ? base : `${base}-${i}`;
     try {
-      const b = await c.env.DB.prepare('INSERT INTO businesses (slug, name, contact_name, email, phone) VALUES (?, ?, ?, ?, ?) RETURNING id')
-        .bind(slug, name, text(f.contact_name, 60), text(f.email, 120), text(f.phone, 30)).first();
+      const b = await c.env.DB.prepare('INSERT INTO businesses (slug, name, contact_name, email, phone) VALUES (?, ?, ?, ?, ?) RETURNING id, slug, name')
+        .bind(i === 1 ? base : `${base}-${i}`, name, text(f.contact_name, 60), text(f.email, 120), text(f.phone, 30)).first();
       await audit(c, 'business', b.id, { created: name }).run();
-      return back(c, `/admin/b/${b.id}`, 'msg', 'Client added. Next: paste their links.');
+      return b;
     } catch (err) {
       if (!String(err).includes('UNIQUE')) throw err;
     }
   }
-  return back(c, '/admin/businesses', 'err', 'Could not pick a unique slug.');
+  return null;
+}
+
+admin.post('/businesses', async c => {
+  const f = await c.req.parseBody();
+  const name = text(f.name, 60);
+  if (!name) return back(c, '/admin/new', 'err', 'Type the business name.');
+  const b = await createBusiness(c, name, f);
+  return b ? back(c, `/admin/b/${b.id}`, 'msg', 'Client added. Next: paste their links.') : back(c, '/admin/new', 'err', 'Could not pick a unique address. Try a slightly different name.');
 });
 
 admin.get('/b/:id', async c => {
@@ -349,4 +354,53 @@ admin.post('/b/:id/owners/:uid/remove', async c => {
     audit(c, 'business', b.id, { owner_login_removed: u.email })
   ]);
   return back(c, `/admin/b/${b.id}`, 'msg', `${u.email} can no longer log in.`);
+});
+
+/* quick setup: one form → client + Google link + stands */
+admin.get('/new', c => page(c, 'businesses', 'New client', V.quickView({ f: {}, q: flashQ(c) })));
+admin.post('/new', async c => {
+  const f = await c.req.parseBody();
+  const name = text(f.name, 60), google = cleanUrl(f.google), sku = PRODUCTS[f.sku] ? f.sku : null;
+  const err = !name ? 'Type the business name.'
+    : google === null ? 'The Google review link doesn’t look right. Copy it again; it should start with https://'
+    : null;
+  if (err) return page(c, 'businesses', 'New client', V.quickView({ f, q: { err } }));
+  const b = await createBusiness(c, name, f);
+  if (!b) return page(c, 'businesses', 'New client', V.quickView({ f, q: { err: 'Could not pick a unique address. Try a slightly different name.' } }));
+  if (google) await c.env.DB.batch([
+    c.env.DB.prepare('INSERT INTO business_links (business_id, key, url) VALUES (?, ?, ?)').bind(b.id, 'google', google),
+    audit(c, 'business', b.id, { links: { google: { from: null, to: google } } })
+  ]);
+  const codes = sku ? await createDevices(c, { sku, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) }) : [];
+  const parts = [google && 'Google link saved', codes.length && `${codes.length} ${codes.length > 1 ? 'stands' : 'stand'} added`].filter(Boolean).join(', ');
+  return back(c, `/admin/b/${b.id}`, 'msg', `${b.name} added${parts ? ` (${parts})` : ''}. Follow the next step below.`);
+});
+
+/* supplier files: CSV of chip/QR links + printable QR sheet for the chip & print supplier */
+async function supplierRows(c) {
+  const bid = Number.parseInt(c.req.query('b'), 10) || 0, which = c.req.query('which') === 'all' ? 'all' : 'new';
+  const { results } = await c.env.DB.prepare(`SELECT d.code, d.label, d.product_sku, d.branch, b.name bname, s.slot
+    FROM devices d JOIN device_slots s ON s.device_code = d.code LEFT JOIN businesses b ON b.id = d.business_id
+    WHERE (?1 = 0 OR d.business_id = ?1) AND (?2 = 'all' OR (d.status = 'new' AND d.first_scan_at IS NULL))
+    ORDER BY b.name, d.label, s.slot = 'main' DESC, s.slot LIMIT 1000`).bind(bid, which).all();
+  const rows = results.map(r => ({ ...r, chip: hasChip(r.slot) ? tapUrl(c.env, 't', r.code, r.slot) : '', qr: hasQr(r.product_sku, r.slot) ? tapUrl(c.env, 'q', r.code, r.slot) : '' }));
+  return { bid, which, rows };
+}
+
+admin.get('/supplier', async c => {
+  const { bid, which, rows } = await supplierRows(c);
+  const businesses = (await c.env.DB.prepare('SELECT id, name FROM businesses ORDER BY name').all()).results;
+  const qrs = Object.fromEntries(rows.filter(r => r.qr).map(r => [r.qr, qrSvg(r.qr)]));
+  return page(c, 'devices', 'Supplier files', V.supplierView({ rows, qrs, businesses, bid, which }));
+});
+
+admin.get('/supplier.csv', async c => {
+  const { bid, which, rows } = await supplierRows(c);
+  const head = ['label', 'code', 'client', 'product', 'branch', 'part', 'chip_link_write_to_nfc', 'qr_link_print_as_qr'];
+  const lines = [head, ...rows.map(r => [r.label, r.code, r.bname || 'not assigned', productName(r.product_sku), r.branch, V.partName(r.slot), r.chip, r.qr])];
+  const name = `tap4-supplier-${bid ? slugify(rows[0]?.bname || 'client') : 'all'}-${which}.csv`;
+  // BOM so Excel opens accents (Café) correctly
+  return c.body('\ufeff' + lines.map(l => l.map(csvCell).join(',')).join('\r\n') + '\r\n', 200, {
+    'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store'
+  });
 });

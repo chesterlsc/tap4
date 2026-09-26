@@ -107,6 +107,12 @@ details.help ol,details.help ul{margin:0;padding-left:20px}
 .linkrow__foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .phone-pv{width:280px;height:560px;border-radius:40px;background:#000;padding:8px;box-shadow:0 0 0 1px var(--l4),0 40px 80px -40px rgba(200,242,60,.25);align-self:center}
 .phone-pv iframe{width:100%;height:100%;border:0;border-radius:32px;background:var(--bg)}
+.qrsheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.qrcell{background:#fff;color:#0a0a0b;border-radius:12px;padding:10px 10px 12px;display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center}
+.qrcell svg{width:100%;height:auto;display:block}
+.qrcell b{font:700 12px var(--mono)}.qrcell span{font-size:10.5px;line-height:1.3}.qrcell code{font:500 8.5px var(--mono);word-break:break-all;color:#444}
+.stepnum{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:var(--bg);font:700 12px var(--mono);margin-right:8px}
+@media print{body{background:#fff!important;color:#000}.site-header,.no-print{display:none!important}.adm{padding:0;max-width:none}.qrsheet{grid-template-columns:repeat(4,1fr);gap:6mm}.qrcell{border:1px dashed #bbb;break-inside:avoid}.print-title{color:#000!important}}
 @media (max-width:600px){.adm{padding:20px 16px 72px}.adm-head{padding:14px 16px}.slotcard{grid-template-columns:1fr}.next b{font-size:18px}}
 `;
 
@@ -190,7 +196,7 @@ export function shell({ area, title, nav, user, adminView, body }) {
 <header class="sticky-header site-header"><div class="site-header__in adm-head">
   <a class="brand" href="${a.prefix}"><span class="tf-mark" style="font-size:26px" aria-hidden="true"></span>tapfour<span class="tag tag--lime">${a.badge}</span></a>
   <nav class="seg adm-nav" aria-label="Dashboard">${a.tabs.map(([href, label, id]) => html`<a href="${a.prefix}${href}"${nav === id ? raw(' class="on" aria-current="page"') : ''}>${label}</a>`)}</nav>
-  <form method="post" action="${a.prefix}/logout" class="row-wrap" style="gap:10px"><span class="mono-12 m3">${user?.email}</span><button class="btn btn--ghost btn--sm">Log out</button></form>
+  <form method="post" action="${a.prefix}/logout" class="row-wrap" style="gap:10px">${area === 'admin' ? html`<a class="btn btn--lime btn--sm" href="/admin/new">+ New client</a>` : ''}<span class="mono-12 m3">${user?.email}</span><button class="btn btn--ghost btn--sm">Log out</button></form>
 </div></header>
 <main class="adm" id="main">${adminView ? html`<form method="get" action="/app/view" class="flash flash--ok row-between wrap" style="gap:10px">
   <span>Admin view: you’re seeing this business exactly as its owner does. Edits are saved under your email.</span>
@@ -362,9 +368,9 @@ export function overviewView({ stats, counts, bizCount, top, recent, q }) {
     ${card('scanned', 'CHECK QUALITY', 'Tapped once, checklist not done')}
     ${card('qc_passed', 'READY TO GO LIVE', 'Turn on when handed to the client')}
     <a class="kpi kpi--lime" href="/admin/devices" style="color:inherit"><span>LIVE</span><b>${n(c('active'))}</b><em>${n(c('disabled'))} paused</em></a></div>`;
-  const start = !bizCount ? next({ tag: 'START HERE', title: 'Set up your first client', text: 'Add the business, paste their links, add their stand, write the chip, check it, and turn it on. The staff guide walks you through each step.', action: html`<div class="row-wrap"><a class="btn" href="/admin/businesses">Add a client →</a><a class="btn" href="/admin/guide">Staff guide</a></div>` })
+  const start = !bizCount ? next({ tag: 'START HERE', title: 'Set up your first client', text: 'Add the business, paste their links, add their stand, write the chip, check it, and turn it on. The staff guide walks you through each step.', action: html`<div class="row-wrap"><a class="btn" href="/admin/new">+ New client</a><a class="btn" href="/admin/guide">Staff guide</a></div>` })
     : waiting ? next({ tag: 'TO DO', title: `${waiting} stand${waiting > 1 ? 's' : ''} still being set up`, text: 'Open the list to see which step each one is on.', action: html`<a class="btn" href="/admin/devices">Open the list →</a>` })
-    : next({ calm: true, tag: 'ALL CAUGHT UP', title: 'Every stand is live.', text: 'New client? Add them under Clients.', action: html`<a class="btn" href="/admin/businesses">Add a client →</a>` });
+    : next({ calm: true, tag: 'ALL CAUGHT UP', title: 'Every stand is live.', text: 'New client? It takes one short form.', action: html`<a class="btn" href="/admin/new">+ New client</a>` });
   return html`${flash(q)}${head('OVERVIEW', 'Every tap. Every stand.')}
   ${start}
   ${statsBlock(stats, { title: 'All clients', caption: 'LAST 30 DAYS · PH TIME', extra })}
@@ -377,21 +383,12 @@ export function overviewView({ stats, counts, bizCount, top, recent, q }) {
 }
 
 export function businessesView({ rows, q }) {
-  return html`${flash(q)}${head('CLIENTS', 'Your clients.', '', 'Each client is one business. Add them here, then set up their links, stands and login on their page.')}
-  <form class="panel" method="post" action="/admin/businesses">
-    <div class="panel__head"><span>ADD A CLIENT</span><span>STEP 1 OF 4</span></div>
-    <div class="fields">
-      <label class="field">Business name (as printed on the stand)<input name="name" required maxlength="60" placeholder="Kape Norte"></label>
-      <label class="field">Contact person<input name="contact_name" maxlength="60" placeholder="Ana Reyes"></label>
-      <label class="field">Email<input name="email" type="email" maxlength="120"></label>
-      <label class="field">Phone / Viber<input name="phone" type="tel" maxlength="30"></label>
-    </div>
-    <div><button class="btn btn--lime btn--lg">Add client →</button></div>
-  </form>
+  return html`${flash(q)}${head('CLIENTS', 'Your clients.', html`<a class="btn btn--lime" href="/admin/new">+ New client</a>`, 'Each client is one business. Open a client to set up their links, stands and login.')}
+  ${next({ calm: true, tag: 'NEW CLIENT', title: 'Add a client in one form', text: 'Name, their Google review link and the stand they bought. The rest you can do after.', action: html`<a class="btn" href="/admin/new">+ New client</a>` })}
   <div class="panel"><div class="panel__head"><span>${rows.length} CLIENT${rows.length === 1 ? '' : 'S'}</span><span>TAPS · 30 DAYS</span></div>
     ${rows.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>CLIENT</th><th>STANDS</th><th>LIVE</th><th>TAPS · 30D</th><th>CONTACT</th></tr></thead><tbody>
     ${rows.map(b => html`<tr><td><a href="/admin/b/${b.id}">${b.name}</a></td><td class="mono">${n(b.devices)}</td><td class="mono">${b.devices ? `${n(b.active)} / ${n(b.devices)}` : '—'}</td><td class="mono lime">${n(b.taps)}</td><td class="m3">${b.contact_name || b.email || b.phone || '—'}</td></tr>`)}
-    </tbody></table></div>` : html`<div class="empty">No clients yet. Add your first one above.</div>`}
+    </tbody></table></div>` : html`<div class="empty">No clients yet. Press “+ New client” to add your first one.</div>`}
   </div>`;
 }
 
@@ -406,7 +403,7 @@ export function businessView({ b, tapBase, ownerViewUrl, links, devices, owners,
     { title: `Finish setting up ${notLive.length} stand${notLive.length > 1 ? 's' : ''}`, text: 'Write the chip, tap it, do the quality check, then turn it on.', action: notLive[0] ? html`<a class="btn" href="/admin/d/${notLive[0].code}">Continue with ${notLive[0].label || notLive[0].code} →</a>` : '' },
     { title: 'Give the owner a login', text: 'They’ll see their numbers and can change their own links at dashboard.tap4.ph.', action: html`<a class="btn" href="#owner">Create login ↓</a>` }
   ][now];
-  return html`${flash(q)}${head('CLIENT', b.name, html`<div class="row-wrap"><a class="btn btn--ghost" href="${ownerViewUrl}" target="_blank" rel="noopener">See their dashboard ↗</a><a class="btn btn--ghost" href="${tapBase}/p/${b.slug}" target="_blank" rel="noopener">Their links page ↗</a></div>`)}
+  return html`${flash(q)}${head('CLIENT', b.name, html`<div class="row-wrap"><a class="btn btn--ghost" href="${ownerViewUrl}" target="_blank" rel="noopener">See their dashboard ↗</a><a class="btn btn--ghost" href="${tapBase}/p/${b.slug}" target="_blank" rel="noopener">Their links page ↗</a><a class="btn btn--ghost" href="/admin/supplier?b=${b.id}">Supplier files</a></div>`)}
   ${steps(['Links added', 'Stand added', 'Stands live', 'Owner login'], now < 0 ? 4 : now)}
   ${todo ? next(todo) : next({ calm: true, tag: 'ALL SET', title: `${b.name} is fully set up.`, text: 'Their stands are live and the owner can log in. Come back here anytime to change links or add stands.' })}
   <div class="grid2">
@@ -457,7 +454,7 @@ export function businessView({ b, tapBase, ownerViewUrl, links, devices, owners,
 }
 
 export function devicesView({ cols, q }) {
-  return html`${flash(q)}${head('STANDS & CARDS', 'Get every stand live.', html`<form method="get" action="/admin/find" class="row-wrap"><label class="field" style="min-width:200px">Find by code (on the device page)<input name="code" required maxlength="12" placeholder="K7M2QX" autocapitalize="characters"></label><button class="btn btn--ghost">Open</button></form>`, 'Each stand moves left to right: write the chip → tap to test → quality check → go live. Tap a stand to see exactly what to do next.')}
+  return html`${flash(q)}${head('STANDS & CARDS', 'Get every stand live.', html`<div class="row-wrap"><a class="btn btn--lime" href="/admin/supplier">Send to supplier</a></div><form method="get" action="/admin/find" class="row-wrap"><label class="field" style="min-width:200px">Find by code (on the device page)<input name="code" required maxlength="12" placeholder="K7M2QX" autocapitalize="characters"></label><button class="btn btn--ghost">Open</button></form>`, 'Each stand moves left to right: write the chip → tap to test → quality check → go live. Tap a stand to see exactly what to do next.')}
   <div class="dash"><div class="dash__top"><b>Setup board</b><span class="mono-12 m3">WRITE → TAP → CHECK → GO LIVE</span></div>
   <div class="dash__body pipe">
     ${STAGES.map(([id, label, color, hint]) => { const list = cols[id] || []; return html`<div class="pipe__col">
@@ -486,7 +483,7 @@ export function deviceView({ d, b, slots, businesses, stats, tapUrl, q, qc }) {
   const goLive = html`<form method="post" action="/admin/d/${d.code}/status"><button class="btn" name="to" value="active">Go live: turn it on →</button></form>`;
   const todo = [
     { title: !b ? 'Choose the client' : 'Save the link this stand opens', text: !b ? 'This stand isn’t assigned yet. Pick the client under “Details” at the bottom.' : `The client has no ${linkName((slots.find(s => s.link_key !== 'links' && !s.url) || main).link_key)} link yet. Add it on the client page, or pick something else below.`, action: b ? html`<a class="btn" href="/admin/b/${b.id}#links">Add the link →</a>` : html`<a class="btn" href="#details">Choose client ↓</a>` },
-    { title: 'Write the chip, then tap it', text: 'Copy the tap link below into the NFC Tools app, write it to the chip and lock it. Then tap the stand with your phone: it should open this page.', action: html`<button type="button" class="btn" data-copy="${tapUrl('t', main.slot)}">Copy tap link</button>` },
+    { title: 'Write the chip, then tap it', text: 'Copy the tap link below into the NFC Tools app, write it to the chip and lock it. Already written by the supplier? Just tap the stand with your phone: it should open this page.', action: html`<button type="button" class="btn" data-copy="${tapUrl('t', main.slot)}">Copy tap link</button>` },
     null,
     { title: 'It works! Now the quality check', text: 'Tick each item on the checklist below after you’ve looked at it.', action: html`<a class="btn" href="#qc">Go to checklist ↓</a>` },
     { title: 'Ready: turn it on', text: 'Do this when the stand is handed to the client. From then on, customers’ taps open the right page.', action: goLive },
@@ -593,7 +590,7 @@ export function accountView({ user, prefix, q }) {
 export function guideView({ tapBase }) {
   const Q = (q, a) => help(q, a);
   return html`${head('STAFF GUIDE', 'How tap4 works, and how to explain it.', html`<a class="btn btn--lime" href="/admin/businesses">Set up a client →</a>`, 'Read this once. Everything a new team member needs: how it works, how to set up a client, what to tell them, and what to do when something goes wrong.')}
-  <nav class="toc" aria-label="On this page"><a href="#how">How it works</a><a href="#setup">Set up a client</a><a href="#say">What to say</a><a href="#numbers">The numbers</a><a href="#faq">Client questions</a><a href="#fix">Fix a problem</a><a href="#words">Words we use</a></nav>
+  <nav class="toc" aria-label="On this page"><a href="#how">How it works</a><a href="#setup">Set up a client</a><a href="#say">What to say</a><a href="#numbers">The numbers</a><a href="#faq">Client questions</a><a href="#fix">Fix a problem</a><a href="#supplier">Ordering from the supplier</a><a href="#words">Words we use</a></nav>
 
   <section class="panel" id="how"><h2>1. How it works</h2>
     <p class="lead">Every stand or card holds a <b>permanent tap4 link</b> in its chip and QR. When someone taps, tap4 looks up where that stand should go <b>right now</b> and sends them there in under a second.</p>
@@ -608,9 +605,8 @@ export function guideView({ tapBase }) {
 
   <section class="panel" id="setup"><h2>2. Set up a new client (about 10 minutes)</h2>
     <ol class="olist">
-      <li><b>Clients → Add a client.</b> Type the business name exactly as printed on the stand.</li>
-      <li><b>Paste their links.</b> Google review first. Under each box it says where to find the link. Press <b>Test this link</b> after saving.</li>
-      <li><b>Add their stand or card.</b> Pick the product they bought and how many.</li>
+      <li><b>Press “+ New client”</b> (top right, on every page). Type the business name exactly as printed on the stand, paste their Google review link, and pick the product they bought.</li>
+      <li><b>Add their other links</b> on the client page (menu, Facebook, Instagram…). Under each box it says where to find it. Press <b>Test this link</b> after saving.</li>
       <li><b>Open the stand and follow the steps at the top:</b> choose what it opens → write the chip with NFC Tools → tap it (it opens the stand’s page = it works) → tick the quality check → <b>Go live</b>.</li>
       <li><b>Create the owner login</b> on the client page and send the ready-made message by Messenger or Viber.</li>
       <li><b>Hand it over.</b> Show the owner one tap on their own phone and open their dashboard together (see “What to say”).</li>
@@ -653,7 +649,22 @@ export function guideView({ tapBase }) {
     ${Q('The owner forgot their password', 'Client page → Owner login → “New password”. Send them the new message.')}
   </section>
 
-  <section class="panel" id="words"><h2>7. Words we use</h2>
+  <section class="panel" id="supplier"><h2>7. Ordering from the supplier</h2>
+    <p class="lead">For bigger orders, the supplier writes the chips and prints the QRs for you. You send them a list of links and a QR sheet; they send back stands that only need a test tap.</p>
+    <ol class="olist">
+      <li><b>Add the client and their stands first</b> (“+ New client”). Every stand gets its permanent links the moment it’s added.</li>
+      <li>Open <b>Stands & cards → Send to supplier</b> and choose the client (or everyone). Leave “Only stands not written yet” on.</li>
+      <li><b>Download the list (CSV)</b>: one row per chip or QR, with the stand name, the <b>chip link</b> and the <b>QR link</b>.</li>
+      <li><b>Save the QR sheet as a PDF</b>: press “Print / save as PDF”. Each QR has the stand name under it.</li>
+      <li><b>Copy the message for the supplier</b> and send it with the two files.</li>
+      <li>When the stands arrive: <b>tap each one</b>. It opens its admin page. Tick the quality check, then <b>Go live</b> on handover.</li>
+    </ol>
+    <div class="say"><em>THE ONE RULE FOR SUPPLIERS</em>The chip gets the <b>chip link</b> (…/t/…). The printed QR gets the <b>QR link</b> (…/q/…). They look almost the same but must not be swapped; that’s how we count taps and scans separately.</div>
+    ${help('What chips should the supplier use?', html`<b>NTAG213</b> (cheapest, plenty for our links) or <b>NTAG215</b>. Ask them to write one URL record and <b>lock</b> the chip after writing. Ask for a sample photo or one test stand before the full batch.`)}
+    ${help('How do I check a supplier sample?', html`Tap the chip with your phone: it should open that stand’s admin page (a staff login page if you’re logged out). Scan the QR: same page. If a tap opens nothing, the chip wasn’t written; if it opens the wrong stand, the labels were mixed up.`)}
+  </section>
+
+  <section class="panel" id="words"><h2>8. Words we use</h2>
     <div class="flow">
       <div><i>TAP LINK</i><span>The permanent link inside a chip (${tapBase}/t/…). Never changes.</span></div>
       <div><i>QR LINK</i><span>Same idea, printed as a QR (${tapBase}/q/…). We count scans separately.</span></div>
@@ -724,4 +735,80 @@ export function ownerHelp() {
     ${Q('Do you collect my customers’ information?', 'No names, numbers or accounts. We only count taps and scans, and tell different phones apart with a daily scrambled ID.')}
     ${Q('I forgot my password', `Message ${SUPPORT_EMAIL} and we’ll send you a new one. Once logged in, you can change it under Account.`)}
   </div>`;
+}
+
+export const partName = slot => slot === 'main' ? 'main tap' : slot === 'menu' ? 'menu QR' : /^z\d$/.test(slot) ? `tap zone ${slot.slice(1)}` : slot;
+
+export function quickView({ f, q }) {
+  const sel = (a, b) => (a === b ? raw(' selected') : '');
+  return html`${flash(q)}${head('NEW CLIENT', 'Add a client in one go.', '', 'Fill in what you know now. Everything can be changed later on the client’s page.')}
+  <form class="panel" method="post" action="/admin/new" style="max-width:720px">
+    <div class="panel__head"><span><span class="stepnum">1</span>THE BUSINESS</span><span>REQUIRED: NAME</span></div>
+    <div class="fields">
+      <label class="field"><b>Business name</b><input name="name" required maxlength="60" placeholder="Kape Norte" value="${f.name || ''}" autofocus><span class="hint">Exactly as printed on the stand.</span></label>
+      <label class="field"><b>Contact person</b><input name="contact_name" maxlength="60" placeholder="Ana Reyes" value="${f.contact_name || ''}"></label>
+      <label class="field"><b>Phone / Viber</b><input name="phone" type="tel" maxlength="30" value="${f.phone || ''}"></label>
+      <label class="field"><b>Email</b><input name="email" type="email" maxlength="120" value="${f.email || ''}"></label>
+    </div>
+    <div class="panel__head" style="margin-top:8px"><span><span class="stepnum">2</span>GOOGLE REVIEW LINK</span><span>OPTIONAL</span></div>
+    <label class="field">${icon('google', 15)}<input name="google" type="url" inputmode="url" placeholder="https://g.page/r/…/review" value="${f.google || ''}"><span class="hint">${LINK_HELP.google} Don’t have it yet? Leave it empty.</span></label>
+    <div class="panel__head" style="margin-top:8px"><span><span class="stepnum">3</span>WHAT THEY BOUGHT</span><span>OPTIONAL</span></div>
+    <div class="fields" style="align-items:end">
+      <label class="field"><b>Product</b><select name="sku"><option value="">No stand yet</option>${Object.entries(PRODUCTS).map(([sku, p]) => html`<option value="${sku}"${sel(f.sku, sku)}>${p.name}</option>`)}</select></label>
+      <label class="field"><b>How many</b><input name="qty" type="number" min="1" max="100" value="${f.qty || 1}"></label>
+      <label class="field"><b>Branch</b><input name="branch" maxlength="40" placeholder="optional, e.g. BGC" value="${f.branch || ''}"></label>
+    </div>
+    <div class="row-wrap"><button class="btn btn--lime btn--lg">Add client →</button><a class="btn btn--ghost" href="/admin/businesses">Cancel</a></div>
+    <p class="hint">Next you’ll land on their page, which shows the next step: more links, writing the chip, the owner’s login.</p>
+  </form>`;
+}
+
+export function supplierView({ rows, qrs, businesses, bid, which }) {
+  const n = rows.length, chips = rows.filter(r => r.chip).length, prints = rows.filter(r => r.qr).length;
+  const stands = new Set(rows.map(r => r.code)).size;
+  const who = bid ? (businesses.find(b => b.id === bid)?.name || 'client') : 'all clients';
+  const qs = `b=${bid}&which=${which}`;
+  const message = `Hi! Here is our tap4 order: ${stands} stand${stands === 1 ? '' : 's'}/card${stands === 1 ? '' : 's'} (${chips} NFC chip${chips === 1 ? '' : 's'}, ${prints} printed QR${prints === 1 ? '' : 's'}).
+
+Attached:
+1) tap4 list (CSV): one row per chip or QR, with the stand label.
+2) tap4 QR sheet (PDF): every QR code with its label underneath.
+
+Please:
+- NFC chips: NTAG213 or NTAG215. Write the "chip_link" of each row as a URL record, exactly as written. Then LOCK the chip (read-only).
+- Printed QR: use the QR from the sheet, or make one from the "qr_link". Black on white, at least 2.5 cm wide, keep the white border.
+- Important: chip links contain /t/ and QR links contain /q/. Please don't swap them.
+- Keep each stand's chip and QR together and label the package with its label (e.g. TF-KN-0001).
+- Test before shipping: tap each chip and scan each QR with a phone. It should open a tap4 page (a login page is normal). If nothing opens, rewrite that chip.
+
+Please send one sample photo (or one test stand) before the full batch. Thank you!`;
+  return html`<div class="no-print stack-14">${head('SUPPLIER FILES', 'Send an order to the supplier.', '', 'Three things to send: the list of links, the QR sheet, and the message below. The supplier writes the chips and prints the QRs; you just test-tap when they arrive.')}
+  <form method="get" action="/admin/supplier" class="panel">
+    <div class="panel__head"><span>WHICH STANDS?</span><span>${stands} STAND${stands === 1 ? '' : 'S'} · ${chips} CHIPS · ${prints} QRS</span></div>
+    <div class="fields" style="align-items:end">
+      <label class="field"><b>Client</b><select name="b" onchange="this.form.submit()"><option value="0">All clients</option>${businesses.map(b => html`<option value="${b.id}"${b.id === bid ? raw(' selected') : ''}>${b.name}</option>`)}</select></label>
+      <label class="field"><b>Stands</b><select name="which" onchange="this.form.submit()"><option value="new">Only stands not written yet</option><option value="all"${which === 'all' ? raw(' selected') : ''}>All stands (re-order / reprint)</option></select></label>
+    </div>
+  </form>
+  ${!n ? next({ calm: true, tag: 'NOTHING TO SEND', title: 'No stands match.', text: 'Add stands to a client first (“+ New client” or on the client page), or choose “All stands”.', action: html`<a class="btn" href="/admin/new">+ New client</a>` }) : html`
+  <div class="grid2">
+    <div class="panel"><div class="panel__head"><span><span class="stepnum">1</span>THE LIST OF LINKS</span><span>CSV · OPENS IN EXCEL / SHEETS</span></div>
+      <p class="hint" style="font-size:13.5px">One row per chip or QR: stand label, client, product, part, <b>chip link</b> (write to NFC) and <b>QR link</b> (print as QR).</p>
+      <div><a class="btn btn--lime" href="/admin/supplier.csv?${qs}" download>Download list (CSV) ↓</a></div></div>
+    <div class="panel"><div class="panel__head"><span><span class="stepnum">2</span>THE QR SHEET</span><span>PDF</span></div>
+      <p class="hint" style="font-size:13.5px">Every printed QR with its label. Press the button and choose <b>Save as PDF</b> as the printer.</p>
+      <div><button type="button" class="btn btn--lime" onclick="window.print()">Print / save as PDF</button></div></div>
+  </div>
+  <div class="panel"><div class="panel__head"><span><span class="stepnum">3</span>THE MESSAGE</span><span>COPY → MESSENGER / EMAIL / ALIBABA CHAT</span></div>
+    <div class="say" style="white-space:pre-line">${message}</div>
+    <div class="row-wrap"><button type="button" class="btn btn--lime" data-copy="${message}">Copy message</button><a class="btn btn--ghost" href="/admin/guide#supplier">Supplier guide</a></div></div>
+  <div class="panel"><div class="panel__head"><span>WHAT’S IN THE LIST</span><span>${n} ROWS</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>LABEL</th><th>CLIENT</th><th>PRODUCT</th><th>PART</th><th>CHIP LINK (NFC)</th><th>QR LINK (PRINT)</th></tr></thead><tbody>
+      ${rows.map(r => html`<tr><td><a href="/admin/d/${r.code}">${r.label || r.code}</a></td><td>${r.bname || 'Not assigned'}</td><td>${productName(r.product_sku)}</td><td>${partName(r.slot)}</td><td class="mono-12">${r.chip || '—'}</td><td class="mono-12">${r.qr || '—'}</td></tr>`)}
+    </tbody></table></div></div>`}
+  </div>
+  ${prints ? html`<section class="panel" style="background:transparent;box-shadow:none;padding:0"><div class="panel__head no-print"><span>QR SHEET PREVIEW</span><span>${prints} QR${prints === 1 ? '' : 'S'}</span></div>
+    <h2 class="print-title" style="display:none">tap4 QR sheet: ${who}</h2>
+    <div class="qrsheet">${rows.filter(r => r.qr).map(r => html`<div class="qrcell">${raw(qrs[r.qr])}<b>${r.label || r.code}</b><span>${r.bname || ''}${r.bname ? ' · ' : ''}${partName(r.slot)}</span><code>${r.qr}</code></div>`)}</div></section>` : ''}
+  <style>@media print{.print-title{display:block!important;margin-bottom:6mm}}</style>`;
 }

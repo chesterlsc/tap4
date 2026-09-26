@@ -145,3 +145,17 @@ export function sniffMenuFile(b) {
   if (ascii(4, 'ftyp') && ['heic', 'heix', 'mif1', 'msf1', 'hevc'].some(t => ascii(8, t))) return ['image/heic', 'heic'];
   return null;
 }
+
+/* ---------- supplier files ---------- */
+// Main taps and 4-in-1 zones are chips; extra parts like "menu" are printed QRs only.
+// A main tap also gets a printed QR when the product has a QR backup.
+export const hasChip = slot => slot === 'main' || /^z\d$/.test(slot);
+export const hasQr = (sku, slot) => (slot === 'main' && !!PRODUCTS[sku]?.qr) || !hasChip(slot);
+
+// CSV cell for spreadsheets: quote when needed, and neutralise formulas (=, +, -, @) so a
+// business name can't run as a formula when the supplier opens the file in Excel.
+export function csvCell(v) {
+  let s = String(v ?? '');
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
