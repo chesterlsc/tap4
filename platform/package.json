@@ -7,11 +7,11 @@
     "dev": "wrangler dev",
     "db:init": "wrangler d1 migrations apply tapfour --local && wrangler d1 execute tapfour --local --file seed.sql",
     "test": "node --test test/*.test.mjs",
-    "deploy": "wrangler d1 migrations apply tapfour --remote && wrangler deploy"
+    "deploy": "wrangler d1 migrations apply tapfour --remote && wrangler deploy",
+    "user:add": "node scripts/add-user.mjs"
   },
   "dependencies": {
     "hono": "^4.13.9",
-    "jose": "^6.2.12",
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {

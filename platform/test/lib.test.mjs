@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials } from '../src/lib.js';
+import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext } from '../src/lib.js';
 
 const tap = { code: 'K7M2QX', slot: 'main', source: 'nfc' };
 const live = { status: 'active', business_id: 1, link_key: 'google', url: 'https://g.page/r/x/review', slug: 'kape-norte' };
@@ -54,4 +54,30 @@ test('seed device codes are valid tap codes', async () => {
   const codes = [...seed.matchAll(/\('([0-9A-Z]{6})', 'TF-/g)].map(m => m[1]);
   assert.ok(codes.length >= 10);
   for (const c of codes) assert.match(c, CODE_RE, c);
+});
+
+test('passwords: salted PBKDF2, verify only the right one', async () => {
+  const h = await hashPassword('correct horse battery');
+  assert.match(h, /^pbkdf2\$100000\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+$/);
+  assert.notEqual(h, await hashPassword('correct horse battery'), 'salted');
+  assert.equal(await verifyPassword('correct horse battery', h), true);
+  assert.equal(await verifyPassword('correct horse batterx', h), false);
+  assert.equal(await verifyPassword('anything', 'garbage'), false);
+  assert.equal(await verifyPassword('anything', null), false);
+  assert.equal(passwordProblem('short'), 'Use at least 10 characters.');
+  assert.equal(passwordProblem('long enough!'), null);
+});
+
+test('one-time passwords and session tokens', () => {
+  assert.match(tempPassword(), /^[0-9a-hjkmnp-tv-z]{4}-[0-9a-hjkmnp-tv-z]{4}-[0-9a-hjkmnp-tv-z]{4}$/);
+  assert.equal(passwordProblem(tempPassword()), null, 'temp passwords satisfy the length rule');
+  const t = newToken();
+  assert.match(t, /^[A-Za-z0-9_-]{43}$/);
+  assert.notEqual(t, newToken());
+});
+
+test('safeNext keeps redirects inside the area', () => {
+  assert.equal(safeNext('/admin/b/3', '/admin'), '/admin/b/3');
+  assert.equal(safeNext('/admin', '/admin'), '/admin');
+  for (const bad of ['https://evil.example', '//evil.example', '/app/destinations', '/admin//evil', '/adminx', '/admin/\\evil', '', null]) assert.equal(safeNext(bad, '/admin'), '/admin', String(bad));
 });

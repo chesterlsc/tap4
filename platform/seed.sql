@@ -1,5 +1,5 @@
 -- LOCAL DEMO DATA ONLY (npm run db:init). Same sample businesses as the marketing site.
-DELETE FROM events; DELETE FROM audit_log; DELETE FROM device_slots; DELETE FROM devices; DELETE FROM business_links; DELETE FROM businesses;
+DELETE FROM sessions; DELETE FROM users; DELETE FROM events; DELETE FROM audit_log; DELETE FROM device_slots; DELETE FROM devices; DELETE FROM business_links; DELETE FROM businesses;
 
 INSERT INTO businesses (id, slug, name, brand_color, contact_name, email, phone) VALUES
   (1, 'kape-norte', 'Kape Norte', '#c8f23c', 'Ana Reyes', 'hello@kapenorte.example', '+63 917 000 0001'),
@@ -51,3 +51,9 @@ INSERT INTO events (ts, device_code, business_id, slot, source, link_key, visito
 SELECT datetime('now', '-' || (((i * 7919) % 43200) * ((i % 4) + 1) / 4) || ' minutes'),
        t.code, t.biz, t.slot, t.src, t.link, 'v' || ((i * 31) % 420), 'PH', (i % 41 = 0)
 FROM n JOIN t ON t.k = (i * 5 + i / 7) % 16;
+
+-- Local-only demo logins. Never load this file into the remote database.
+--   admin: admin@tap4.local / tap4-admin-local      owner (Kape Norte): owner@kapenorte.example / kape-norte-local
+INSERT INTO users (email, name, password_hash, role, business_id) VALUES
+  ('admin@tap4.local', 'Local admin', 'pbkdf2$100000$OLa/WNIDuNl9cDvNvR//ig==$FM3ZG1+LC9d61iRxexP35VhzbgokojNpzn7zu4pU6D8=', 'admin', NULL),
+  ('owner@kapenorte.example', 'Ana Reyes', 'pbkdf2$100000$UBTH5XXpFLUrzJkAlNwr2A==$vpMjcPzpN2qpXqhUV81GcizsFfAM+dYLj1mq36CMtZA=', 'owner', 1);

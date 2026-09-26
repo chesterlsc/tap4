@@ -73,14 +73,62 @@ export function resolve(row, { code, slot, source }) {
 
 export function checklist(sku, slots) {
   const p = PRODUCTS[sku] || { qr: false };
+  const zone = s => (s.slot === 'main' ? 'Tapping' : s.slot === 'menu' ? 'The menu QR' : `Tap zone ${s.slot.replace(/^z/, '')}`);
   return [
-    ['nfc', 'NFC tap opens this device'],
-    ...(p.qr ? [['qr', 'QR scan opens this device']] : []),
-    ...slots.map(s => ['dest_' + s.slot, `${s.slot === 'main' ? 'Tap' : s.slot.toUpperCase()} → ${linkName(s.link_key)} opens correctly`]),
-    ['locked', 'Tag locked (read-only)'],
-    ['logo', 'Correct logo'],
-    ['business', 'Correct business name'],
-    ['product', 'Correct product'],
-    ['print', 'Print approved']
+    ['nfc', 'Tapping the chip with a phone opened this page'],
+    ...(p.qr ? [['qr', 'Scanning the printed QR opened this page']] : []),
+    ...slots.map(s => ['dest_' + s.slot, `${zone(s)} → ${linkName(s.link_key)}: the link opens the right page (use Test)`]),
+    ['locked', 'Chip is locked in the NFC app (so no one can rewrite it)'],
+    ['logo', 'Logo is correct'],
+    ['business', 'Business name is spelled right'],
+    ['product', 'It’s the product the client ordered'],
+    ['print', 'Print is clean: no smudges or scratches']
   ];
+}
+
+/* ---------- auth ---------- */
+// PBKDF2-SHA256 at 100k iterations: the maximum Workers' WebCrypto allows. Stored as pbkdf2$iter$salt$hash.
+const ITERATIONS = 100000;
+const b64 = u8 => btoa(String.fromCharCode(...u8));
+const unb64 = s => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+
+async function pbkdf2(password, salt, iterations) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, 256));
+}
+
+export async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return `pbkdf2$${ITERATIONS}$${b64(salt)}$${b64(await pbkdf2(password, salt, ITERATIONS))}`;
+}
+
+export async function verifyPassword(password, stored) {
+  const [alg, iterations, salt, hash] = String(stored || '').split('$');
+  if (alg !== 'pbkdf2' || !salt || !hash) return false;
+  const got = await pbkdf2(String(password), unb64(salt), Number(iterations)), want = unb64(hash);
+  let diff = got.length ^ want.length; // constant-time compare
+  for (let i = 0; i < got.length; i++) diff |= got[i] ^ (want[i] ?? 0);
+  return diff === 0;
+}
+
+export const passwordProblem = pw => String(pw).length < 10 ? 'Use at least 10 characters.' : String(pw).length > 200 ? 'That password is too long.' : null;
+
+// One-time password an admin hands to an owner: 3 groups of 4 unambiguous chars (60 bits).
+export function tempPassword(bytes = crypto.getRandomValues(new Uint8Array(12))) {
+  return Array.from(bytes, b => ALPHABET[b & 31]).join('').toLowerCase().replace(/(.{4})(?=.)/g, '$1-');
+}
+
+export function newToken() {
+  return b64(crypto.getRandomValues(new Uint8Array(32))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export async function sha256hex(s) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Post-login redirect target: only paths inside this area, never another host.
+export function safeNext(next, prefix) {
+  const s = String(next || '');
+  return (s === prefix || s.startsWith(prefix + '/')) && !s.includes('//') && !s.includes('\\') ? s : prefix;
 }

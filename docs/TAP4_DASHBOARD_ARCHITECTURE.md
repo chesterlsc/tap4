@@ -96,7 +96,7 @@ script). The theme stays the only source of truth for the look.
                        /t/:code[/:slot]   302 → destination  + log event (waitUntil)
                        /q/:code[/:slot]
                        /p/:slug           hosted links page / menu (theme.css look)
-                       /admin/*           internal dashboard  ← Cloudflare Access (SSO)
+                       /admin/*           internal dashboard  ← email + password (admin.tap4.ph)
                        /app/*             customer dashboard  (Phase 2)
 ```
 
@@ -105,7 +105,7 @@ Why this shape:
 - **The redirect must outlive everything else.** The copy says "stand works alone", "pay once, works forever", and
   "cancel anytime, your stand keeps working". Redirects run at the edge and never check subscription status.
 - **One deployable.** Redirects, hosted pages, and admin live in one Worker with one database: nothing to sync and one bill (likely $0–5/mo at your scale).
-- **No auth code for MVP.** Cloudflare Access sits in front of `/admin` (Google/email OTP, free for up to 50 users).
+- **Two logins, one system.** Staff sign in at `admin.tap4.ph` and owners at `dashboard.tap4.ph` with email + password (see §12).
 - **Subdomain, not the root.** The storefront serves `tap4.ph` (currently a static Vercel build), so tap URLs live on
   `go.tap4.ph`, which points at the Worker and is owned outright. It's the `TAP_BASE` setting and is final once chips are written.
 
@@ -125,7 +125,7 @@ Rejected:
 | Runtime / hosting | Cloudflare Workers | service |
 | Database | Cloudflare D1 (SQLite, built-in point-in-time restore) | service |
 | Router + HTML (auto-escaping JSX) | `hono` | library |
-| Admin login + roles | Cloudflare Access; the Worker also verifies the `Cf-Access-Jwt-Assertion` JWT (`jose`) | service |
+| Admin + owner login | Email + password: PBKDF2 hashes + DB sessions (WebCrypto, no extra dependency) | custom (small) |
 | Deploy / migrations | `wrangler` | CLI |
 | QR SVG/PNG | `qrcode` (SVG in browser → canvas → PNG) | library |
 | Order import | Shopify Admin GraphQL, custom-app token, `read_orders` scope | service |
@@ -136,7 +136,7 @@ Rejected:
 Not needed: React/Next, Redux, GraphQL server, Redis, queues, Segment/Mixpanel/ClickHouse,
 Stripe (Shopify bills), an auth SaaS for MVP, Docker/K8s, or microservices.
 
-Env / secrets: `SHOPIFY_STORE`, `SHOPIFY_ADMIN_TOKEN`, `CF_ACCESS_AUD`, `CF_ACCESS_TEAM`, `HASH_SECRET`.
+Env / secrets: `SHOPIFY_STORE`, `SHOPIFY_ADMIN_TOKEN`, `HASH_SECRET`.
 
 ---
 
@@ -216,7 +216,7 @@ CREATE TABLE audit_log (                        -- who changed which destination
 ```
 
 Deliberately **not** tables yet: branches (text column), orders/production/suppliers
-(Shopify order + `devices.status` + `note`), users/roles (Cloudflare Access), QC checklist items (JSON).
+(Shopify order + `devices.status` + `note`), branch-level roles, QC checklist items (JSON).
 Total taps and last interaction are computed from `events`. Add counter columns only if the list page gets slow.
 
 How the 4-in-1 cases fall out:
@@ -243,7 +243,7 @@ The prefix decides the source (`/t` = NFC, `/q` = QR). The same slot can be reac
 **Resolver** (one function, unit-tested):
 1. Normalise the code (uppercase) and look up the device + slot + business link in a single query.
 2. Unknown code → Tap4 "not found" page (404).
-3. `status = new` → 302 to `/admin/qc/:code`. Staff land on the QC page (Access login); anyone else gets the Access wall.
+3. `status = new` → 302 to `/admin/qc/:code`. Staff land on the QC page (after logging in); anyone else only reaches the admin login page.
 4. `status = disabled` → neutral Tap4 notice page.
 5. `qc_passed` / `active` → `url` if set; `links`/hosted `menu` → `/p/:slug`; missing link → `/p/:slug`.
 6. Respond **302** with `Cache-Control: no-store` so every tap is counted and edits apply instantly.
@@ -326,7 +326,7 @@ Future writers plug into step 2 only:
 | **Device ID guessing** | Random codes. Never use a device code as a claim secret. If self-activation ever exists, it uses a separate one-time claim code inside the box. |
 | **Chip tampering** | Lock tags after writing. Otherwise anyone with a free NFC app can rewrite a café's stand. |
 | **QR sticker overlay** | Print `go.tap4.ph` under the QR so guests can see the host. The QC photo is a reference for support. |
-| **Admin access** | Cloudflare Access (SSO / OTP, per-email allow-list). The Worker re-verifies the Access JWT. Start with one admin role; split production-staff vs admin only when needed. |
+| **Admin access** | Separate host, email + password (PBKDF2), 12 h sessions, lockout after 5 failures, audit log. Start with one admin role; split production-staff vs admin only when needed. Add 2FA when there's more than one staff member. |
 | **Customer data / tenant isolation** | Phase 2: every `/app` query goes through one `requireBusiness(user)` helper. Never trust a business id from the client. |
 | **Analytics privacy (PH Data Privacy Act)** | No raw IPs. Visitor = HMAC with a daily salt. Store country only. The public "live taps" ticker stays sample data or anonymised. |
 | **Secrets** | `wrangler secret` only. Shopify token has read-only `read_orders` scope. |
@@ -338,7 +338,7 @@ Future writers plug into step 2 only:
 
 ### MVP (what makes the physical products manageable)
 1. Worker + D1 schema + resolver `/t` `/q`, event logging, not-found/disabled pages. Resolver unit tests.
-2. Admin (Access-protected): businesses + links, devices + slots, batch create, edit destination (audit-logged).
+2. Admin (password-protected): businesses + links, devices + slots, batch create, edit destination (audit-logged).
 3. Device page: URLs with copy buttons, QR SVG/PNG download + preview.
 4. QC flow (scan → QC page → pass/fail) and queue view.
 5. Hosted `/p/:slug` links page (`.kn-links` look), because it's **already sold**.
@@ -379,7 +379,11 @@ Future writers plug into step 2 only:
 |---|---|
 | Schema | `platform/migrations/0001_init.sql` |
 | Resolver, codes, URL validation, product/slot map, QC checklist | `platform/src/lib.js` (unit-tested in `platform/test/`) |
-| Routes: `/t`, `/q`, `/p/:slug`, `/admin/*`. `go.tap4.ph` 404s `/admin`; `admin.tap4.ph` serves only `/admin` | `platform/src/index.js` |
+| Hosts + taps + links page: `go.tap4.ph` (taps), `admin.tap4.ph` (only `/admin`), `dashboard.tap4.ph` (only `/app`) | `platform/src/index.js` |
+| Staff dashboard | `platform/src/admin.js` |
+| Owner dashboard: Overview, Destinations, Branding, Account, scoped to the owner's own business | `platform/src/owner.js` |
+| Email + password login, sessions, lockout, change password | `platform/src/auth.js`, `migrations/0002_users.sql` |
+| Create/reset a login from the terminal | `platform/scripts/add-user.mjs` (`npm run user:add`) |
 | Pages (the site's `theme.css`, fonts, icon sprite and photos, served straight from `assets/` and `snippets/`) | `platform/src/views.js` |
 | Local demo data | `platform/seed.sql` |
 
@@ -398,18 +402,19 @@ Admin screens:
 Run locally:
 ```bash
 cd platform && npm install
-cp .dev.vars.example .dev.vars      # AUTH_DEV=1 bypasses Access locally only
-npm run db:init                      # schema + demo businesses/devices/taps
-npm run dev                          # http://localhost:8787/admin
+cp .dev.vars.example .dev.vars
+npm run db:init                      # schema + demo businesses/devices/taps/logins
+npm run dev                          # localhost:8787/admin  (admin@tap4.local / tap4-admin-local)
+                                     # localhost:8787/app    (owner@kapenorte.example / kape-norte-local)
 npm test
 ```
 
 Deploy (one-time):
 1. `npx wrangler d1 create tapfour`, then paste its id into `platform/wrangler.toml`.
 2. `npx wrangler secret put HASH_SECRET` (any long random string).
-3. Cloudflare Zero Trust → Access → self-hosted app for the whole `admin.tap4.ph` hostname, with an allow-list of staff emails.
-   Then `wrangler secret put CF_ACCESS_TEAM` (team name) and `CF_ACCESS_AUD` (the app's AUD tag).
-   Without them `/admin` returns 403: it fails closed.
+3. After the first deploy, create your admin login on the live database:
+   `npm run user:add -- --email you@example.com --remote`. The password is typed hidden and only its hash is sent.
+   Owners are created from the admin (business page → Owner logins), which shows a one-time password to send them.
 4. DNS: tap4.ph is registered at **Namecheap** (as of 2026-09-26 it uses Namecheap BasicDNS: parked page + email forwarding).
    Namecheap stays the registrar; only the nameservers move to Cloudflare (Free plan). Worker custom domains need that.
    1. Cloudflare → Add a domain → `tap4.ph` → Free. Delete the imported parking records (A `192.64.119.225`, `www` → `parkingpage.namecheap.com`).
@@ -418,7 +423,7 @@ Deploy (one-time):
       Then delete the `eforward*.registrar-servers.com` MX records and the old SPF TXT.
    4. Namecheap → Domain List → tap4.ph → Nameservers → **Custom DNS**, and paste Cloudflare's two nameservers. Propagation takes minutes to 48 h.
    5. Turn on **auto-renew** at Namecheap. Every chip depends on this domain.
-   6. `npm run deploy`: `wrangler.toml` attaches `go.tap4.ph` and `admin.tap4.ph` and creates their DNS records.
+   6. `npm run deploy`: `wrangler.toml` attaches `go.tap4.ph`, `admin.tap4.ph` and `dashboard.tap4.ph` and creates their DNS records.
 5. Point an uptime monitor at one active device's `/t/<code>`.
 
 Verified locally:
@@ -427,7 +432,15 @@ Verified locally:
 - `javascript:`/`http:` destinations are rejected.
 - Cross-site POSTs return 403 (CSRF).
 - HTML in names is escaped.
-- `/admin` returns 403 without a valid Access JWT, while taps keep working.
+- Logins:
+  - Signed-out users are sent to login; POSTs get 401.
+  - Owner and admin sessions don't work in each other's area.
+  - `next=` can't redirect off-site.
+  - 5 wrong passwords lock the account for 15 min.
+  - Unknown emails take the same time to reject as known ones.
+  - An owner only ever sees their own business, and an admin can't act on one business's owner through another business's URL.
+  - Password change or admin reset signs out other sessions.
+  - Session cookies are HttpOnly and SameSite=Lax (plus Secure on https). Only token hashes are stored.
 - Bot taps are flagged; a double read within 10 s logs once.
 - A QC scan stamps "programmed" without counting as a tap.
 - No horizontal scroll at 375px.

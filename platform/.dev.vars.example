@@ -1,6 +1,6 @@
-# Copy to .dev.vars for local development. NEVER set AUTH_DEV in production.
-AUTH_DEV=1
+# Copy to .dev.vars for local development.
 HASH_SECRET=local-dev-secret
 TAP_BASE=http://localhost:8787
-# Empty = localhost serves taps and admin together. Production splits go.tap4.ph / admin.tap4.ph.
+# Empty = localhost serves taps, /admin and /app together. Production splits go / admin / dashboard.tap4.ph.
 ADMIN_HOST=
+APP_HOST=
