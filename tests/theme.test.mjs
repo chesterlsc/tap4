@@ -33,6 +33,12 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
   assert.ok(!$('#tf-checkout').hidden, 'checkout panel opens');
+  $('.co-cta').click(); // review -> menu (printed QR menu needs one)
+  $('[data-co-submit]').click();
+  assert.match($('.co-foot').textContent, /Add your menu/);
+  const menu = $('#co-menuLink');
+  menu.value = 'https://drive.google.com/menu';
+  menu.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
 
@@ -41,6 +47,7 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   assert.deepEqual(sent.body.items.map(i => i.id), [id('acrylic-glass-stand'), id('printed-qr-menu')]);
   assert.equal(sent.body.items[0].properties['Business name'], 'Kape Norte');
   assert.equal(sent.body.items[0].properties['Google review URL'], 'https://g.page/r/kapenorte/review');
+  assert.equal(sent.body.items[0].properties['Menu link'], 'https://drive.google.com/menu');
 });
 
 test('static site (tap4.ph) sends the order by email', async t => {
@@ -62,7 +69,13 @@ test('static site (tap4.ph) sends the order by email', async t => {
   url.value = 'https://g.page/r/kapenorte/review';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
-  $('.co-cta').click(); // review -> details
+  $('.co-cta').click(); // review -> menu
+  $('.co-cta').click(); // a menu is required
+  assert.match($('.co-foot').textContent, /Add your menu/);
+  const items = $('#co-menuText');
+  items.value = 'Sagada Latte — ₱165';
+  items.dispatchEvent(new w.Event('input', { bubbles: true }));
+  $('.co-cta').click(); // menu -> details
   $('.co-cta').click(); // details are required
   assert.match($('.co-foot').textContent, /Enter your name/);
   const fill = (id, v) => { const el = $('#co-' + id); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
@@ -77,4 +90,5 @@ test('static site (tap4.ph) sends the order by email', async t => {
   assert.match(body, /One-time: ₱1,398/);
   assert.match(body, /Mobile: 0917 123 4567/);
   assert.match(body, /Deliver to: 12 Session Rd, Baguio/);
+  assert.match(body, /Menu items:\nSagada Latte — ₱165/);
 });

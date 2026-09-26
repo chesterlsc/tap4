@@ -33,7 +33,7 @@
     { id: 'card', handle: 'nfc-card-4-in-1', name: '4-in-1 NFC Card', desc: 'Matte black PVC, CR80 size', price: 249, was: 419 }
   ];
   const BAR = { id: 'bar', handle: '4-tap-bar', name: '4-Tap Bar', desc: 'Long acrylic bar · 4 NFC zones', price: 1490, was: 2479 };
-  const HW_MENU = { handle: 'printed-qr-menu', name: 'Printed QR menu', price: 499, was: 829, badge: 'RECOMMENDED', desc: 'We build your mobile menu and print its QR right on the stand.', points: ['Send a photo of your menu — we type it up', 'QR printed on the stand face', '1 free price update per year'] };
+  const HW_MENU = { handle: 'printed-qr-menu', name: 'Printed QR menu', price: 499, was: 829, badge: 'RECOMMENDED', desc: 'We build your mobile menu and print its QR right on the stand.', points: ['Send your menu at checkout — we type it up', 'QR printed on the stand face', '1 free price update per year'] };
   const LINKS = { handle: 'multi-link-page', name: '4-in-1 links page', price: 350, was: 579 };
   const PL = [['google', 'Google', '4285F4'], ['facebook', 'Facebook', '0866FF'], ['instagram', 'Instagram', 'FF0069'], ['tiktok', 'TikTok', '000000']];
   const SLOT_OPTS = [...PL, ['website', 'Website', null]];
@@ -413,10 +413,23 @@
   }
 
   /* ---------- checkout panel ---------- */
-  const CO = { open: false, step: 1, done: false, opener: null, error: '', info: { name: '', phone: '', email: '', address: '', city: '', pay: 'GCash', note: '' } };
+  const CO = { open: false, step: 1, done: false, opener: null, error: '', info: { name: '', phone: '', email: '', address: '', city: '', pay: 'GCash', note: '', menuLink: '', menuText: '', menuAttach: false } };
   const PAY = ['GCash', 'Maya', 'Bank transfer', 'Cash on delivery'];
   const coRoot = $('#tf-checkout');
-  const steps = () => TF.orderEmail ? ['Review', 'Details', 'Confirm'] : ['Review'];
+  // A menu step appears whenever we have to build a menu: printed QR menu, the app's live menu, or Menu setup.
+  const needsMenu = () => derive().menuOn || !!S.svcs['menu-setup'];
+  const steps = () => ['Review', ...(needsMenu() ? ['Menu'] : []), ...(TF.orderEmail ? ['Details', 'Confirm'] : [])];
+  const TITLES = { Review: 'Your order', Menu: 'Your menu', Details: 'Delivery details', Confirm: 'Confirm & send' };
+  function checkMenu() {
+    const i = CO.info, link = i.menuLink.trim();
+    if (link) { try { if (!/^https?:$/.test(new URL(link).protocol)) throw 0; } catch (_) { return ['Menu link must start with http:// or https://', 'co-menuLink']; } }
+    if (!link && !i.menuText.trim() && !i.menuAttach) return ['Add your menu: a link, the items, or tick “attach photos”.', 'co-menuLink'];
+    return null;
+  }
+  const menuLines = () => {
+    const i = CO.info;
+    return [i.menuLink.trim() ? 'Menu link: ' + i.menuLink.trim() : null, i.menuText.trim() ? 'Menu items:\n' + i.menuText.trim() : null, i.menuAttach ? 'Menu photos: attached to this email' : null].filter(Boolean);
+  };
   function openCheckout() {
     if (!coRoot) return;
     Object.assign(CO, { open: true, step: 1, done: false, error: '', opener: document.activeElement });
@@ -457,43 +470,56 @@
     const totals = `<div class="co-totals"><div><span>One-time</span><b>${peso(d.oneTime)}</b></div>${d.monthly ? `<div><span>Monthly</span><b>${peso(d.monthly)}</b></div>` : ''}${d.saved > 0 ? `<div class="lime"><span>You save</span><b>${peso(d.saved)}</b></div>` : ''}</div>`;
     const field = (id, label, type = 'text', extra = '') => `<label class="field co-field">${label}<input id="co-${id}" data-co="${id}" type="${type}" value="${esc(i[id])}" ${extra}></label>`;
     let body;
+    const cur = st[CO.step - 1], at = name => st.indexOf(name) + 1;
     if (CO.done) {
-      body = `<div class="co-done"><span class="co-done__check">✓</span><h4>Almost done — press Send</h4><p>Your email app opened with the full order for ${esc(S.name.trim())}. Press <b>Send</b> there and we’ll reply to confirm shipping and payment.</p>
+      body = `<div class="co-done"><span class="co-done__check">✓</span><h4>Almost done — press Send</h4><p>Your email app opened with the full order for ${esc(S.name.trim())}. ${i.menuAttach && needsMenu() ? '<b class="lime">Attach your menu photos</b>, then press <b>Send</b>' : 'Press <b>Send</b> there'} and we’ll reply to confirm shipping and payment.</p>
         <p class="m3">Nothing opened? Email <a class="fg" href="mailto:${esc(TF.orderEmail)}">${esc(TF.orderEmail)}</a>.</p>
         <button type="button" class="btn btn--light btn--block" data-co-close>Back to the site</button></div>`;
-    } else if (CO.step === 1) {
+    } else if (cur === 'Review') {
       body = `<div class="co-item">${ph ? `<img src="${ph.src}" alt="" style="object-position:${ph.pos}">` : '<span class="co-item__ph">4×</span>'}
           <div class="co-item__txt"><b>${esc(d.prod.name)}</b><small>${esc(S.name.trim())} · “${esc(S.headline.trim())}”</small><small class="lime">${esc(d.destUrl)}</small>
             <div class="qty qty--sm"><button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button><output>${S.qty}</output><button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button></div></div>
           <em>${peso(priceOf(d.prod) * S.qty)}</em></div>
         ${extras ? `<div class="co-lines">${extras}</div>` : ''}${totals}
         <button type="button" class="co-edit" data-co-edit>✎ Edit setup</button>`;
-    } else if (CO.step === 2) {
+    } else if (cur === 'Menu') {
+      body = `<div class="co-form">
+        <div class="co-menu-intro"><span class="co-menu-intro__qr">${QR}</span><div><b>Send us your menu</b><span>We type it up, build your mobile menu${d.menuOn && !d.isApp ? ' and print its QR on your stand' : ' and pair it with your stand'}.${S.svcs['menu-setup'] ? ' Menu setup is included, so we also price and photograph it.' : ''}</span></div></div>
+        ${field('menuLink', 'Menu link · Google Drive, website, Facebook photos…', 'url', 'inputmode="url" placeholder="https://"')}
+        <label class="field co-field">Or paste / type your menu<textarea id="co-menuText" data-co="menuText" rows="6" placeholder="COFFEE&#10;Sagada Latte — ₱165&#10;Ube Cold Brew — ₱190&#10;&#10;PASTRY&#10;Ensaymada — ₱95">${esc(i.menuText)}</textarea></label>
+        <label class="co-check"><input type="checkbox" id="co-menuAttach" data-co="menuAttach"${i.menuAttach ? ' checked' : ''}><span></span>I’ll attach photos of my menu to the order email</label>
+        <p class="co-hint">Any one of these works. You can send changes any time before we print.</p></div>`;
+    } else if (cur === 'Details') {
       body = `<div class="co-form">${field('name', 'Full name', 'text', 'autocomplete="name"')}${field('phone', 'Mobile number', 'tel', 'autocomplete="tel" inputmode="tel" placeholder="09XX XXX XXXX"')}
         ${field('email', 'Email (optional)', 'email', 'autocomplete="email"')}${field('address', 'Delivery address', 'text', 'autocomplete="street-address"')}${field('city', 'City / Province', 'text', 'autocomplete="address-level2"')}
         <div class="field co-field">Preferred payment · we confirm by email<div class="co-pay">${PAY.map(p => `<label class="co-pay__opt"><input type="radio" name="co-pay" data-co="pay" value="${p}"${i.pay === p ? ' checked' : ''}><span>${p}</span></label>`).join('')}</div></div>
         <label class="field co-field">Notes (optional)<textarea id="co-note" data-co="note" rows="2" placeholder="Delivery instructions, rush order…">${esc(i.note)}</textarea></label></div>`;
     } else {
       body = `<div class="co-review">
-          <div class="co-block"><div class="co-block__h"><span>DELIVER TO</span><button type="button" data-co-step="2">Edit</button></div><b>${esc(i.name)}</b><span>${esc(i.phone)}${i.email ? ' · ' + esc(i.email) : ''}</span><span>${esc(i.address)}${i.city ? ', ' + esc(i.city) : ''}</span><span class="m3">Pay with ${esc(i.pay)}</span></div>
+          <div class="co-block"><div class="co-block__h"><span>DELIVER TO</span><button type="button" data-co-step="${at('Details')}">Edit</button></div><b>${esc(i.name)}</b><span>${esc(i.phone)}${i.email ? ' · ' + esc(i.email) : ''}</span><span>${esc(i.address)}${i.city ? ', ' + esc(i.city) : ''}</span><span class="m3">Pay with ${esc(i.pay)}</span></div>
           <div class="co-block"><div class="co-block__h"><span>YOUR SETUP</span><button type="button" data-co-step="1">Edit</button></div><span>${esc(d.summary)}</span></div>
+          ${at('Menu') ? `<div class="co-block"><div class="co-block__h"><span>YOUR MENU</span><button type="button" data-co-step="${at('Menu')}">Edit</button></div>${menuLines().map(l => `<span class="co-pre">${esc(l.length > 160 ? l.slice(0, 160) + '…' : l)}</span>`).join('')}</div>` : ''}
           ${totals}<p class="co-hint">Sending opens your email app with everything filled in. Press Send there to place the order.</p></div>`;
     }
     const last = CO.step === st.length;
     const cta = CO.done ? '' : `<div class="co-foot">${CO.error ? `<div class="summary__err" role="alert">${esc(CO.error)}</div>` : ''}
       ${CO.step > 1 ? `<button type="button" class="btn btn--ghost" data-co-step="${CO.step - 1}">Back</button>` : ''}
       <button type="button" class="btn btn--lime btn--lg co-cta" ${last ? 'data-co-submit' : `data-co-step="${CO.step + 1}"`}${S.ordering ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : last ? (TF.orderEmail ? 'Send order · ' + peso(d.dueNow) : 'Secure checkout · ' + peso(d.dueNow)) + ' →' : 'Continue →'}</button></div>`;
-    $('.co__panel', coRoot).innerHTML = `<div class="co__head"><div><span class="mono-11 m3">${CO.done ? 'ORDER READY' : 'STEP ' + CO.step + ' OF ' + st.length}</span><h3 id="co-title">${CO.done ? 'Check your email app' : st[CO.step - 1] === 'Review' ? 'Your order' : st[CO.step - 1] === 'Details' ? 'Delivery details' : 'Confirm & send'}</h3></div><button type="button" class="co__x" data-co-close aria-label="Close checkout">×</button></div>
-      ${st.length > 1 && !CO.done ? `<div class="co-steps">${st.map((n, k) => `<span class="${k + 1 <= CO.step ? 'on' : ''}"><i></i>${n}</span>`).join('')}</div>` : ''}
+    $('.co__panel', coRoot).innerHTML = `<div class="co__head"><div><span class="mono-11 m3">${CO.done ? 'ORDER READY' : 'STEP ' + CO.step + ' OF ' + st.length}</span><h3 id="co-title">${CO.done ? 'Check your email app' : TITLES[st[CO.step - 1]]}</h3></div><button type="button" class="co__x" data-co-close aria-label="Close checkout">×</button></div>
+      ${st.length > 1 && !CO.done ? `<div class="co-steps" style="grid-template-columns:repeat(${st.length},1fr)">${st.map((n, k) => `<span class="${k + 1 <= CO.step ? 'on' : ''}"><i></i>${n}</span>`).join('')}</div>` : ''}
       <div class="co__body">${body}</div>${cta}`;
   }
   function goStep(n) {
-    if (n > CO.step && CO.step === 2) { const bad = checkInfo(); if (bad) { CO.error = bad[0]; renderCheckout(); return document.getElementById(bad[1])?.focus(); } }
+    const cur = steps()[CO.step - 1];
+    const bad = n > CO.step && (cur === 'Details' ? checkInfo() : cur === 'Menu' ? checkMenu() : null);
+    if (bad) { CO.error = bad[0]; renderCheckout(); return document.getElementById(bad[1])?.focus(); }
     Object.assign(CO, { step: n, error: '' });
     renderCheckout();
     $('.co__body', coRoot).scrollTop = 0;
   }
   async function submit() {
+    const bad = steps()[CO.step - 1] === 'Menu' ? checkMenu() : null;
+    if (bad) { CO.error = bad[0]; renderCheckout(); return document.getElementById(bad[1])?.focus(); }
     const r = prepare();
     if (r.error) { closeCheckout(); return set({ error: r.error }); }
     const { d, items, props } = r;
@@ -505,12 +531,16 @@
         'One-time: ' + peso(d.oneTime), d.monthly ? 'Monthly: ' + peso(d.monthly) : null, '',
         'Name: ' + i.name.trim(), 'Mobile: ' + i.phone.trim(), i.email.trim() ? 'Email: ' + i.email.trim() : null,
         'Deliver to: ' + i.address.trim() + (i.city.trim() ? ', ' + i.city.trim() : ''), 'Preferred payment: ' + i.pay,
-        i.note.trim() ? 'Notes: ' + i.note.trim() : null
+        i.note.trim() ? 'Notes: ' + i.note.trim() : null,
+        ...(needsMenu() ? ['', '— MENU —', ...menuLines(), ...(i.menuAttach ? ['📎 Remember to attach your menu photos before sending.'] : [])] : [])
       ].filter(v => v !== null).join('\n');
       (TF.open || (url => { location.href = url; }))('mailto:' + TF.orderEmail + '?subject=' + encodeURIComponent('Order: ' + S.qty + ' × ' + d.prod.name + ' — ' + S.name.trim()) + '&body=' + encodeURIComponent(body));
       CO.done = true;
       return renderCheckout();
     }
+    const m = CO.info;
+    if (needsMenu() && items[0]?.properties) Object.assign(items[0].properties,
+      m.menuLink.trim() ? { 'Menu link': m.menuLink.trim() } : {}, m.menuText.trim() ? { 'Menu items': m.menuText.trim() } : {}, m.menuAttach ? { 'Menu photos': 'Customer will email photos' } : {});
     set({ ordering: true });
     renderCheckout();
     try {
@@ -531,8 +561,9 @@
       if (stepBtn) return goStep(+stepBtn.dataset.coStep);
       if (e.target.closest('[data-co-submit]')) return submit();
     });
-    coRoot.addEventListener('input', e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.value; });
-    coRoot.addEventListener('change', e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.value; });
+    const keep = e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; };
+    coRoot.addEventListener('input', keep);
+    coRoot.addEventListener('change', keep);
     document.addEventListener('keydown', e => { if (CO.open && e.key === 'Escape') closeCheckout(); });
   }
 
