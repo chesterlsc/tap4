@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -94,7 +96,12 @@ export async function createPreview({ emptyProducts = false, orderEmail = '' } =
   const settings = { ...defaults, ...saved, ...(orderEmail && { order_email: orderEmail }) };
   const money = cents => '₱' + (Number(cents || 0) / 100).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const engine = new Liquid({ root: [path.join(ROOT, 'snippets')], extname: '.liquid', strictFilters: true });
-  engine.registerFilter('asset_url', file => '/assets/' + file);
+  // Content fingerprint (like Shopify's ?v=) so browsers fetch fresh CSS/JS after every deploy.
+  const versions = new Map();
+  engine.registerFilter('asset_url', file => {
+    if (!versions.has(file)) versions.set(file, createHash('md5').update(readFileSync(path.join(ROOT, 'assets', file))).digest('hex').slice(0, 10));
+    return '/assets/' + file + '?v=' + versions.get(file);
+  });
   engine.registerFilter('image_url', image => typeof image === 'string' ? image : image?.src || '');
   engine.registerFilter('image_tag', (src, ...args) => {
     const attrs = Object.fromEntries(args.filter(Array.isArray));
