@@ -21,6 +21,10 @@
         <svg width="20" height="20" aria-hidden="true"><use href="#i-bag"/></svg>
         {%- if cart.item_count > 0 %}<span class="cart-link__count">{{ cart.item_count }}</span>{% endif -%}
       </a>
+      {%- else -%}
+      <a class="cart-link" href="/#build" data-open-checkout aria-label="Checkout your setup">
+        <svg width="20" height="20" aria-hidden="true"><use href="#i-bag"/></svg>
+      </a>
       {%- endif -%}
       <details class="mobile-nav">
         <summary aria-label="Menu"><span></span><span></span></summary>

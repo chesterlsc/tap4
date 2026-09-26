@@ -72,7 +72,7 @@
     menuCat: 0, preset: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
     feats: { reviews: true, menu: true, order: false, crm: false, wifi: false }, hw: { menu: false }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
-  const set = o => { Object.assign(S, { error: '', sent: false }, o); render(); };
+  const set = o => { Object.assign(S, { error: '' }, o); render(); };
 
   function derive() {
     const isQuad = S.mode === 'quad', isApp = S.mode === 'app', isDirect = S.mode === 'direct';
@@ -113,16 +113,37 @@
   }
 
   /* ---------- builder views ---------- */
-  const presetPhoto = p => p.set.product === 'card' ? TF.img.cardNfc : p.id === 'app' ? TF.img.standCombo : p.id === 'menu' ? TF.img.standAcrylicKn : TF.img.standAcrylic;
+  // Quick picks show what each setup *does* (drawn scenes); the product photo lives only in the live preview.
+  const QR = (() => {
+    let seed = 7, d = '';
+    const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let y = 0; y < 21; y++) for (let x = 0; x < 21; x++) {
+      const finder = (x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12);
+      if (!finder && rnd() > .5) d += `M${x} ${y}h1v1h-1z`;
+    }
+    const eye = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" fill="#fff"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3"/>`;
+    return `<svg viewBox="0 0 21 21" shape-rendering="crispEdges" aria-hidden="true"><rect width="21" height="21" fill="#fff"/><g fill="#0a0a0b"><path d="${d}"/>${eye(0, 0)}${eye(14, 0)}${eye(0, 14)}</g></svg>`;
+  })();
+  function scene(id) {
+    const name = esc(S.name.trim() || 'Your shop');
+    if (id === 'google') return `<span class="sc sc--google"><i class="sc-ring"></i><i class="sc-ring sc-ring--2"></i>
+      <span class="sc-card"><span class="sc-card__h">${ic('google', '4285F4', 13)}<b>Rate ${name}</b></span><span class="sc-stars">★★★★★</span><span class="sc-card__txt">Best latte in town!</span><span class="sc-card__btn">Post</span></span>
+      <span class="sc-tag">TAP → REVIEW</span></span>`;
+    if (id === 'menu') return `<span class="sc sc--menu"><span class="sc-tile sc-tile--qr">${QR}<small>SCAN · MENU</small></span><span class="sc-plus">+</span>
+      <span class="sc-tile sc-tile--tap"><span class="sc-nfc">)))</span>${ic('google', '4285F4', 16)}<small>TAP · REVIEW</small></span></span>`;
+    if (id === 'links') return `<span class="sc sc--links"><span class="sc-nfccard"><span class="sc-nfccard__top"><span class="ring ring--xs">${esc(derive().initials)}</span><b>${name}</b><span>)))</span></span></span>
+      <span class="sc-fan">${PL.map(([pid, , col]) => `<span class="sc-dot">${ic(pid, col, 16)}</span>`).join('')}</span></span>`;
+    return `<span class="sc sc--app"><span class="sc-ticket"><small>TABLE 4 · 2 ITEMS</small><span><b>Sagada Latte</b><em>₱165</em></span><span><b>Ube Cold Brew</b><em>₱190</em></span><span class="sc-ticket__btn">Send to staff · ₱355</span></span>
+      <span class="sc-bars">${[40, 62, 48, 80, 100].map(h => `<i style="height:${h}%"></i>`).join('')}</span></span>`;
+  }
   function viewPresets() {
     return PRESETS.map(p => {
       const on = S.preset === p.id, hw = HW.find(x => x.id === p.set.product), isAppP = p.set.mode === 'app';
       const parts = [hw, !isAppP && p.set.hw.menu ? HW_MENU : null, p.set.dest === 'links' ? LINKS : null].filter(Boolean);
       const one = parts.reduce((a, x) => a + priceOf(x), 0), was = parts.reduce((a, x) => a + (wasOf(x) || priceOf(x)), 0);
       const mo = isAppP ? '+ ' + peso(priceOf(planItem(PLANS[0], false)) + priceOf(FEATS[1]) + priceOf(FEATS[2])) + '/mo · cancel anytime' : 'No subscription';
-      const pos = p.set.product === 'card' ? 'center 60%' : p.id === 'google' ? 'center 55%' : 'center 40%';
       return `<button type="button" class="preset${on ? ' on' : ''}${p.badge ? ' rec' : ''}" data-act="preset" data-arg="${p.id}" aria-pressed="${on}">
-        <span class="preset__img"><img src="${presetPhoto(p)}" alt="" loading="lazy" style="object-position:${pos}"><span class="preset__shade"></span>
+        <span class="preset__img">${scene(p.id)}<span class="preset__shade"></span>
           <span class="preset__tags"><span class="tag tag--glass">${p.tag}</span>${p.badge ? `<span class="tag tag--lime">★ ${p.badge}</span>` : ''}</span></span>
         <span class="preset__body"><span class="preset__name">${p.name}</span><span class="preset__desc">${p.desc}</span></span>
         <span class="preset__foot"><span class="preset__prices"><span class="preset__row"><b>${peso(one)}</b>${was > one ? `<s>${peso(was)}</s>` : ''}<small>one-time</small></span><span class="preset__mo">${mo}</span></span><span class="preset__btn">${on ? '✓' : '→'}</span></span>
@@ -133,10 +154,10 @@
   function viewPreview(d) {
     const shift = d.menuOn ? (d.isQuad ? '-60px' : '-100px') : '0px';
     const combo = d.isApp && d.prod.id === 'acrylic';
-    const photo = combo ? TF.img.standCombo : photoOf(d.prod.id, d);
+    const ph = shotFor(d.prod.id, d);
     let stage = '<div class="pv-glow"></div>';
     if (!d.isQuad) {
-      stage += `<div class="pv-photo" style="transform:translateX(${shift})"><img src="${photo}" alt="${esc(d.prod.name)} sample"><span class="pv-cap">${combo ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>`;
+      stage += `<div class="pv-photo" style="transform:translateX(${shift})"><img src="${ph.src}" alt="${esc(d.prod.name)} sample" style="object-position:${ph.pos}"><span class="pv-cap">${combo ? 'COMBO STAND · APP' : d.prod.name.toUpperCase()} · SAMPLE PRINT</span></div>${ph.note ? `<span class="pv-note">ⓘ ${esc(ph.note)}</span>` : ''}`;
     } else {
       stage += `<div class="quad" style="transform:translateX(${shift})"><div class="quad__face"><div class="shine"></div>
         <div class="row-between rel"><div class="quad__id"><span class="ring ring--sm">${esc(d.initials)}</span><span class="quad__name">${esc(S.name.toUpperCase())}</span></div><span class="quad__tap">TAP ONE ))) </span></div>
@@ -157,20 +178,26 @@
       <div class="pv-url"><span><span class="lime">TAP OPENS →</span> ${esc(d.destUrl)}</span></div>`;
   }
 
-  // Product photo that matches the current setup (menu on/off, single link vs 4-in-1).
-  const photoOf = (id, d) => ({
-    acrylic: d.menuOn ? TF.img.standAcrylicKn : TF.img.standAcrylic,
-    l: d.menuOn ? TF.img.standLKn : TF.img.standLLinks,
-    pvc: TF.img.standPvcMenu,
-    card: d.isApp || S.dest === 'links' ? TF.img.cardNfc : TF.img.cardPersonal
-  })[id];
+  // Best-matching photo for the current setup. `pos` keeps the product in frame when a 4:3 or square
+  // photo is cropped to 4:5; `note` says honestly when the sample print differs from the customer's.
+  const FOCUS = { standAcrylic: '34% 55%', standL: '52% 55%', standLLinks: '50% 55%', cardNfc: '50% 58%', cardPersonal: '48% 58%' };
+  const shot = (key, note = '') => ({ src: TF.img[key], pos: FOCUS[key] || '50% 50%', note });
+  function shotFor(id, d) {
+    const single = d.isDirect && S.dest !== 'links';
+    const only = single ? 'Sample print · yours shows ' + d.dest.name + ' only' : '';
+    if (id === 'acrylic') return d.isApp ? shot('standCombo') : d.menuOn ? shot('standAcrylicKn', single && S.dest !== 'google' ? only + ' + menu QR' : '') : shot('standAcrylic', only);
+    if (id === 'l') return d.menuOn || d.isApp ? shot('standLKn', single && S.dest !== 'google' ? only + ' + menu QR' : '') : S.dest === 'links' ? shot('standLLinks') : shot('standL', only);
+    if (id === 'pvc') return shot('standPvcMenu', d.menuOn || d.isApp ? (single && S.dest !== 'google' ? only + ' + menu QR' : '') : 'Sample print · yours prints without the menu QR');
+    if (id === 'card') return d.isApp || S.dest === 'links' ? shot('cardNfc') : shot('cardPersonal', 'Sample print · yours carries your business name');
+    return null;
+  }
 
   function viewHardware(d) {
     return (d.isQuad ? [BAR] : HW).map(p => {
       const on = d.prod.id === p.id, was = wasOf(p);
-      const img = photoOf(p.id, d);
+      const img = shotFor(p.id, d);
       return `<button type="button" class="opt${on ? ' on' : ''}${img ? ' opt--img' : ''}" ${p.id === 'bar' ? 'disabled' : `data-act="product" data-arg="${p.id}"`} aria-pressed="${on}">
-        ${img ? `<img class="opt__img" src="${img}" alt="" loading="lazy">` : ''}<b>${p.name}</b><span>${p.desc}</span><span class="opt__price"><em>${peso(priceOf(p))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`;
+        ${img ? `<img class="opt__img" src="${img.src}" alt="" loading="lazy" style="object-position:${img.pos}">` : ''}<b>${p.name}</b><span>${p.desc}</span><span class="opt__price"><em>${peso(priceOf(p))} ea</em>${was ? `<s>${peso(was)}</s>` : ''}</span></button>`;
     }).join('');
   }
 
@@ -248,8 +275,7 @@
       ${d.saved > 0 ? `<div class="summary__save"><span>${esc(label)}YOU SAVE ${peso(d.saved)}</span>${deadline ? `<span class="fg">${deadline === 'Offer ended' ? '' : 'ENDS '}<span data-countdown>${deadline}</span></span>` : ''}</div>` : ''}
       <div class="summary__line">${esc(d.summary)}</div>
       ${TF.sale.stock > 0 ? `<div class="s13 b6">Only ${TF.sale.stock} stands left at sale price · Ships nationwide in 3–5 days</div>` : ''}
-      <button type="button" class="btn btn--dark btn--lg btn--block" data-act="order"${S.ordering || d.demoPrices ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : d.demoPrices ? 'Ordering unavailable' : (TF.orderEmail ? 'Email my order · ' : 'Order for ') + peso(d.dueNow) + ' →'}</button>
-      ${S.sent ? `<div class="s13" role="status">Your email app should open with the order filled in. Nothing opened? Email <a class="fg" href="mailto:${esc(TF.orderEmail)}">${esc(TF.orderEmail)}</a>.</div>` : ''}
+      <button type="button" class="btn btn--dark btn--lg btn--block" data-act="order"${S.ordering || d.demoPrices ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : d.demoPrices ? 'Ordering unavailable' : 'Checkout · ' + peso(d.dueNow) + ' →'}</button>
       ${S.error ? `<div class="summary__err" role="alert">${esc(S.error)}</div>` : ''}`;
   }
 
@@ -296,6 +322,7 @@
     $('#tf-mode-after').innerHTML = viewModeAfter(d);
     $('#tf-extra').innerHTML = viewExtra(d);
     $('#tf-summary').innerHTML = viewSummary(d);
+    renderCheckout();
     $('#tf-bar-total').textContent = peso(d.oneTime) + (d.monthly ? ' + ' + peso(d.monthly) + '/mo' : '');
     for (const [id, key] of [['tf-name', 'name'], ['tf-headline', 'headline'], ['tf-website', 'website']]) {
       const el = document.getElementById(id);
@@ -313,13 +340,10 @@
   }
 
   /* ---------- add the whole setup to the Shopify cart ---------- */
-  async function order() {
-    if (S.ordering) return;
+  // Validates the setup and builds the order. Returns { error, input } or { d, items, props }.
+  function prepare() {
     const d = derive(), items = [], missing = [], missingPlans = [];
-    const reject = (message, inputId) => {
-      set({ error: message });
-      if (inputId) document.getElementById(inputId)?.focus({ preventScroll: true });
-    };
+    const reject = (error, input) => ({ error, input });
     if (!S.name.trim()) return reject('Enter the business name to print on your setup.', 'tf-name');
     if (d.isDirect && S.dest === 'links' && d.activePl.length < 2) return reject('Choose at least two apps for your multi-link page.');
     if (d.isApp && S.feats.order && !S.feats.menu) return reject('Table ordering requires the live QR menu.');
@@ -371,25 +395,145 @@
 
     if (missing.length) return reject('Not available right now: ' + missing.join(', ') + '. Message us and we’ll sort it out.');
     if (missingPlans.length) return reject('Subscription billing is not configured for: ' + missingPlans.join(', ') + '. Please contact us before ordering.');
+    return { d, items, props };
+  }
+
+  // "Checkout" from the summary, the sticky bar or the header bag: validate, then open the order panel.
+  function order() {
+    if (S.ordering) return;
+    const r = prepare();
+    if (r.error) {
+      set({ error: r.error });
+      const el = r.input && document.getElementById(r.input);
+      (el || $('#tf-summary'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus({ preventScroll: true });
+      return;
+    }
+    openCheckout();
+  }
+
+  /* ---------- checkout panel ---------- */
+  const CO = { open: false, step: 1, done: false, opener: null, error: '', info: { name: '', phone: '', email: '', address: '', city: '', pay: 'GCash', note: '' } };
+  const PAY = ['GCash', 'Maya', 'Bank transfer', 'Cash on delivery'];
+  const coRoot = $('#tf-checkout');
+  const steps = () => TF.orderEmail ? ['Review', 'Details', 'Confirm'] : ['Review'];
+  function openCheckout() {
+    if (!coRoot) return;
+    Object.assign(CO, { open: true, step: 1, done: false, error: '', opener: document.activeElement });
+    coRoot.hidden = false;
+    document.documentElement.classList.add('co-lock');
+    renderCheckout();
+    requestAnimationFrame(() => { coRoot.classList.add('on'); $('.co__x', coRoot)?.focus(); });
+  }
+  function closeCheckout() {
+    CO.open = false;
+    coRoot.classList.remove('on');
+    document.documentElement.classList.remove('co-lock');
+    setTimeout(() => { if (!CO.open) coRoot.hidden = true; }, 300);
+    CO.opener?.focus?.({ preventScroll: true });
+  }
+  function checkInfo() {
+    const i = CO.info;
+    if (!i.name.trim()) return ['Enter your name.', 'co-name'];
+    if (i.phone.replace(/\D/g, '').length < 10) return ['Enter a mobile number we can reach you on.', 'co-phone'];
+    if (i.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(i.email.trim())) return ['Check your email address.', 'co-email'];
+    if (!i.address.trim()) return ['Enter the delivery address.', 'co-address'];
+    return null;
+  }
+  function renderCheckout() {
+    if (!coRoot || !CO.open) return;
+    const r = prepare();
+    if (r.error) { closeCheckout(); return set({ error: r.error }); }
+    const { d } = r, st = steps(), i = CO.info;
+    const ph = shotFor(d.prod.id, d) || (d.isQuad ? null : shot('standAcrylic'));
+    const line = (name, price, sub = '') => `<div class="co-line"><span><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><em>${price}</em></div>`;
+    const extras = [
+      d.hwMenuFee ? line(HW_MENU.name, peso(d.hwMenuFee)) : '',
+      d.linkFee ? line(LINKS.name, peso(d.linkFee), d.activePl.map(p => p[1]).join(' · ')) : '',
+      d.isApp ? line(d.plan.name + ' plan', peso(planPrice(d.plan)) + '/mo', S.yearly ? 'Billed yearly' : 'Billed monthly') : '',
+      ...d.activeFeats.filter(f => f.handle).map(f => line(f.name, peso(priceOf(f)) + '/mo')),
+      ...d.activeSvcs.map(v => line(v.name, peso(v.price) + (v.monthly ? '/mo' : ''), 'Done-for-you service'))
+    ].join('');
+    const totals = `<div class="co-totals"><div><span>One-time</span><b>${peso(d.oneTime)}</b></div>${d.monthly ? `<div><span>Monthly</span><b>${peso(d.monthly)}</b></div>` : ''}${d.saved > 0 ? `<div class="lime"><span>You save</span><b>${peso(d.saved)}</b></div>` : ''}</div>`;
+    const field = (id, label, type = 'text', extra = '') => `<label class="field co-field">${label}<input id="co-${id}" data-co="${id}" type="${type}" value="${esc(i[id])}" ${extra}></label>`;
+    let body;
+    if (CO.done) {
+      body = `<div class="co-done"><span class="co-done__check">✓</span><h4>Almost done — press Send</h4><p>Your email app opened with the full order for ${esc(S.name.trim())}. Press <b>Send</b> there and we’ll reply to confirm shipping and payment.</p>
+        <p class="m3">Nothing opened? Email <a class="fg" href="mailto:${esc(TF.orderEmail)}">${esc(TF.orderEmail)}</a>.</p>
+        <button type="button" class="btn btn--light btn--block" data-co-close>Back to the site</button></div>`;
+    } else if (CO.step === 1) {
+      body = `<div class="co-item">${ph ? `<img src="${ph.src}" alt="" style="object-position:${ph.pos}">` : '<span class="co-item__ph">4×</span>'}
+          <div class="co-item__txt"><b>${esc(d.prod.name)}</b><small>${esc(S.name.trim())} · “${esc(S.headline.trim())}”</small><small class="lime">${esc(d.destUrl)}</small>
+            <div class="qty qty--sm"><button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button><output>${S.qty}</output><button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button></div></div>
+          <em>${peso(priceOf(d.prod) * S.qty)}</em></div>
+        ${extras ? `<div class="co-lines">${extras}</div>` : ''}${totals}
+        <button type="button" class="co-edit" data-co-edit>✎ Edit setup</button>`;
+    } else if (CO.step === 2) {
+      body = `<div class="co-form">${field('name', 'Full name', 'text', 'autocomplete="name"')}${field('phone', 'Mobile number', 'tel', 'autocomplete="tel" inputmode="tel" placeholder="09XX XXX XXXX"')}
+        ${field('email', 'Email (optional)', 'email', 'autocomplete="email"')}${field('address', 'Delivery address', 'text', 'autocomplete="street-address"')}${field('city', 'City / Province', 'text', 'autocomplete="address-level2"')}
+        <div class="field co-field">Preferred payment · we confirm by email<div class="co-pay">${PAY.map(p => `<label class="co-pay__opt"><input type="radio" name="co-pay" data-co="pay" value="${p}"${i.pay === p ? ' checked' : ''}><span>${p}</span></label>`).join('')}</div></div>
+        <label class="field co-field">Notes (optional)<textarea id="co-note" data-co="note" rows="2" placeholder="Delivery instructions, rush order…">${esc(i.note)}</textarea></label></div>`;
+    } else {
+      body = `<div class="co-review">
+          <div class="co-block"><div class="co-block__h"><span>DELIVER TO</span><button type="button" data-co-step="2">Edit</button></div><b>${esc(i.name)}</b><span>${esc(i.phone)}${i.email ? ' · ' + esc(i.email) : ''}</span><span>${esc(i.address)}${i.city ? ', ' + esc(i.city) : ''}</span><span class="m3">Pay with ${esc(i.pay)}</span></div>
+          <div class="co-block"><div class="co-block__h"><span>YOUR SETUP</span><button type="button" data-co-step="1">Edit</button></div><span>${esc(d.summary)}</span></div>
+          ${totals}<p class="co-hint">Sending opens your email app with everything filled in. Press Send there to place the order.</p></div>`;
+    }
+    const last = CO.step === st.length;
+    const cta = CO.done ? '' : `<div class="co-foot">${CO.error ? `<div class="summary__err" role="alert">${esc(CO.error)}</div>` : ''}
+      ${CO.step > 1 ? `<button type="button" class="btn btn--ghost" data-co-step="${CO.step - 1}">Back</button>` : ''}
+      <button type="button" class="btn btn--lime btn--lg co-cta" ${last ? 'data-co-submit' : `data-co-step="${CO.step + 1}"`}${S.ordering ? ' disabled' : ''}>${S.ordering ? 'Adding to cart…' : last ? (TF.orderEmail ? 'Send order · ' + peso(d.dueNow) : 'Secure checkout · ' + peso(d.dueNow)) + ' →' : 'Continue →'}</button></div>`;
+    $('.co__panel', coRoot).innerHTML = `<div class="co__head"><div><span class="mono-11 m3">${CO.done ? 'ORDER READY' : 'STEP ' + CO.step + ' OF ' + st.length}</span><h3 id="co-title">${CO.done ? 'Check your email app' : st[CO.step - 1] === 'Review' ? 'Your order' : st[CO.step - 1] === 'Details' ? 'Delivery details' : 'Confirm & send'}</h3></div><button type="button" class="co__x" data-co-close aria-label="Close checkout">×</button></div>
+      ${st.length > 1 && !CO.done ? `<div class="co-steps">${st.map((n, k) => `<span class="${k + 1 <= CO.step ? 'on' : ''}"><i></i>${n}</span>`).join('')}</div>` : ''}
+      <div class="co__body">${body}</div>${cta}`;
+  }
+  function goStep(n) {
+    if (n > CO.step && CO.step === 2) { const bad = checkInfo(); if (bad) { CO.error = bad[0]; renderCheckout(); return document.getElementById(bad[1])?.focus(); } }
+    Object.assign(CO, { step: n, error: '' });
+    renderCheckout();
+    $('.co__body', coRoot).scrollTop = 0;
+  }
+  async function submit() {
+    const r = prepare();
+    if (r.error) { closeCheckout(); return set({ error: r.error }); }
+    const { d, items, props } = r;
     if (TF.orderEmail) {
-      // No checkout on the static site: hand the full setup to the customer's mail app.
+      const i = CO.info;
       const body = [
         'Hi tapfour, I’d like to order this setup:', '', d.summary, '',
         ...Object.entries(props).map(([k, v]) => k + ': ' + v), '',
         'One-time: ' + peso(d.oneTime), d.monthly ? 'Monthly: ' + peso(d.monthly) : null, '',
-        'Delivery address:', 'Contact number:'
+        'Name: ' + i.name.trim(), 'Mobile: ' + i.phone.trim(), i.email.trim() ? 'Email: ' + i.email.trim() : null,
+        'Deliver to: ' + i.address.trim() + (i.city.trim() ? ', ' + i.city.trim() : ''), 'Preferred payment: ' + i.pay,
+        i.note.trim() ? 'Notes: ' + i.note.trim() : null
       ].filter(v => v !== null).join('\n');
       (TF.open || (url => { location.href = url; }))('mailto:' + TF.orderEmail + '?subject=' + encodeURIComponent('Order: ' + S.qty + ' × ' + d.prod.name + ' — ' + S.name.trim()) + '&body=' + encodeURIComponent(body));
-      return set({ error: '', sent: true });
+      CO.done = true;
+      return renderCheckout();
     }
     set({ ordering: true });
+    renderCheckout();
     try {
-      const r = await fetch(TF.cartAddUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ items }) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).description || 'Could not add to cart.');
+      const res = await fetch(TF.cartAddUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ items }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).description || 'Could not add to cart.');
       location.href = TF.cartUrl;
     } catch (e) {
-      set({ ordering: false, error: e.message || 'Could not add to cart. Please try again.' });
+      S.ordering = false;
+      CO.error = e.message || 'Could not add to cart. Please try again.';
+      renderCheckout();
     }
+  }
+  if (coRoot) {
+    coRoot.addEventListener('click', e => {
+      if (e.target.closest('[data-co-close]')) return closeCheckout();
+      if (e.target.closest('[data-co-edit]')) { closeCheckout(); return scrollTo('build'); }
+      const stepBtn = e.target.closest('[data-co-step]');
+      if (stepBtn) return goStep(+stepBtn.dataset.coStep);
+      if (e.target.closest('[data-co-submit]')) return submit();
+    });
+    coRoot.addEventListener('input', e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.value; });
+    coRoot.addEventListener('change', e => { const k = e.target.dataset.co; if (k) CO.info[k] = e.target.value; });
+    document.addEventListener('keydown', e => { if (CO.open && e.key === 'Escape') closeCheckout(); });
   }
 
   /* ---------- events ---------- */
@@ -417,7 +561,7 @@
     planCta: id => { set({ plan: id, mode: 'app', preset: null }); if (builder) scrollTo('build'); },
     yearly: v => set({ yearly: v === '1' }),
     svc: id => set({ svcs: { ...S.svcs, [id]: !S.svcs[id] } }),
-    order: (_, btn) => order(btn)
+    order: () => order()
   };
   document.addEventListener('click', e => {
     const el = e.target.closest('[data-act]');
@@ -447,7 +591,7 @@
     const io = new IntersectionObserver(es => { es.forEach(e => { seen[e.target === builder ? 'build' : 'summary'] = e.isIntersecting; }); sync(); });
     io.observe(builder);
     io.observe($('#tf-summary'));
-    bar.querySelector('[data-to-summary]').addEventListener('click', () => $('#tf-summary').scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    bar.querySelector('[data-to-summary]').addEventListener('click', order);
   }
 
   /* ---------- gentle reveal on scroll ---------- */
@@ -455,6 +599,12 @@
     const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
     $$('.sec__head, .sec > .sec__titles, .app-card, .app-photo, .dash, .plan, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
   }
+
+  document.addEventListener('click', e => { const a = e.target.closest('[data-open-checkout]'); if (a && builder) { e.preventDefault(); order(); } });
+
+  /* ---------- header: denser glass once the page scrolls ---------- */
+  const hdr = $('.site-header');
+  if (hdr) { const onScroll = () => hdr.classList.toggle('is-scrolled', scrollY > 24); addEventListener('scroll', onScroll, { passive: true }); onScroll(); }
 
   /* ---------- mobile menu: close after picking a link or tapping outside ---------- */
   const mnav = $('.mobile-nav');

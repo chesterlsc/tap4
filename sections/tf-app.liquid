@@ -3,7 +3,7 @@
   if s.image
     assign img = s.image | image_url: width: 900
   else
-    assign img = 'stand-l.jpg' | asset_url
+    assign img = 'stand-combo.jpg' | asset_url
   endif
 -%}
 <section id="app" class="sec">
@@ -40,7 +40,7 @@
       <div class="app-card__txt"><h3>{{ s.card2_title | escape }}</h3><p>{{ s.card2_text | escape }}</p></div>
     </div>
     <div class="app-photo">
-      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="900" height="675">
+      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="1100" height="1430">
       <div class="app-photo__txt"><h3>{{ s.card3_title | escape }}</h3><p>{{ s.card3_text | escape }}</p></div>
     </div>
   </div>

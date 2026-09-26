@@ -32,6 +32,8 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   url.value = 'https://g.page/r/kapenorte/review';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
+  assert.ok(!$('#tf-checkout').hidden, 'checkout panel opens');
+  $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
 
   const id = handle => catalog[handle].variants[0].id;
@@ -44,7 +46,8 @@ test('builder sends the configured setup to /cart/add.js', async t => {
 test('static site (tap4.ph) sends the order by email', async t => {
   const preview = await createPreview({ orderEmail: 'orders@example.com' });
   const { html } = await preview.renderPage('/');
-  assert.doesNotMatch(html, /cart-link|Local theme preview/);
+  assert.doesNotMatch(html, /href="\/cart"|Local theme preview/);
+  assert.match(html, /data-open-checkout/);
   const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
   const w = dom.window;
   t.after(() => w.close());
@@ -59,10 +62,19 @@ test('static site (tap4.ph) sends the order by email', async t => {
   url.value = 'https://g.page/r/kapenorte/review';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
+  $('.co-cta').click(); // review -> details
+  $('.co-cta').click(); // details are required
+  assert.match($('.co-foot').textContent, /Enter your name/);
+  const fill = (id, v) => { const el = $('#co-' + id); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+  fill('name', 'Juan Dela Cruz'); fill('phone', '0917 123 4567'); fill('address', '12 Session Rd, Baguio');
+  $('.co-cta').click(); // details -> confirm
+  $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
   assert.match(opened, /^mailto:orders@example\.com\?subject=/);
   const body = decodeURIComponent(opened.split('&body=')[1]);
   assert.match(body, /Business name: Kape Norte/);
   assert.match(body, /Google review URL: https:\/\/g\.page\/r\/kapenorte\/review/);
   assert.match(body, /One-time: ₱1,398/);
+  assert.match(body, /Mobile: 0917 123 4567/);
+  assert.match(body, /Deliver to: 12 Session Rd, Baguio/);
 });
