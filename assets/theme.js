@@ -185,7 +185,13 @@
   function shotFor(id, d) {
     const single = d.isDirect && S.dest !== 'links';
     const only = single ? 'Sample print · yours shows ' + d.dest.name + ' only' : '';
-    if (id === 'acrylic') return d.isApp ? shot('standCombo') : d.menuOn ? shot('standAcrylicKn', single && S.dest !== 'google' ? only + ' + menu QR' : '') : shot('standAcrylic', only);
+    // Acrylic Glass Stand: standard = Google review only; QR-menu model; 4-in-1 model; app combo.
+    if (id === 'acrylic') {
+      if (d.isApp) return shot('standCombo');
+      if (d.menuOn) return shot('standAcrylicKn', single && S.dest !== 'google' ? only + ' + menu QR' : '');
+      if (S.dest === 'links') return shot('standAcrylicLinks');
+      return TF.img.standAcrylicGoogle ? shot('standAcrylicGoogle', S.dest !== 'google' ? only : '') : shot('standAcrylicLinks', only);
+    }
     if (id === 'l') return d.menuOn || d.isApp ? shot('standLKn', single && S.dest !== 'google' ? only + ' + menu QR' : '') : S.dest === 'links' ? shot('standLLinks') : shot('standL', only);
     if (id === 'pvc') return shot('standPvcMenu', d.menuOn || d.isApp ? (single && S.dest !== 'google' ? only + ' + menu QR' : '') : 'Sample print · yours prints without the menu QR');
     if (id === 'card') return d.isApp || S.dest === 'links' ? shot('cardNfc') : shot('cardPersonal', 'Sample print · yours carries your business name');
