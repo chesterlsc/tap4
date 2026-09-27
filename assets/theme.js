@@ -75,8 +75,8 @@
 
   const S = {
     name: 'Kape Norte', finish: 'black', qty: 1, mode: 'direct', dest: 'google',
-    menuCat: 0, preset: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
-    feats: { reviews: true, menu: true, order: false, crm: false, wifi: false }, hw: { menu: false }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
+    menuCat: 0, preset: 'menu', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
+    feats: { reviews: true, menu: true, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
   const set = o => { Object.assign(S, { error: '' }, o); render(); };
 
@@ -316,12 +316,48 @@
     });
   }
 
+  /* ---------- hero (1b): three faces + finish + selected offer, same state as the builder ---------- */
+  const HERO = { review: ['Review', 'One tap opens your Google review box.'], menu: ['Review + Menu', 'Tap to review, scan the QR for your menu.'], links: ['4-in-1', 'One tap opens Google, Facebook, Instagram and TikTok.'] };
+  let heroFace = null;
+  function renderHero() {
+    const hero = $('[data-hero]');
+    if (!hero) return;
+    const face = designOf(), stand = standItem(S.finish);
+    const cost = id => {
+      const parts = [stand, ...(id === 'menu' ? [HW_MENU] : id === 'links' ? [LINKS] : [])];
+      return { now: parts.reduce((a, x) => a + priceOf(x), 0), was: parts.reduce((a, x) => a + (wasOf(x) || priceOf(x)), 0) };
+    };
+    $$('.h4-face', hero).forEach(b => {
+      const id = b.dataset.arg, on = id === face, img = $('[data-face-img]', b), src = TF.img[`l-${S.finish}-${id}`];
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on);
+      if (src && img.getAttribute('src') !== src) img.src = src;
+      $('[data-face-price]', b).textContent = peso(cost(id).now);
+      $('.h4-face__dot', b).textContent = on ? '✓' : '→';
+    });
+    $$('.h4__dots i', hero).forEach((dot, i) => dot.classList.toggle('on', ['review', 'menu', 'links'][i] === face));
+    $$('.h4__finish button', hero).forEach(b => b.classList.toggle('on', b.dataset.arg === S.finish));
+    const c = cost(face), [name, desc] = HERO[face];
+    $('[data-offer-name]', hero).textContent = name;
+    $('[data-offer-now]', hero).textContent = peso(c.now);
+    $('[data-offer-was]', hero).textContent = c.was > c.now ? peso(c.was) : '';
+    $('[data-offer-desc]', hero).textContent = desc;
+    $('[data-offer-cta]', hero).textContent = `Order ${name} →`;
+    // Mobile swipe row: keep the selected face centred.
+    if (heroFace !== face) {
+      const row = $('[data-hero-faces]', hero), card = $(`.h4-face[data-arg="${face}"]`, hero);
+      if (row.scrollWidth > row.clientWidth) setTimeout(() => row.scrollTo({ left: card.offsetLeft - (row.clientWidth - card.offsetWidth) / 2, behavior: heroFace ? 'smooth' : 'auto' }), heroFace ? 360 : 0);
+      heroFace = face;
+    }
+  }
+
   const builder = $('[data-builder]');
   function render() {
     const focused = document.activeElement;
     const focusKey = focused && { id: focused.id, act: focused.dataset.act, arg: focused.dataset.arg, start: focused.selectionStart, end: focused.selectionEnd };
     renderPlans();
     renderServices();
+    renderHero();
     if (!builder) return;
     const d = derive();
     builder.setAttribute('aria-busy', S.ordering);
@@ -625,7 +661,9 @@
   const ACTS = {
     preset: id => { const p = PRESETS.find(x => x.id === id); set({ ...structuredClone(p.set), preset: id }); },
     finish: id => set({ finish: id, preset: null }),
-    design: id => set({ dest: id === 'links' ? 'links' : 'google', hw: { ...S.hw, menu: id === 'menu' }, plats: id === 'links' ? { ...ALL_PLATS } : S.plats, preset: null }),
+    heroFace: id => ACTS.design(id, 'direct'),
+    heroOrder: () => { set({ mode: 'direct', preset: null }); scrollTo('build'); },
+    design: (id, mode) => set({ dest: id === 'links' ? 'links' : 'google', hw: { ...S.hw, menu: id === 'menu' }, plats: id === 'links' ? { ...ALL_PLATS } : S.plats, preset: null, ...(typeof mode === 'string' && { mode }) }),
     qty: n => set({ qty: Math.max(1, S.qty + +n) }),
     mode: id => set({ mode: id, preset: null }),
     plat: id => {
@@ -667,6 +705,8 @@
   });
   document.addEventListener('toggle', e => { if (e.target.matches?.('.guide')) S.guideOpen = e.target.open; }, true);
   render();
+  // Photos and fonts change the swipe row's widths, so centre the selected face again once they've loaded.
+  addEventListener('load', () => { heroFace = null; renderHero(); });
 
   /* ---------- mobile: sticky order bar while configuring, hidden once the summary is on screen ---------- */
   const bar = $('#tf-bar');

@@ -145,8 +145,15 @@ test('TAP4.1: finish switches the variant and photos, designs set the add-ons', 
   const $ = s => w.document.querySelector(s);
   const photo = () => $('.pv-photo img').getAttribute('src');
 
+  // Hero opens on Review + Menu (best for cafés); picking a face in the hero drives the builder.
+  assert.match(photo(), /tapfour-l-black-menu/);
+  assert.equal($('[data-offer-name]').textContent, 'Review + Menu');
+  $('[data-act="heroFace"][data-arg="review"]').click();
   assert.match(photo(), /tapfour-l-black-review/);
+  assert.equal($('[data-offer-now]').textContent, '₱899');
+  assert.equal($('[data-offer-cta]').textContent, 'Order Review →');
   $('[data-act="finish"][data-arg="white"]').click();
+  assert.match($('.h4-face.on img').getAttribute('src'), /tapfour-l-white-review/);
   assert.match(photo(), /tapfour-l-white-review/);
   $('[data-act="design"][data-arg="links"]').click();
   assert.match(photo(), /tapfour-l-white-links/);

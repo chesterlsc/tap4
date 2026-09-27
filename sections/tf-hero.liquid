@@ -1,90 +1,55 @@
+{%- comment -%}
+  Hero "1b": the TAP4.1 L-Stand offer up front — three faces, a finish switch and the selected offer.
+  Selection, photos and prices are driven by theme.js and shared with the setup builder below.
+{%- endcomment -%}
 {%- liquid
   assign s = section.settings
-  if s.image
-    assign hero_img = s.image | image_url: width: 900
-  else
-    assign hero_img = 'tapfour-l-black-menu.jpg' | asset_url
-  endif
+  assign faces = 'review|QUICK START|Review|₱899;menu|BEST FOR CAFÉS|Review + Menu|₱1,398;links|GROW FOLLOWERS|4-in-1|₱1,249' | split: ';'
 -%}
-<section class="hero">
+<section class="hero hero--tap4" data-hero>
   <div class="glow hero__glow1"></div>
-  <div class="glow hero__glow2"></div>
   <div class="hero__in">
-    <div class="hero__grid">
-      <div class="hero__copy">
+    <div class="h4">
+      <div class="h4__copy">
         <div class="chips">
           <div class="chip chip--g"><svg class="chip__g" style="fill:#4285F4"><use href="#i-google"/></svg><span class="stars">★★★★★</span>{{ s.chip_1 | escape }}</div>
           <div class="chip chip--lime"><span style="font-size:12px">↑</span>{{ s.chip_2 | escape }}</div>
-          <div class="chip"><span class="chip__sq"></span>{{ s.chip_3 | escape }}</div>
         </div>
         <h1 class="hero__title">{{ s.title_1 | escape }}<br><span>{{ s.title_2 | escape }}</span></h1>
         <p class="hero__sub">{{ s.subtitle | escape }}</p>
-        <div class="hero__ctas">
-          <button type="button" class="cta-main" data-act="preset" data-arg="google" data-scroll="build">
-            <b>{{ s.cta_label | escape }}</b><small>{{ s.cta_note }}</small>
-          </button>
-          <button type="button" class="cta-alt" data-act="preset" data-arg="menu" data-scroll="build">{{ s.cta2_label }}</button>
-        </div>
-        <div class="stats">
-          {%- for block in section.blocks -%}
-            <div class="stat" {{ block.shopify_attributes }}><b>{{ block.settings.value | escape }}</b><span>{{ block.settings.label | escape }}</span></div>
+      </div>
+
+      <div class="h4__stage">
+        <div class="h4__faces" data-hero-faces>
+          {%- for f in faces -%}
+            {%- assign p = f | split: '|' -%}
+            <button type="button" class="h4-face{% if p[0] == 'menu' %} on{% endif %}" data-act="heroFace" data-arg="{{ p[0] }}" aria-pressed="{% if p[0] == 'menu' %}true{% else %}false{% endif %}">
+              <img src="{{ 'tapfour-l-black-' | append: p[0] | append: '.jpg' | asset_url }}" alt="TAP4.1 L-Stand, {{ p[2] }} face" width="1122" height="1402" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}" data-face-img>
+              <span class="h4-face__tag">{{ p[1] }}</span>
+              <span class="h4-face__foot"><span><b>{{ p[2] }}</b><em data-face-price>{{ p[3] }}</em></span><i class="h4-face__dot">{% if p[0] == 'menu' %}✓{% else %}→{% endif %}</i></span>
+            </button>
           {%- endfor -%}
         </div>
-        <a class="app-teaser" href="#plans">{% render 'tf-mark', px: 18 %}<span>{{ s.teaser }} <b>{{ s.teaser_link | escape }}</b></span></a>
+        <div class="h4__dots" aria-hidden="true"><i></i><i class="on"></i><i></i></div>
+        <div class="seg h4__finish" role="group" aria-label="Finish">
+          <button type="button" class="on" data-act="finish" data-arg="black">Glossy Black</button>
+          <button type="button" data-act="finish" data-arg="white">Glossy White</button>
+        </div>
       </div>
 
-      <div class="hero-art" aria-hidden="true">
-        <div class="art-photo">
-          <img src="{{ hero_img }}" alt="" width="420" height="520" fetchpriority="high">
-          <div class="pill-blur">{{ s.photo_label | escape }} <span class="mono lime">{{ s.photo_price | escape }}</span></div>
-        </div>
-
-        <div class="g-popup">
-          <div class="g-popup__head"><svg width="17" height="17" style="fill:#4285F4"><use href="#i-google"/></svg>Rate {{ s.demo_name | escape }}</div>
-          <div class="g-popup__stars">★★★★★</div>
-          <div class="g-popup__text">{{ s.demo_review | escape }}</div>
-          <div class="g-popup__btn">Post</div>
-        </div>
-        <div class="art-tag">TAP → REVIEW IN 3 SEC</div>
-
-        <div class="art-phone">
-          <div class="art-phone__bezel"><div class="art-phone__screen">
-            <div class="art-phone__island"></div>
-            <div class="art-phone__status"><span>9:41</span><span>●●● ▮</span></div>
-            <div class="art-phone__head">
-              <div class="art-phone__row">
-                <div><div class="art-phone__name">{{ s.demo_name | escape }}</div><div class="art-phone__meta">QR MENU · OPEN TODAY</div></div>
-                <div class="art-phone__logo">{% render 'tf-mark', px: 12 %}</div>
-              </div>
-              <div class="mini-tabs"><span class="on">Coffee</span><span>Pastry</span><span>Meals</span></div>
-            </div>
-            <div class="art-phone__list">
-              <div class="mi"><div class="mi__img"></div><div class="mi__txt"><b>Sagada Latte</b><span>Double shot, oat</span></div><div class="mi__p">₱165</div></div>
-              <div class="mi"><div class="mi__img"></div><div class="mi__txt"><b>Benguet Pour-over</b><span>Single origin</span></div><div class="mi__p">₱180</div></div>
-              <div class="mi"><div class="mi__img"></div><div class="mi__txt"><b>Ube Cold Brew</b><span>Seasonal</span></div><div class="mi__p">₱190</div></div>
-            </div>
-            <div class="art-phone__cta"><div><span>LOVED IT?</span><b>Leave a review</b></div><i>★★★★★</i></div>
-            <div class="art-phone__bar"></div>
-          </div></div>
-        </div>
-
-        <div class="app-panel">
-          <div class="app-panel__top">
-            <div class="app-panel__brand">{% render 'tf-mark', px: 16 %}tapfour</div>
-            <div class="app-panel__plans"><span class="on">Solo</span><span>Business</span><span>Agency</span></div>
+      <div class="h4__offer">
+        <div class="h4-offer__body">
+          <div class="h4-offer__top">
+            <div><span class="h4-offer__lbl">SELECTED</span><b data-offer-name>Review + Menu</b></div>
+            <div class="h4-offer__price"><b data-offer-now>₱1,398</b><s data-offer-was>₱2,328</s></div>
           </div>
-          <div class="ap-row"><div class="tgl on"></div><div class="ap-row__txt"><b>Tap for reviews</b><span>Google, Facebook, Instagram, TikTok</span></div><div class="ap-row__p">INCLUDED</div></div>
-          <div class="ap-row ap-row--hl"><div class="tgl on"></div><div class="ap-row__txt"><b>Live QR menu</b><span>Edit your menu in seconds</span></div><div class="tag tag--lime" style="font-size:8px">RECOMMENDED</div></div>
-          <div class="ap-row"><div class="tgl"></div><div class="ap-row__txt"><b>Order from the table</b><span>Guests order on their phone</span></div><div class="ap-row__p">+₱499/mo</div></div>
-          <div class="ap-row"><div class="tgl"></div><div class="ap-row__txt"><b>Customer in / out data</b><span>Who comes in, how long they stay</span></div><div class="ap-row__p">+₱299/mo</div></div>
+          <p data-offer-desc>Tap to review, scan the QR for your menu.</p>
+          <button type="button" class="btn btn--lime btn--block h4-offer__cta" data-act="heroOrder" data-offer-cta>Order Review + Menu →</button>
+          <div class="h4-offer__checks"><span><i>✓</i>Free shipping</span><span><i>✓</i>One-time price</span><span><i>✓</i>Works without an app</span></div>
         </div>
+        <a class="h4-offer__app" href="#plans">{% render 'tf-mark', px: 18 %}<span><small>{{ s.teaser }}</small><b>{{ s.teaser_link | escape }}</b></span><i>→</i></a>
       </div>
     </div>
-
-    {%- assign clients = s.clients | split: ',' -%}
-    {%- if clients.size > 0 -%}
-      <div class="clients"><span class="mono">SAMPLE BUSINESSES</span>{% for c in clients %}<b>{{ c | strip | escape }}</b>{% endfor %}</div>
-    {%- endif -%}
   </div>
 </section>
 
@@ -94,32 +59,11 @@
   "settings": [
     { "type": "text", "id": "chip_1", "label": "Chip 1", "default": "More good reviews" },
     { "type": "text", "id": "chip_2", "label": "Chip 2", "default": "Rank higher on Google Maps" },
-    { "type": "text", "id": "chip_3", "label": "Chip 3", "default": "QR menu" },
-    { "type": "text", "id": "title_1", "label": "Title line 1", "default": "More Google reviews." },
-    { "type": "text", "id": "title_2", "label": "Title line 2 (lime)", "default": "Zero asking." },
-    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "Guests tap to leave a review and scan to see your menu. One stand on the counter does both. No app to download." },
-    { "type": "text", "id": "cta_label", "label": "Main button", "default": "Get my review stand →" },
-    { "type": "html", "id": "cta_note", "label": "Main button note", "default": "<s>₱1,499</s> ₱899 · 40% OFF · SHIPS NATIONWIDE" },
-    { "type": "html", "id": "cta2_label", "label": "Second button", "default": "Add QR menu <s>₱829</s> +₱499" },
-    { "type": "text", "id": "teaser", "label": "App teaser", "default": "Want table orders and guest data too?" },
-    { "type": "text", "id": "teaser_link", "label": "App teaser link text", "default": "tapfour app from ₱299/mo →" },
-    { "type": "image_picker", "id": "image", "label": "Stand photo" },
-    { "type": "text", "id": "photo_label", "label": "Photo label", "default": "Review stand + QR menu" },
-    { "type": "text", "id": "photo_price", "label": "Photo price", "default": "₱1,398" },
-    { "type": "text", "id": "demo_name", "label": "Demo business", "default": "Kape Norte" },
-    { "type": "text", "id": "demo_review", "label": "Demo review", "default": "Best latte in Baguio. Staff were so friendly!" },
-    { "type": "text", "id": "clients", "label": "Clients (comma separated)", "default": "Kape Norte, Hapag Grill, Salon Ligaya, Lomi House QC" }
-  ],
-  "blocks": [
-    {
-      "type": "stat",
-      "name": "Stat",
-      "limit": 4,
-      "settings": [
-        { "type": "text", "id": "value", "label": "Value", "default": "3 sec" },
-        { "type": "text", "id": "label", "label": "Label", "default": "tap to review box" }
-      ]
-    }
+    { "type": "text", "id": "title_1", "label": "Title line 1", "default": "Pick a stand." },
+    { "type": "text", "id": "title_2", "label": "Title line 2 (lime)", "default": "Get reviewed." },
+    { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "An NFC stand in glossy acrylic, with three faces for every counter. Each one is programmed to your links and ready out of the box." },
+    { "type": "text", "id": "teaser", "label": "App teaser", "default": "Table orders & guest data?" },
+    { "type": "text", "id": "teaser_link", "label": "App teaser link text", "default": "tapfour app from ₱299/mo" }
   ],
   "presets": [{ "name": "Tapfour hero" }]
 }

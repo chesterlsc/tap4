@@ -2,34 +2,6 @@
   "sections": {
     "hero": {
       "type": "tf-hero",
-      "blocks": {
-        "s1": {
-          "type": "stat",
-          "settings": {
-            "value": "3 sec",
-            "label": "tap to review box"
-          }
-        },
-        "s2": {
-          "type": "stat",
-          "settings": {
-            "value": "NFC + QR",
-            "label": "two ways to connect"
-          }
-        },
-        "s3": {
-          "type": "stat",
-          "settings": {
-            "value": "₱0/mo",
-            "label": "stand works alone"
-          }
-        }
-      },
-      "block_order": [
-        "s1",
-        "s2",
-        "s3"
-      ],
       "settings": {}
     },
     "taps": {
