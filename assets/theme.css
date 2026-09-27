@@ -191,6 +191,8 @@ h1, h2, h3, p { margin: 0; }
 .seg { display: flex; gap: 4px; background: var(--card); border-radius: 99px; padding: 4px; box-shadow: inset 0 0 0 1px var(--l2); }
 .seg button { padding: 10px 20px; border-radius: 99px; font-size: 14px; font-weight: 700; color: var(--m2); }
 .seg button.on { background: var(--lime); color: var(--bg); }
+/* Pill buttons that stretch to fill a row (segments, plan tabs, steppers, big add buttons) keep their label centred. */
+.seg button, .dp-mtabs button, .dp-mstep button, .ax-hrs button, .ax-addon__btn { display: flex; align-items: center; justify-content: center; text-align: center; }
 .seg--sm { background: var(--bg); box-shadow: inset 0 0 0 1px var(--l4); }
 .seg--sm button { padding: 8px 14px; font-size: 13px; }
 .summary { border-radius: 24px; background: var(--lime); color: var(--bg); padding: 26px; display: flex; flex-direction: column; gap: 14px; }
