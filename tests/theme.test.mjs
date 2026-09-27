@@ -24,13 +24,17 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
   const $ = s => w.document.querySelector(s);
 
-  $('[data-act="preset"][data-arg="menu"]').click();
-  assert.match($('#tf-summary').textContent, /₱1,398/);
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+  assert.match($('#tf-summary').textContent, /₱1,398/); // Review + Menu is the default face
   $('[data-act="order"]').click();
-  assert.match($('#tf-summary').textContent, /Google Maps link/, 'blocks ordering without the Google Maps link');
-  const url = $('#tf-url-google');
-  url.value = 'https://maps.app.goo.gl/KapeNorte123';
-  url.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.match($('#tf-summary').textContent, /business name/, 'asks who the order is for');
+  input($('#tf-name'), 'Kape Norte');
+  input($('#tf-url-google'), 'https://example.com/kape');
+  assert.match($('#tf-links').textContent, /Not a Google Maps link/);
+  $('[data-act="order"]').click();
+  assert.match($('#tf-summary').textContent, /Google Maps link/, 'blocks a link that is not from Google Maps');
+  input($('#tf-url-google'), 'https://maps.app.goo.gl/KapeNorte123');
+  assert.match($('#tf-links').textContent, /Looks right/);
   $('[data-act="order"]').click();
   assert.ok(!$('#tf-checkout').hidden, 'checkout panel opens');
   $('.co-cta').click(); // review -> menu (printed QR menu needs one)
@@ -67,7 +71,9 @@ test('static site (tap4.ph) sends the order by email', async t => {
   w.scrollTo = () => {};
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
   const $ = s => w.document.querySelector(s);
-  $('[data-act="preset"][data-arg="menu"]').click();
+  const name = $('#tf-name');
+  name.value = 'Kape Norte';
+  name.dispatchEvent(new w.Event('input', { bubbles: true }));
   const url = $('#tf-url-google');
   url.value = 'https://maps.app.goo.gl/KapeNorte123';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
@@ -115,8 +121,7 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
   const tick = () => new Promise(r => setTimeout(r, 0));
 
-  $('[data-act="preset"][data-arg="menu"]').click();
-  input($('#tf-url-google'), 'https://maps.app.goo.gl/KapeNorte123');
+  input($('#tf-name'), 'Ana’s Café'); // Google link left blank: sent after checkout
   $('[data-act="order"]').click();
   $('.co-cta').click(); // review -> menu
   const files = $('#co-menuFiles');
@@ -129,7 +134,9 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   input($('#co-name'), 'Ana Reyes'); input($('#co-phone'), '0917 000 0001'); input($('#co-address'), 'Maginhawa St, QC');
   $('.co-cta').click(); // details -> confirm
   $('[data-co-submit]').click();
-  assert.match(decodeURIComponent(opened.split('&body=')[1]), /Menu files:\nmenu\.pdf — https:\/\/go\.example\/m\/abc/);
+  const body = decodeURIComponent(opened.split('&body=')[1]);
+  assert.match(body, /Menu files:\nmenu\.pdf — https:\/\/go\.example\/m\/abc/);
+  assert.match(body, /Google Maps link: To be provided after checkout/);
 });
 
 test('TAP4.1: finish switches the variant and photos, designs set the add-ons', async t => {
@@ -162,9 +169,9 @@ test('TAP4.1: finish switches the variant and photos, designs set the add-ons', 
   assert.match(photo(), /tapfour-l-white-menu/);
   assert.match($('#tf-summary').textContent, /₱1,398/); // 899 + 499 menu
 
-  const url = $('#tf-url-google');
-  url.value = 'https://maps.app.goo.gl/KapeNorte123';
-  url.dispatchEvent(new w.Event('input', { bubbles: true }));
+  const name = $('#tf-name');
+  name.value = 'Kape Norte';
+  name.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-act="order"]').click();
   $('.co-cta').click();
   const menu = $('#co-menuLink');
@@ -175,4 +182,52 @@ test('TAP4.1: finish switches the variant and photos, designs set the add-ons', 
   const white = catalog['tap4-l-stand'].variants.find(v => v.title === 'Glossy White').id;
   assert.equal(sent.items[0].id, white);
   assert.equal(sent.items[0].properties.Finish, 'Glossy White');
+});
+
+test('4-Tap Bar and the tapfour app popup', async t => {
+  const preview = await createPreview({ orderEmail: 'orders@example.com' });
+  const { html } = await preview.renderPage('/');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let opened;
+  w.TF.open = url => { opened = url; };
+  w.scrollTo = () => {};
+  w.requestAnimationFrame = f => f();
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+
+  $('[data-act="stand"][data-arg="quad"]').click();
+  assert.match($('.pv-photo img').getAttribute('src'), /bar-4tap/);
+  assert.equal(w.document.querySelectorAll('.zone').length, 4);
+  $('.zone[data-arg="3"]').click(); // TikTok -> Website
+  assert.match($('.pv-url').textContent, /Google · Facebook · Instagram · Website/);
+  assert.match($('#tf-summary').textContent, /₱1,490/);
+
+  $('[data-act="appPop"]').click();
+  assert.ok(!$('#tf-app').hidden, 'app popup opens');
+  assert.match($('#tf-app').textContent, /Order from the table/);
+  assert.match($('#tf-app').textContent, /Tap-to-join Wi-Fi/);
+  $('#tf-app [data-act="feat"][data-arg="order"]').click(); // needs the live menu, so it switches that on too
+  assert.match($('#tf-app [data-act="appAdd"]').textContent, /₱997\/mo/); // 299 + 199 + 499
+  $('#tf-app [data-act="appAdd"]').click();
+  assert.match($('#tf-summary').textContent, /tapfour app · Solo/);
+  assert.match($('#tf-summary').textContent, /Then ₱997\/mo/);
+
+  input($('#tf-name'), 'Kape Norte');
+  $('[data-act="order"]').click();
+  assert.ok(!$('#tf-checkout').hidden, 'checkout opens with blank zone links');
+  $('.co-cta').click(); // review -> menu (live menu needs one)
+  input($('#co-menuText'), 'Latte — ₱150');
+  $('.co-cta').click();
+  const fill = (id, v) => input($('#co-' + id), v);
+  fill('name', 'Juan'); fill('phone', '0917 123 4567'); fill('address', 'Baguio');
+  $('.co-cta').click();
+  $('[data-co-submit]').click();
+  const body = decodeURIComponent(opened.split('&body=')[1]);
+  assert.match(body, /Setup: 4-Tap Bar \+ tapfour app/);
+  assert.match(body, /Tap zones: Google, Facebook, Instagram, Website/);
+  assert.match(body, /Order from the table/);
+  assert.match(body, /Monthly: ₱997/);
 });
