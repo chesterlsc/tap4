@@ -1,17 +1,15 @@
 {%- comment -%}
-  App section "2a": five phone screens, one per app feature, each with an Add button that shares state with the
-  setup builder (theme.js), then a sample dashboard where all of it lands. Numbers are illustrative sample data.
+  02 · The tapfour app. Five features (four included in every plan, table ordering is the quote-priced add-on),
+  then "all of it lands here": the owner's counter tablet and a guest's phone at the table.
+  Desktop: five-card grid, tablet and phone side by side. Mobile: one swipe row, a pinned price bar, and the
+  demo as two steps. The tablet, guest phone and order list are rendered by theme.js from sample data.
 {%- endcomment -%}
 {%- liquid
   assign s = section.settings
   assign menu = 'Sagada Latte|Double shot|₱165|#c9a27a|;Pour-over|Single origin|₱180|#8b5e3c|;Ube Cold Brew|Seasonal|₱190|#7a5aa8|;Spanish Latte|Sold out|₱170|#d8b98e|so' | split: ';'
   assign order = 'Sagada Latte|₱165|×2;Ensaymada|₱95|×1;Ube Cold Brew|₱190|+' | split: ';'
   assign hours = '20,35,60,45,90,100,70,40,55,80,65,30' | split: ','
-  assign kpis = 'TAPS|1,284|▲ 22%|hi;MENU VIEWS|3,902|Top: Ube Cold Brew|;ORDERS|63|₱21,480|;GUESTS IN NOW|38|Avg stay 46 min|;RETURNING|41%|62 this week|' | split: ';'
-  assign bars = '34,48,41,62,55,70,58,76,64,88,72,95,83,100' | split: ','
-  assign split = 'Google review|38|#c8f23c;Menu|27|#e9f8b8;Instagram|17|#8fae2a;TikTok|11|#5a6b22;Facebook|7|#3a4418' | split: ';'
-  assign tickets = 'Table 4|Latte ×2, Ensaymada|New|new;Table 2|Tapa Bowl|Preparing|;Table 7|Pour-over|Served|' | split: ';'
-  assign nav = 'Today,Taps,Menu,Orders,Guests,My links,My stands' | split: ','
+  assign dash = 'RETURNING|Came back this week|41%|hi;BILLING|Bean supplier · due Fri|₱8,400|;INVENTORY|Oat milk · low|3 L|hi' | split: ';'
 -%}
 <section id="app" class="sec ax" data-app-section>
   <div class="sec__head">
@@ -19,11 +17,11 @@
       <div class="eyebrow">{{ s.eyebrow | escape }}</div>
       <h2 class="h2">{{ s.title_1 | escape }}<br>{{ s.title_2 | escape }}</h2>
     </div>
-    <div class="ax__pill">App from <b>₱299/mo</b> · stand works without it</div>
+    <div class="ax__pill">Four included in every plan · <b>table ordering is the add-on</b></div>
   </div>
 
-  <div class="ax-row">
-    <div class="ax-f" data-ax="reviews">
+  <div class="ax-row" data-ax-row>
+    <div class="ax-f">
       <div class="ax-card"><span class="ax-tag ax-tag--hi">INCLUDED</span>
         <div class="ax-phone"><div class="ax-scr">
           <div class="ax-rv">
@@ -37,11 +35,11 @@
         </div></div>
       </div>
       <div class="ax-f__txt"><b>Tap for reviews</b><span>Review, follow, like, watch.</span></div>
-      <button type="button" class="ax-btn" disabled><span>✓ Included</span><small>FREE</small></button>
+      <div class="ax-btn ax-btn--inc ax-d"><span>✓ Included</span><small>EVERY PLAN</small></div>
     </div>
 
-    <div class="ax-f" data-ax="menu">
-      <div class="ax-card"><span class="ax-tag">+₱199/MO</span>
+    <div class="ax-f">
+      <div class="ax-card"><span class="ax-tag ax-tag--hi">INCLUDED</span>
         <div class="ax-phone"><div class="ax-scr ax-scr--light">
           <div class="ax-list">
             <div class="ax-list__h"><b>Menu</b><span>OPEN NOW</span></div>
@@ -53,44 +51,30 @@
         </div></div>
       </div>
       <div class="ax-f__txt"><b>Live QR menu</b><span>Edit prices. Hide sold-out.</span></div>
-      <button type="button" class="ax-btn" data-act="feat" data-arg="menu" aria-pressed="false"><span>+ Add</span><small>₱199/MO</small></button>
+      <div class="ax-btn ax-btn--inc ax-d"><span>✓ Included</span><small>EVERY PLAN</small></div>
     </div>
 
-    <div class="ax-f" data-ax="order">
-      <div class="ax-card"><span class="ax-tag">+₱499/MO</span>
-        <div class="ax-phone"><div class="ax-scr ax-scr--light">
-          <div class="ax-list ax-list--full">
-            <div class="ax-list__h"><b>Table 4</b><span>ORDER</span></div>
-            {%- for o in order -%}{%- assign r = o | split: '|' -%}
-              <div class="ax-mi"><span><b>{{ r[0] }}</b><small class="mono">{{ r[1] }}</small></span><em class="ax-q{% if r[2] != '+' %} on{% endif %}">{{ r[2] }}</em></div>
-            {%- endfor -%}
-            <div class="ax-send"><span>Send to staff</span><span>₱355 →</span></div>
-          </div>
-        </div></div>
-      </div>
-      <div class="ax-f__txt"><b>Order from the table</b><span>Straight to your staff phone.</span></div>
-      <button type="button" class="ax-btn" data-act="feat" data-arg="order" aria-pressed="false"><span>+ Add</span><small>₱499/MO</small></button>
-    </div>
-
-    <div class="ax-f" data-ax="crm">
-      <div class="ax-card"><span class="ax-tag">+₱299/MO</span>
+    <div class="ax-f">
+      <div class="ax-card"><span class="ax-tag ax-tag--hi">INCLUDED</span>
         <div class="ax-phone"><div class="ax-scr">
           <div class="ax-list">
             <b class="ax-list__t">Dashboard · Today</b>
             <div class="ax-kp"><span class="hi"><small>IN NOW</small><b>38</b></span><span><small>AVG STAY</small><b>46m</b></span></div>
-            <small class="ax-lbl">BUSIEST HOURS</small>
+            <small class="ax-lbl ax-d">BUSIEST HOURS</small>
             <div class="ax-hours">{% for h in hours %}<i style="height:{{ h }}%"{% if h == '90' or h == '100' %} class="hi"{% endif %}></i>{% endfor %}</div>
-            <div class="ax-axis"><span>8AM</span><span>12</span><span>4PM</span><span>8</span></div>
-            <div class="ax-ret"><span>Returning</span><b>41%</b></div>
+            <div class="ax-axis ax-d"><span>8AM</span><span>12</span><span>4PM</span><span>8</span></div>
+            {%- for x in dash -%}{%- assign r = x | split: '|' -%}
+              <div class="ax-dr"><span><small>{{ r[0] }}</small>{{ r[1] }}</span><b{% if r[3] == 'hi' %} class="lime"{% endif %}>{{ r[2] }}</b></div>
+            {%- endfor -%}
           </div>
         </div></div>
       </div>
-      <div class="ax-f__txt"><b>Dashboard</b><span>Taps, orders and guests in one view.</span></div>
-      <button type="button" class="ax-btn" data-act="feat" data-arg="crm" aria-pressed="false"><span>+ Add</span><small>₱299/MO</small></button>
+      <div class="ax-f__txt"><b>Dashboard</b><span>Taps, guests, bills and stock in one view.</span></div>
+      <div class="ax-btn ax-btn--inc ax-d"><span>✓ Included</span><small>EVERY PLAN</small></div>
     </div>
 
-    <div class="ax-f" data-ax="wifi">
-      <div class="ax-card"><span class="ax-tag">+₱99/MO</span>
+    <div class="ax-f">
+      <div class="ax-card"><span class="ax-tag ax-tag--hi">INCLUDED</span>
         <div class="ax-phone"><div class="ax-scr">
           <div class="ax-wifi">
             <span class="ax-wifi__ic" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -100,44 +84,74 @@
           </div>
         </div></div>
       </div>
-      <div class="ax-f__txt"><b>Tap-to-join Wi-Fi</b><span>Time-limited access per guest.</span></div>
-      <div class="ax-hrs" role="group" aria-label="Wi-Fi time per guest">
+      <div class="ax-f__txt"><b>Tap-to-join Wi-Fi</b><span><span class="ax-d">Time-limited access per guest.</span><span class="ax-m">1 or 2 hours per guest.</span></span></div>
+      <div class="ax-hrs ax-d" role="group" aria-label="Wi-Fi time per guest">
         <button type="button" class="on" data-act="wifiH" data-arg="1">1 hour per guest</button>
         <button type="button" data-act="wifiH" data-arg="2">2 hours per guest</button>
       </div>
-      <button type="button" class="ax-btn" data-act="feat" data-arg="wifi" aria-pressed="false"><span>+ Add</span><small>₱99/MO</small></button>
+      <div class="ax-btn ax-btn--inc ax-d"><span>✓ Included</span><small>EVERY PLAN</small></div>
+    </div>
+
+    <div class="ax-f ax-f--order">
+      <div class="ax-card"><span class="ax-tag">ADD-ON · FROM ₱499/MO</span>
+        <div class="ax-phone"><div class="ax-scr ax-scr--light">
+          <div class="ax-list ax-list--full">
+            <div class="ax-list__h"><b>Table 4</b><span>YOUR ORDER</span></div>
+            {%- for o in order -%}{%- assign r = o | split: '|' -%}
+              <div class="ax-mi"><span><b>{{ r[0] }}</b><small class="mono">{{ r[1] }}</small></span><em class="ax-q{% if r[2] != '+' %} on{% endif %}">{{ r[2] }}</em></div>
+            {%- endfor -%}
+            <div class="ax-route ax-d"><span>YOU</span><span>→</span><span>YOUR SERVER</span><span>→</span><span>KITCHEN</span></div>
+            <div class="ax-send"><span>Send order</span><span>₱355 →</span></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Order from the table</b><span><span class="ax-d">Goes straight to your server’s phone.</span><span class="ax-m">It pops up on your counter tablet.</span></span></div>
+      <div class="ax-flow ax-d"><span>Guest</span><i>→</i><span>Your server</span><i>→</i><span>Kitchen</span></div>
+      <button type="button" class="ax-btn ax-d" data-act="tableOrder" aria-pressed="false"><span data-ax-order-lbl>+ Add</span><small>FROM ₱499/MO</small></button>
+    </div>
+  </div>
+  <div class="ax-dots ax-m" aria-hidden="true"><span data-ax-dots><i class="on"></i><i></i><i></i><i></i><i></i></span><small data-ax-pager>1 / 5 · SWIPE →</small></div>
+
+  <div class="ax-m ax-mob">
+    <div class="ax-addon">
+      <span class="ax-tag ax-tag--static">ADD-ON</span>
+      <h3>Order from the table</h3>
+      <p>Guests order on their phone. It pops up on your counter tablet, then goes to the kitchen.</p>
+      <div class="ax-flow"><span>Guest</span><i>→</i><span>Counter</span><i>→</i><span>Kitchen</span></div>
+      <div class="ax-addon__p"><small>PRICED BY TABLES &amp; VOLUME</small><span>from <b>₱499</b>/mo</span></div>
+      <button type="button" class="ax-addon__btn" data-act="tableOrder" aria-pressed="false" data-ax-order-big>+ Add table ordering</button>
+    </div>
+    <div class="ax-inc">
+      <small>INCLUDED IN EVERY PLAN</small>
+      <div><i>✓</i><span><b>Tap for reviews</b><small>Review, follow, like, watch.</small></span></div>
+      <div><i>✓</i><span><b>Live QR menu</b><small>Edit prices. Hide sold-out.</small></span></div>
+      <div><i>✓</i><span><b>Dashboard</b><small>Taps, guests, bills and stock.</small></span></div>
+      <div><i>✓</i><span><b>Tap-to-join Wi-Fi</b><small>1 or 2 hours per guest.</small></span></div>
     </div>
   </div>
 
   <div class="ax-bar">
-    <div class="ax-bar__chips"><span>Your app:</span><span data-ax-chips></span></div>
-    <div class="ax-bar__end"><b data-ax-total>₱299/mo</b><button type="button" class="btn btn--lime" data-act="appFromSection">Add to my stand →</button></div>
+    <div class="ax-bar__chips"><span>In Solo:</span><span data-ax-chips></span></div>
+    <div class="ax-bar__end">
+      <span class="ax-bar__p"><small class="ax-m">IN SOLO</small><b data-ax-total>₱3,000 + ₱299/mo</b><small data-ax-note>PACKAGE ONCE · APP MONTHLY</small></span>
+      <a class="btn btn--lime" href="#plans">Compare plans ↓</a>
+    </div>
   </div>
 
   <div class="ax-div"><i></i><span>ALL OF IT LANDS HERE ↓</span><i></i></div>
 
-  <div class="ax-dash" aria-label="Sample tapfour dashboard">
-    <div class="ax-dash__nav">
-      <div class="ax-dash__logo">{% render 'tf-mark', px: 16 %}<b>tapfour</b></div>
-      {%- for n in nav -%}<span{% if forloop.first %} class="on"{% endif %}>{{ n }}</span>{%- endfor -%}
+  <div class="ax-demo">
+    <div class="ax-demo__tab">
+      <div class="ax-stepm ax-m"><span>2</span><span><b>It pops up at the counter</b><small>Accept and it goes to the kitchen.</small></span></div>
+      <div class="ax-tablet"><div class="ax-tablet__s" data-ax-tablet></div></div>
+      <div class="ax-cap ax-d"><b>Owner · tablet at the counter</b><span>New table orders pop up here. Accept and it goes to the kitchen.</span></div>
+      <div class="ax-big ax-m" data-ax-big></div>
     </div>
-    <div class="ax-dash__main">
-      <div class="ax-dash__h"><b>Today</b><span>SAMPLE DATA</span></div>
-      <div class="ax-kpis">
-        {%- for k in kpis -%}{%- assign r = k | split: '|' -%}
-          <div class="ax-kpi{% if r[3] == 'hi' %} hi{% endif %}"><small>{{ r[0] }}</small><b>{{ r[1] }}</b><span>{{ r[2] }}</span></div>
-        {%- endfor -%}
-      </div>
-      <div class="ax-dash__grid">
-        <div class="ax-box"><small>TAPS PER DAY</small><div class="ax-bars">{% for b in bars %}<i style="height:{{ b }}%" class="{% if forloop.last %}hi{% elsif forloop.index > 10 %}mid{% endif %}"></i>{% endfor %}</div></div>
-        <div class="ax-box"><small>WHERE TAPS GO</small>
-          <div class="ax-split">{% for x in split %}{% assign r = x | split: '|' %}<i style="width:{{ r[1] }}%;background:{{ r[2] }}"></i>{% endfor %}</div>
-          {%- for x in split -%}{%- assign r = x | split: '|' -%}<div class="ax-split__row"><span><i style="background:{{ r[2] }}"></i>{{ r[0] }}</span><b>{{ r[1] }}%</b></div>{%- endfor -%}
-        </div>
-        <div class="ax-box"><small>LIVE ORDERS</small>
-          {%- for t in tickets -%}{%- assign r = t | split: '|' -%}<div class="ax-tk"><span><b>{{ r[0] }}</b><small>{{ r[1] }}</small></span><em{% if r[3] == 'new' %} class="new"{% endif %}>{{ r[2] }}</em></div>{%- endfor -%}
-        </div>
-      </div>
+    <div class="ax-demo__ph">
+      <div class="ax-stepm ax-m"><span>1</span><span><b>Guest orders at the table</b><small>Scan the table QR, pick, send.</small></span></div>
+      <div class="ax-gphone"><div class="ax-gphone__s" data-ax-guest></div></div>
+      <div class="ax-cap ax-d"><b>Guest · phone at the table</b><span>Scan the table QR, pick, send.</span></div>
+      <small class="ax-then ax-m">↓ THEN IT POPS UP AT THE COUNTER</small>
     </div>
   </div>
 </section>

@@ -40,13 +40,13 @@
   const designOf = () => S.dest === 'links' ? 'links' : S.hw.menu ? 'menu' : 'review';
   const PL = [['google', 'Google', '4285F4'], ['facebook', 'Facebook', '0866FF'], ['instagram', 'Instagram', 'FF0069'], ['tiktok', 'TikTok', '000000']];
   const SLOT_OPTS = [...PL, ['website', 'Website', null]];
-  const ADD = 'tapfour-app-add-ons';
+  // Every plan includes the first four; table ordering is the one add-on, priced by quote (tables & volume).
   const FEATS = [
-    { id: 'reviews', name: 'Tap for reviews', desc: 'Your 4-in-1 page with live stats on every tap.', price: 0, points: ['Google, Facebook, Instagram, TikTok', 'Swap links anytime — no reprint', 'Taps & new reviews in your dashboard'] },
-    { id: 'menu', handle: ADD, variant: 'Live QR menu', name: 'Live QR menu', desc: 'A mobile menu you edit yourself, in seconds.', price: 199, badge: 'RECOMMENDED', points: ['Change prices & photos from your phone', 'Mark items sold out instantly', 'See which dishes get viewed most'] },
-    { id: 'order', handle: ADD, variant: 'Table ordering', name: 'Order from the table', desc: 'Guests order on their own phone — no waiting in line.', price: 499, points: ['Orders ping your staff phone or kitchen tablet', 'Table number attached to every order', 'Pay at counter or via GCash / Maya'] },
-    { id: 'crm', handle: ADD, variant: 'Customer in/out data', name: 'Dashboard · guests in / out', desc: 'Know who comes in, how long they stay, who returns.', price: 299, points: ['Tap-in on arrival, tap-out on payment', 'Busiest hours & average stay', 'Returning guests & visit history'] },
-    { id: 'wifi', handle: ADD, variant: 'Tap-to-join Wi-Fi', name: 'Tap-to-join Wi-Fi', desc: 'Guests connect without typing passwords.', price: 99, points: ['Rotate the password anytime'] }
+    { id: 'reviews', name: 'Tap for reviews', desc: 'Review, follow, like, watch.', points: ['Google, Facebook, Instagram, TikTok', 'Swap links anytime — no reprint'] },
+    { id: 'menu', name: 'Live QR menu', desc: 'Edit prices. Hide sold-out.', points: ['Change prices & photos from your phone', 'See which dishes get viewed most'] },
+    { id: 'crm', name: 'Dashboard', desc: 'Taps, guests, bills and stock in one view.', points: ['Guests in now, average stay, returning guests', 'Billing & inventory trackers'] },
+    { id: 'wifi', name: 'Tap-to-join Wi-Fi', desc: '1 or 2 hours per guest.', points: ['No password to type', 'Time-limited access per guest'] },
+    { id: 'order', name: 'Order from the table', desc: 'Guests order on their phone. It pops up on your counter tablet, then goes to the kitchen.', quote: true, points: ['Table number on every order', 'Call staff & bill please too'] }
   ];
   const PLANS = [{ id: 'solo', name: 'Solo', price: 299 }, { id: 'business', name: 'Business', price: 799 }, { id: 'empire', name: 'Empire', price: 1999 }];
   // Packages: Review + Menu stands paid once, plus that plan's app monthly (03 · Dashboard & plans).
@@ -61,38 +61,36 @@
 
   const S = {
     name: '', finish: 'black', qty: 1, mode: 'direct', dest: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
-    app: false, pkg: null, pkgOrder: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', locIdx: 0, yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
+    app: false, pkg: null, tableOrder: false, hw: { menu: true }, plan: 'solo', locIdx: 0, yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
   const set = o => { Object.assign(S, { error: '' }, o); render(); };
   // Monthly price of the app as configured in the popup (plan + paid features).
-  const appMonthly = plan => planPrice(plan) + FEATS.filter(f => f.handle && S.feats[f.id]).reduce((a, f) => a + priceOf(f), 0);
 
   function derive() {
     const pkg = S.pkg, isQuad = !pkg && S.mode === 'quad', isApp = !!pkg || S.app;
     const prod = pkg ? pkgItem(pkg) : isQuad ? BAR : standItem(S.finish), units = pkg ? 1 : S.qty;
     const design = isQuad ? null : pkg ? 'menu' : designOf();
     const plan = PLANS.find(p => p.id === (pkg || S.plan)) || PLANS[0];
-    const activeFeats = isApp && !pkg ? FEATS.filter(f => S.feats[f.id]) : []; // a package's app already includes its features
     const activeSvcs = SVCS.filter(v => S.svcs[v.id]);
     const slotName = id => SLOT_OPTS.find(o => o[0] === id)[1];
     const activePl = isQuad ? PL.filter(p => S.slots.includes(p[0])) : design === 'links' ? PL.filter(p => S.plats[p[0]]) : PL.filter(p => p[0] === 'google');
     const linkFee = !pkg && design === 'links' ? priceOf(LINKS) : 0;
     const hwMenuFee = !pkg && design === 'menu' ? priceOf(HW_MENU) : 0;
-    const menuOn = !!pkg || !!hwMenuFee || (isApp && !!S.feats.menu);
+    const menuOn = !!pkg || !!hwMenuFee;
     const oneTime = priceOf(prod) * units + linkFee + hwMenuFee + activeSvcs.filter(v => !v.monthly).reduce((a, v) => a + v.price, 0);
     const yearly = isApp && S.yearly ? priceOf(planItem(plan, true)) : 0;
-    const monthly = (isApp ? (S.yearly ? 0 : priceOf(planItem(plan, false))) + activeFeats.reduce((a, f) => a + priceOf(f), 0) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
+    const monthly = (isApp && !S.yearly ? priceOf(planItem(plan, false)) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
     const dueNow = oneTime + yearly + monthly;
     const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * units : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
     const destUrl = isQuad ? S.slots.map(slotName).join(' · ') : design === 'links' ? '4-in-1 page · ' + activePl.map(p => p[1]).join(', ') : design === 'menu' ? 'Google review (tap) · Menu (scan)' : 'Your Google review box';
     const summary = [
       units + ' × ' + prod.name + (isQuad || pkg ? ' · ' + FINISHES.find(x => x.id === S.finish).name : ''),
-      pkg ? (S.pkgOrder ? 'Table ordering (quote)' : null) : isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : DESIGNS.find(x => x.id === design).name + ' design' + (design === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
-      ...activeFeats.map(f => f.name), isApp ? 'tapfour app · ' + plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, ...activeSvcs.map(v => v.name)
+      isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : DESIGNS.find(x => x.id === design).name + ' design' + (design === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
+      isApp ? 'tapfour app · ' + plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, isApp && S.tableOrder ? 'Table ordering (quote)' : null, ...activeSvcs.map(v => v.name)
     ].filter(Boolean).join(' · ');
-    const catalogItems = [prod, ...(hwMenuFee ? [HW_MENU] : []), ...(linkFee ? [LINKS] : []), ...(isApp ? [planItem(plan, S.yearly), ...activeFeats.filter(f => f.handle)] : [])];
+    const catalogItems = [prod, ...(hwMenuFee ? [HW_MENU] : []), ...(linkFee ? [LINKS] : []), ...(isApp ? [planItem(plan, S.yearly)] : [])];
     const demoPrices = catalogItems.some(it => !variant(it.handle, it.variant));
-    return { pkg, units, isQuad, isApp, design, prod, plan, activeFeats, activeSvcs, slotName, activePl, linkFee, hwMenuFee, menuOn, oneTime, monthly, yearly, dueNow, demoPrices, saved, destUrl, summary };
+    return { pkg, units, isQuad, isApp, design, prod, plan, activeSvcs, slotName, activePl, linkFee, hwMenuFee, menuOn, oneTime, monthly, yearly, dueNow, demoPrices, saved, destUrl, summary };
   }
 
   /* ---------- builder views (01 · Build your setup v2) ---------- */
@@ -195,27 +193,27 @@
       <div class="guide__links"><a href="https://business.google.com/en-all/business-profile/" target="_blank" rel="noopener">Not on Google Maps yet? Add your business free ↗</a><a href="mailto:${esc(TF.orderEmail || 'hello@tapfour.ph')}?subject=${encodeURIComponent('Help finding my Google Maps link')}">Stuck? Email us ↗</a></div>
     </details>`;
 
-  const toggleRow = (f, on, act, priceLabel) => `<button type="button" class="feat${on ? ' on' : ''}" data-act="${act}" data-arg="${f.id || ''}" aria-pressed="${on}"${f.handle ? '' : ' disabled'}>
+  const toggleRow = (f, on, act, priceLabel) => `<button type="button" class="feat${on ? ' on' : ''}" data-act="${act}" data-arg="${f.id || ''}" aria-pressed="${on}"${act === 'feat' ? ' disabled' : ''}>
       <span class="tgl tgl--lg${on ? ' on' : ''}"></span>
       <span class="feat__body"><span class="feat__name"><b>${f.name}</b>${f.badge ? rec(f.badge) : ''}</span><span class="feat__desc">${f.desc}</span>
         <span class="feat__pts">${f.points.map(p => `<span><i>•</i>${p}</span>`).join('')}</span></span>
       <span class="feat__p">${priceLabel}</span></button>`;
 
   function viewExtra(d) {
-    const picked = FEATS.filter(f => f.handle && S.feats[f.id]);
     const svcs = SVCS.filter(v => !v.monthly);
+    const orderRow = `<button type="button" class="appx__more" data-act="tableOrder" aria-pressed="${S.tableOrder}"><span>${S.tableOrder ? '✓ Table ordering added · we send your quote' : 'Add table ordering · priced by your tables, from ₱499/mo'}</span><b>${S.tableOrder ? 'Remove' : 'Add'} →</b></button>`;
     const appRow = d.pkg ? `<div class="appx on"><div class="appx__main"><span class="tgl tgl--lg on"></span>
           <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app · ${d.plan.name}</b><em>${peso(planPrice(d.plan))}/mo</em></span>
             <span class="appx__desc">Included in your package: ${esc(PKG_FEATS[d.pkg])}.</span><span class="mono-11 m3">CANCEL ANYTIME · YOUR STANDS KEEP WORKING</span></span></div>
-        <button type="button" class="appx__more" data-act="pkgOrder" aria-pressed="${S.pkgOrder}"><span>${S.pkgOrder ? '✓ Table ordering added · we send your quote' : 'Add table ordering · priced by your tables, from ₱499/mo'}</span><b>${S.pkgOrder ? 'Remove' : 'Add'} →</b></button></div>` : '';
+        ${orderRow}</div>` : '';
     return `<div class="step__h"><span class="step__n step__n--plus">+</span><b>Optional extras</b><em>SKIP IF YOU LIKE</em></div>
       ${appRow}<div class="appx${S.app ? ' on' : ''}"${d.pkg ? ' hidden' : ''}>
         <button type="button" class="appx__main" data-act="appPop" aria-haspopup="dialog" aria-label="tapfour app${S.app ? ', added' : ''}: see features">
           <span class="tgl tgl--lg${S.app ? ' on' : ''}"></span>
-          <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app</b><em>${peso(appMonthly(d.plan))}/mo</em></span>
-            <span class="appx__desc">Edit your links anytime, with no reprint. See taps, review page opens and menu opens for every stand.</span>
+          <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app</b><em>${peso(planPrice(d.plan))}/mo</em></span>
+            <span class="appx__desc">Included: live QR menu, dashboard, tap-to-join Wi-Fi and tap for reviews. Edit your links anytime, no reprint.</span>
             <span class="mono-11 m3">CANCEL ANYTIME · YOUR STAND KEEPS WORKING</span></span></button>
-        <button type="button" class="appx__more" data-act="appPop"><span>${picked.length ? '✓ ' + picked.map(f => f.name).join(' · ') : 'Order from the table · Live menu · Wi-Fi · Guest data'}</span><b>${picked.length ? 'Edit' : 'See features'} →</b></button>
+        ${S.app ? orderRow : '<button type="button" class="appx__more" data-act="appPop"><span>Live menu · Dashboard · Wi-Fi · Reviews · + table ordering</span><b>See features →</b></button>'}
       </div>
       ${svcs.length ? `<div class="stack-10"><span class="bld-sub">Done-for-you, pay once</span>
         <div class="chips-row">${svcs.map(v => { const on = !!S.svcs[v.id]; return `<button type="button" class="pchip pchip--svc${on ? ' on' : ''}" data-act="svc" data-arg="${v.id}" aria-pressed="${on}"${v.available ? '' : ' disabled'}>${esc(v.name)}<em>+${peso(v.price)}</em></button>`; }).join('')}</div></div>` : ''}`;
@@ -230,8 +228,7 @@
       d.linkFee ? [`${LINKS.name} (${d.activePl.length} apps)`, peso(d.linkFee)] : null,
       ...d.activeSvcs.map(v => [v.name, peso(v.price) + (v.monthly ? '/mo' : '')]),
       d.isApp ? [`tapfour app · ${d.plan.name} · first ${S.yearly ? 'year' : 'month'}`, peso(S.yearly ? d.yearly : priceOf(planItem(d.plan, false)))] : null,
-      ...d.activeFeats.filter(f => f.handle).map(f => [f.name + ' · first month', peso(priceOf(f))]),
-      d.pkg && S.pkgOrder ? ['Table ordering · we send your quote', 'from ₱499/mo'] : null
+      d.isApp && S.tableOrder ? ['Table ordering · we send your quote', 'from ₱499/mo'] : null
     ].filter(Boolean);
     const label = TF.sale.label ? TF.sale.label + ' · ' : '', deadline = countdown();
     const then = d.monthly ? `Then ${peso(d.monthly)}/mo. Cancel anytime.` : d.yearly ? `Renews yearly at ${peso(d.yearly)}.` : '';
@@ -256,9 +253,10 @@
       <div class="co__body">
         <p class="app-pop__lead">Run the counter from your phone: live menu, table orders, guest data and tap stats in one dashboard. Cancel anytime and your stand keeps working.</p>
         <div class="stack-10"><span class="bld-sub">Dashboard plan</span><div class="seg seg--sm app-pop__plans">${PLANS.map(p => `<button type="button" class="${S.plan === p.id ? 'on' : ''}" data-act="plan" data-arg="${p.id}" aria-pressed="${S.plan === p.id}">${p.name}<small>${peso(planPrice(p))}/mo</small></button>`).join('')}</div></div>
-        <div class="stack-10"><span class="bld-sub">Features · add what you need</span>${FEATS.map(f => toggleRow(f, !!S.feats[f.id], 'feat', f.handle ? '+' + peso(priceOf(f)) + '/mo' : 'INCLUDED')).join('')}</div>
+        <div class="stack-10"><span class="bld-sub">Included in every plan</span>${FEATS.filter(f => !f.quote).map(f => toggleRow(f, true, 'feat', 'INCLUDED')).join('')}</div>
+        <div class="stack-10"><span class="bld-sub">Add-on · priced by your tables and how busy you get</span>${FEATS.filter(f => f.quote).map(f => toggleRow(f, S.tableOrder, 'tableOrder', 'from ₱499/mo')).join('')}</div>
       </div>
-      <div class="co-foot">${S.app ? '<button type="button" class="btn btn--ghost" data-act="appRemove">Remove app</button>' : ''}<button type="button" class="btn btn--lime btn--lg app-pop__cta" data-act="appAdd">${S.app ? 'Done' : 'Add to my setup'} · ${peso(appMonthly(plan))}/mo</button></div>`;
+      <div class="co-foot">${S.app ? '<button type="button" class="btn btn--ghost" data-act="appRemove">Remove app</button>' : ''}<button type="button" class="btn btn--lime btn--lg app-pop__cta" data-act="appAdd">${S.app ? 'Done' : 'Add to my setup'} · ${peso(planPrice(plan))}/mo${S.tableOrder ? ' + quote' : ''}</button></div>`;
   }
   function openApp() {
     if (!appRoot) return;
@@ -313,7 +311,7 @@
 
   function viewDash(id, n) {
     const tbl = (cls, head, rows) => `<div class="dp-tbl ${cls}"><div class="dp-tbl__h">${head.map(h => `<span>${h}</span>`).join('')}</div>${rows.join('')}</div>`;
-    if (S.pkgOrder && DP.oView) {
+    if (S.tableOrder && DP.oView) {
       const sel = DP.tables[DP.oSel], [slabel, scls] = TST[sel.st], count = t => t.items.reduce((a, r) => a + r[1], 0);
       const acts = { 0: 'Accept · send to kitchen', 1: 'Mark served', 3: 'Bill sent · clear table' };
       const stats = [['NEW ORDERS', DP.tables.filter(t => t.st === 0).length, 1], ['IN KITCHEN', DP.tables.filter(t => t.st === 1).length], ['TABLES SEATED', DP.tables.filter(t => t.st !== -1).length + '/12']];
@@ -386,17 +384,17 @@
       $('[data-plan-up]', el).textContent = peso(plan ? priceOf(pkgItem(id)) : +el.dataset.up);
       $('[data-plan-price]', el).textContent = '+ ' + peso(monthly);
       $('[data-plan-billing]', el).textContent = 'MONTHLY · ' + (S.yearly ? 'BILLED YEARLY' : 'BILLED MONTHLY');
-      $('[data-plan-total]', el).textContent = peso(monthly) + (S.pkgOrder ? ' + from ₱499/mo' : '/mo');
-      const add = $('.dp-add', el), btn = $('[data-act="pkgOrder"]', el);
-      add.classList.toggle('on', S.pkgOrder);
-      btn.textContent = S.pkgOrder ? '✓ Added' : '+ Add';
-      btn.setAttribute('aria-pressed', S.pkgOrder);
+      $('[data-plan-total]', el).textContent = peso(monthly) + (S.tableOrder ? ' + from ₱499/mo' : '/mo');
+      const add = $('.dp-add', el), btn = $('[data-act="tableOrder"]', el);
+      add.classList.toggle('on', S.tableOrder);
+      btn.textContent = S.tableOrder ? '✓ Added' : '+ Add';
+      btn.setAttribute('aria-pressed', S.tableOrder);
       $('.dp-plan__cta', el).textContent = S.pkg === id ? '✓ In your setup ↑' : 'Choose ' + $('h3', el).textContent + ' →';
     });
     const navs = { solo: ['Overview', 'My stands', 'Menu', 'Billing', 'Inventory', 'Wi-Fi', 'My links', 'Help'], business: ['Overview', 'Branches', 'My links', 'My stands', 'Reports', 'Help'], empire: ['Overview', 'Branches', 'Billing', 'Inventory', 'Staff', 'Help'] };
     const home = { solo: 'My stands', business: 'Branches', empire: EMP[DP.eTab][0] }[id];
-    const nav = S.pkgOrder ? [...navs[id].slice(0, 2), 'Orders', ...navs[id].slice(2)] : navs[id];
-    const ov = S.pkgOrder && DP.oView, active = ov ? 'Orders' : home, fresh = DP.tables.filter(t => t.st === 0).length;
+    const nav = S.tableOrder ? [...navs[id].slice(0, 2), 'Orders', ...navs[id].slice(2)] : navs[id];
+    const ov = S.tableOrder && DP.oView, active = ov ? 'Orders' : home, fresh = DP.tables.filter(t => t.st === 0).length;
     $('[data-dp-nav]', sec).innerHTML = nav.map(l => `<button type="button" class="${l === active ? 'on' : ''}${l === 'Orders' ? ' ord' : ''}" data-dp-nav-item="${l}">${l}${l === 'Orders' && fresh ? `<small>${fresh} NEW</small>` : ''}</button>`).join('');
     $('[data-dp-view]', sec).textContent = active;
     $('[data-dp-scope]', sec).textContent = ov ? 'SAMPLE DATA · LIVE FLOOR' : id === 'solo' ? 'SAMPLE DATA · YOUR SHOP' : `SAMPLE DATA · ${n} BRANCHES`;
@@ -412,23 +410,100 @@
     });
   }
 
-  /* ---------- app section (2a): five feature phones share the app state with the builder ---------- */
+  /* ---------- 02 · the tapfour app: feature row, price bar, counter tablet + guest phone ---------- */
+  const GMENU = [['Sagada Latte', 165, '#c9a27a'], ['Ensaymada', 95, '#e2c48f'], ['Ube Cold Brew', 190, '#7a5aa8'], ['Pour-over', 180, '#8b5e3c']];
+  const AX = {
+    qty: [2, 1, 0, 0], pop: null, toast: '',
+    tix: [
+      { id: 4, table: 'Table 5', items: 'Spanish Latte ×1, Ensaymada ×2', order: true, st: 0 },
+      { id: 3, table: 'Table 7', items: 'Pour-over ×1', order: true, st: 0, lines: [['Pour-over', '×1']], total: 180 },
+      { id: 2, table: 'Table 9', items: 'Bill please', order: false, st: 0 },
+      { id: 1, table: 'Table 2', items: 'Tapa bowl ×1, Ube Cold Brew ×1', order: true, st: 1 }
+    ]
+  };
+  const axLabel = t => (t.order ? ['NEW', 'IN KITCHEN', 'SERVED'] : ['NEW', 'ON THE WAY', 'DONE'])[Math.min(t.st, 2)];
+  const axShort = t => t.st === 0 ? 'Accept' : t.order ? 'Served' : 'Done';
+  const axPill = t => `<em class="dp-pill dp-pill--${t.st === 0 ? 'new' : t.st >= 2 ? 'done' : 'kit'}">${axLabel(t)}</em>`;
   function renderAppSection() {
     const sec = $('[data-app-section]');
     if (!sec) return;
-    $$('[data-ax]', sec).forEach(el => {
-      const id = el.dataset.ax, on = !!S.feats[id], btn = $('.ax-btn', el);
-      if (id === 'reviews') return;
-      el.classList.toggle('on', on);
-      btn.setAttribute('aria-pressed', on);
-      btn.firstElementChild.textContent = on ? '✓ Added' : '+ Add';
-    });
-    $$('[data-act="wifiH"]', sec).forEach(b => { const on = +b.dataset.arg === S.wifiH; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    const on = S.tableOrder, fresh = AX.tix.filter(t => t.st === 0).length;
+    const popT = on && AX.tix.find(t => t.id === AX.pop && t.st === 0);
+    $('.ax-f--order', sec).classList.toggle('on', on);
+    $$('[data-act="tableOrder"]', sec).forEach(b => b.setAttribute('aria-pressed', on));
+    $('[data-ax-order-lbl]', sec).textContent = on ? '✓ Added' : '+ Add';
+    $('[data-ax-order-big]', sec).textContent = on ? '✓ Added to Solo' : '+ Add table ordering';
+    $('.ax-addon', sec).classList.toggle('on', on);
+    $$('[data-act="wifiH"]', sec).forEach(b => { const o = +b.dataset.arg === S.wifiH; b.classList.toggle('on', o); b.setAttribute('aria-pressed', o); });
     $('[data-wifi-note]', sec).textContent = `Free for ${S.wifiH} hour${S.wifiH > 1 ? 's' : ''}. No password to type.`;
-    const names = { menu: 'Live QR menu', order: 'Table ordering', crm: 'Dashboard', wifi: `Wi-Fi · ${S.wifiH}h` };
-    $('[data-ax-chips]', sec).innerHTML = ['Tap for reviews', ...Object.keys(names).filter(k => S.feats[k]).map(k => names[k])].map(n => `<em>${esc(n)}</em>`).join('');
-    $('[data-ax-total]', sec).textContent = peso(appMonthly(PLANS.find(p => p.id === S.plan) || PLANS[0])) + '/mo';
-    $('[data-act="appFromSection"]', sec).textContent = S.app ? '✓ In your setup · review →' : 'Add to my stand →';
+    $('[data-ax-chips]', sec).innerHTML = ['5 stands', 'Reviews', 'Menu', 'Dashboard', 'Wi-Fi', ...(on ? ['Table ordering'] : [])].map(n => `<em${n === 'Table ordering' ? ' class="hi"' : ''}>${n}</em>`).join('');
+    $('[data-ax-total]', sec).textContent = `${peso(priceOf(pkgItem('solo')))} + ${peso(planPrice(PLANS[0]))}/mo`;
+    const note = $('[data-ax-note]', sec);
+    note.textContent = on ? '+ TABLE ORDERING FROM ₱499/MO' : 'PACKAGE ONCE · APP MONTHLY';
+    note.classList.toggle('lime', on);
+    // Owner's counter tablet
+    const pop = popT ? `<div class="ax-pop"><div class="ax-pop__c"><div class="ax-pop__h"><span><i></i>${popT.order ? 'NEW ORDER' : 'REQUEST'}</span><small>JUST NOW</small></div><b>${esc(popT.table)}</b>
+        <div class="ax-pop__l">${(popT.lines || [[popT.items, '']]).map(([n, q]) => `<div><span>${esc(n)}</span><span>${q}</span></div>`).join('')}${popT.total ? `<div class="tot"><b>Total</b><b>${peso(popT.total)}</b></div>` : ''}</div>
+        <div class="ax-pop__a"><button type="button" data-ax-accept>${popT.order ? 'Accept · send to kitchen' : 'On my way'}</button><button type="button" data-ax-later>Later</button></div></div></div>` : '';
+    $('[data-ax-tablet]', sec).innerHTML = `<div class="ax-tn"><div class="ax-tn__logo">${leaf(16)}<b>tapfour</b></div>${['Today', 'Orders', 'Menu', 'Guests', 'Billing', 'Inventory', 'Wi-Fi', 'My stands'].map((l, i) => `<span${i === 0 ? ' class="on"' : ''}>${l}${l === 'Orders' && on && fresh ? `<b>${fresh}</b>` : ''}</span>`).join('')}</div>
+      <div class="ax-tm">${pop}
+        <div class="ax-tm__h"><b>Today · Your shop</b><small>SAMPLE DATA · 12:41</small></div>
+        <div class="ax-tk4">${[['TAPS', '146', 'NFC today', 1], ['QR SCANS', '58', 'Counted separately'], ['GUESTS IN NOW', '38', 'Avg stay 46 min'], ['ORDERS', on ? '23' : '—', on ? '₱8,940 today' : 'Add-on']].map(([l, v, sub, hi]) => `<div${hi ? ' class="hi"' : ''}><small>${l}</small><b>${v}</b><span>${sub}</span></div>`).join('')}</div>
+        <div class="ax-tm__g">
+          <div class="ax-lo${on ? '' : ' off'}"><div class="ax-lo__h"><small>LIVE ORDERS</small><em>${on ? fresh + ' NEW' : 'ADD-ON'}</em></div>
+            ${AX.tix.map(t => `<div class="ax-lo__r"><span><b>${esc(t.table)}</b><small>${esc(t.items)}</small></span><span>${axPill(t)}${on && t.st < 2 ? `<button type="button" data-ax-tk="${t.id}"${t.st === 0 ? ' class="hi"' : ''}>${axShort(t)}</button>` : ''}</span></div>`).join('')}</div>
+          <div class="ax-tm__side"><div class="ax-needs"><small>NEEDS YOU</small><div class="hi"><span><small>INVENTORY · LOW</small><b>Oat milk</b></span><b>3 L</b></div><div><span><small>BILLING · DUE FRI</small><b>Coffee bean supplier</b></span><b>₱8,400</b></div></div>
+            <div class="ax-bh"><small>BUSIEST HOURS</small><div>${[20, 35, 60, 45, 90, 100, 70, 40, 55, 80, 65, 30].map(h => `<i style="height:${h}%"${h >= 90 ? ' class="hi"' : ''}></i>`).join('')}</div><div class="ax-axis"><span>8AM</span><span>12</span><span>4PM</span><span>8</span></div></div></div>
+        </div>
+      </div>`;
+    // Guest's phone at the table
+    const cart = GMENU.map(([n, p], i) => ({ n, p, q: AX.qty[i] })).filter(m => m.q), count = cart.reduce((a, m) => a + m.q, 0), sum = cart.reduce((a, m) => a + m.q * m.p, 0);
+    $('[data-ax-guest]', sec).innerHTML = `<div class="ax-gp__notch"><i></i></div>
+      <div class="ax-gp__h"><span><b>Table 4</b><small>YOUR SHOP · MENU</small></span><em>OPEN</em></div>
+      <div class="ax-gp__menu">${GMENU.map(([n, p, c], i) => `<div class="ax-gp__mi"><i style="background:${c}"></i><span><b>${n}</b><small>${peso(p)}</small></span><span class="dp-g__q">${AX.qty[i] ? `<button type="button" data-ax-qty="${i}" data-d="-1" aria-label="Remove one ${n}">−</button><b>${AX.qty[i]}</b>` : ''}<button type="button" class="add" data-ax-qty="${i}" data-d="1" aria-label="Add one ${n}">+</button></span></div>`).join('')}</div>
+      <div class="ax-gp__foot"><div class="ax-gp__quick"><button type="button" data-ax-call>Call staff</button><button type="button" data-ax-bill>Bill please</button></div>
+        <button type="button" class="dp-g__send${count ? ' on' : ''}" data-ax-send${count ? '' : ' disabled'}><span>Send order</span><span>${count ? count + ' item' + (count > 1 ? 's' : '') + ' · ' + peso(sum) : 'Add items'}</span></button>
+        <small>GOES TO THE COUNTER → KITCHEN</small></div>
+      ${AX.toast ? `<div class="dp-g__toast" role="status"><b>✓</b>${esc(AX.toast)}</div>` : ''}
+      ${on ? '' : '<div class="ax-lock"><small>ADD-ON</small><b>Guests order from their phone. It pops up on your counter tablet.</b><button type="button" data-act="tableOrder">+ Add table ordering</button><small>FROM ₱499/MO</small></div>'}`;
+    // Phones: the popup and live orders again, at thumb size
+    $('[data-ax-big]', sec).innerHTML = (popT ? `<div class="ax-bigpop"><div class="ax-pop__h"><span><i></i>${popT.order ? 'NEW ORDER' : 'REQUEST'}</span><small>JUST NOW</small></div><b>${esc(popT.table)}</b><p>${esc(popT.items)}</p>
+        <div class="ax-pop__a"><button type="button" data-ax-accept>${popT.order ? 'Accept · send to kitchen' : 'On my way'}</button><button type="button" data-ax-later>Later</button></div></div>` : '') +
+      `<div class="ax-bigl"><div class="ax-bigl__h"><small>LIVE ORDERS</small><small>${fresh} NEW</small></div>${AX.tix.map(t => `<div class="ax-bigl__r${t.st === 0 ? ' new' : t.st >= 2 ? ' done' : ''}"><span><span><b>${esc(t.table)}</b>${axPill(t)}</span><small>${esc(t.items)}</small></span>${on && t.st < 2 ? `<button type="button" data-ax-tk="${t.id}"${t.st === 0 ? ' class="hi"' : ''}>${axShort(t)}</button>` : ''}</div>`).join('')}</div>`;
+  }
+  const axSec = $('[data-app-section]');
+  if (axSec) {
+    let axT;
+    const axPush = (t, msg) => {
+      const id = Date.now();
+      AX.tix = [{ id, table: 'Table 4', st: 0, ...t }, ...AX.tix].slice(0, 5);
+      AX.pop = id; AX.toast = msg;
+      clearTimeout(axT); axT = setTimeout(() => { AX.toast = ''; renderAppSection(); }, 2200);
+    };
+    axSec.addEventListener('click', e => {
+      const t = e.target.closest('[data-ax-qty],[data-ax-call],[data-ax-bill],[data-ax-send],[data-ax-tk],[data-ax-accept],[data-ax-later]');
+      if (!t) return;
+      const ds = t.dataset;
+      if (ds.axQty) AX.qty[+ds.axQty] = Math.max(0, AX.qty[+ds.axQty] + +ds.d);
+      else if ('axCall' in ds) axPush({ items: 'Call staff', lines: [['Guest needs help', '']], order: false }, 'Staff is on the way');
+      else if ('axBill' in ds) axPush({ items: 'Bill please', lines: [['Guest asked for the bill', '']], order: false }, 'Bill requested');
+      else if ('axSend' in ds) {
+        const cart = GMENU.map(([n, p], i) => ({ n, p, q: AX.qty[i] })).filter(m => m.q);
+        if (!cart.length) return;
+        axPush({ items: cart.map(m => m.n + ' ×' + m.q).join(', '), lines: cart.map(m => [m.n, '×' + m.q]), total: cart.reduce((a, m) => a + m.q * m.p, 0), order: true }, 'Sent to the counter');
+        AX.qty = AX.qty.map(() => 0);
+      } else if (ds.axTk) { const tk = AX.tix.find(x => x.id === +ds.axTk); if (tk) { tk.st++; if (AX.pop === tk.id) AX.pop = null; } }
+      else if ('axAccept' in ds) { const tk = AX.tix.find(x => x.id === AX.pop); if (tk) tk.st = 1; AX.pop = null; }
+      else if ('axLater' in ds) AX.pop = null;
+      renderAppSection();
+    });
+    // Mobile swipe row: dots follow the card in view.
+    const row = $('[data-ax-row]', axSec);
+    row.addEventListener('scroll', () => {
+      const card = row.firstElementChild, i = Math.min(4, Math.round(row.scrollLeft / ((card?.offsetWidth || 1) + 12)));
+      $$('[data-ax-dots] i', axSec).forEach((d, k) => d.classList.toggle('on', k === i));
+      $('[data-ax-pager]', axSec).textContent = `${i + 1} / 5 · SWIPE →`;
+    }, { passive: true });
   }
 
   /* ---------- hero (1b): three faces + finish + selected offer, same state as the builder ---------- */
@@ -521,7 +596,6 @@
     const reject = (error, input) => ({ error, input });
     if (!S.name.trim()) return reject('Enter your business name so we know who the order is for.', 'tf-name');
     if (d.design === 'links' && d.activePl.length < 2) return reject('Choose at least two apps for your multi-link page.');
-    if (d.isApp && S.feats.order && !S.feats.menu) return reject('Table ordering requires the live QR menu.');
     const destinations = d.isQuad
       ? S.slots.map((id, i) => ({ label: 'Tap ' + (i + 1) + ' · ' + d.slotName(id), plat: id, value: S.slotLinks[i], input: 'tf-url-zone-' + i }))
       : d.activePl.map(([id, label]) => ({ label, plat: id, value: S.links[id], input: 'tf-url-' + id }));
@@ -547,14 +621,14 @@
       items.push(line);
     };
     const props = { 'Business name': S.name.trim(), Setup: d.pkg ? d.plan.name + ' package' : (d.isQuad ? '4-Tap Bar' : 'TAP4.1 L-Stand') + (d.isApp ? ' + tapfour app' : ''), Finish: FINISHES.find(x => x.id === S.finish).name };
-    if (d.pkg) Object.assign(props, { Stands: PKGS[d.pkg].stands + ' × TAP4.1 L-Stand', 'Table ordering': S.pkgOrder ? 'Yes — send a quote (from ₱499/mo)' : 'No' });
+    if (d.pkg) props.Stands = PKGS[d.pkg].stands + ' × TAP4.1 L-Stand';
     if (d.isQuad) props['Tap zones'] = S.slots.map(d.slotName).join(', ');
     else {
       Object.assign(props, { Design: DESIGNS.find(x => x.id === d.design).name, 'Tap opens': d.destUrl });
       if (d.design === 'links') props['4-in-1 apps'] = d.activePl.map(p => p[1]).join(', ');
     }
     if (d.isApp) props['App page'] = 'Assigned during setup after checkout';
-    if (d.isApp && S.feats.wifi) props['Wi-Fi per guest'] = S.wifiH + (S.wifiH > 1 ? ' hours' : ' hour');
+    if (d.isApp) Object.assign(props, { 'Wi-Fi per guest': S.wifiH + (S.wifiH > 1 ? ' hours' : ' hour'), 'Table ordering': S.tableOrder ? 'Yes — send a quote (from ₱499/mo)' : 'No' });
     destinations.forEach(dest => { props[dest.label + (dest.plat === 'google' ? ' link' : ' URL')] = dest.value || 'To be provided after checkout'; });
     if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
 
@@ -563,7 +637,6 @@
     if (d.linkFee) add(LINKS, 1);
     if (d.isApp) {
       add(planItem(d.plan, S.yearly), 1, null, true);
-      d.activeFeats.filter(f => f.handle).forEach(f => add(f, 1, null, true));
     }
     d.activeSvcs.forEach(v => {
       if (!v.vid || !v.available) missing.push(v.name);
@@ -644,7 +717,7 @@
       d.hwMenuFee ? line(HW_MENU.name, peso(d.hwMenuFee)) : '',
       d.linkFee ? line(LINKS.name, peso(d.linkFee), d.activePl.map(p => p[1]).join(' · ')) : '',
       d.isApp ? line(d.plan.name + ' plan', peso(planPrice(d.plan)) + '/mo', S.yearly ? 'Billed yearly' : 'Billed monthly') : '',
-      ...d.activeFeats.filter(f => f.handle).map(f => line(f.name, peso(priceOf(f)) + '/mo')),
+      d.isApp && S.tableOrder ? line('Table ordering', 'quote', 'From ₱499/mo · priced by your tables') : '',
       ...d.activeSvcs.map(v => line(v.name, peso(v.price) + (v.monthly ? '/mo' : ''), 'Done-for-you service'))
     ].join('');
     const totals = `<div class="co-totals"><div><span>One-time</span><b>${peso(d.oneTime)}</b></div>${d.monthly ? `<div><span>Monthly</span><b>${peso(d.monthly)}</b></div>` : ''}${d.saved > 0 ? `<div class="lime"><span>You save</span><b>${peso(d.saved)}</b></div>` : ''}</div>`;
@@ -794,20 +867,13 @@
       set({ plats: { ...S.plats, [id]: !S.plats[id] } });
     },
     slot: i => { const idx = SLOT_OPTS.findIndex(x => x[0] === S.slots[i]); set({ slots: S.slots.map((v, j) => j === +i ? SLOT_OPTS[(idx + 1) % SLOT_OPTS.length][0] : v), slotLinks: S.slotLinks.map((v, j) => j === +i ? '' : v) }); },
-    feat: id => {
-      const feats = { ...S.feats, [id]: !S.feats[id] };
-      if (id === 'order' && feats.order) feats.menu = true;
-      if (id === 'menu' && !feats.menu) feats.order = false;
-      set({ feats });
-    },
     plan: id => set({ plan: id }),
     planCta: id => { set({ plan: id, pkg: id }); if (builder) scrollTo('build'); },
-    pkgOrder: () => { DP.oView = !S.pkgOrder; set({ pkgOrder: !S.pkgOrder }); }, // adding it opens the live floor demo
+    tableOrder: () => { DP.oView = !S.tableOrder; AX.pop = S.tableOrder ? null : 3; set({ tableOrder: !S.tableOrder }); }, // adding it opens the live floor + a sample order popup
     pkgClear: () => set({ pkg: null }),
     appPop: () => openApp(),
     appAdd: () => { set({ app: true }); closeApp(); },
     appRemove: () => { set({ app: false }); closeApp(); },
-    appFromSection: () => { set({ app: true, pkg: null }); scrollTo('build'); },
     wifiH: h => set({ wifiH: +h }),
     yearly: v => set({ yearly: v === '1' }),
     svc: id => set({ svcs: { ...S.svcs, [id]: !S.svcs[id] } }),
@@ -854,7 +920,7 @@
   /* ---------- gentle reveal on scroll ---------- */
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
-    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-dash, .dp__grid, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
+    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-demo, .dp__grid, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
   }
 
   document.addEventListener('click', e => { const a = e.target.closest('[data-open-checkout]'); if (a && builder) { e.preventDefault(); order(); } });

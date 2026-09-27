@@ -79,7 +79,7 @@
             <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
           </div>
           <div class="dp-add">
-            <div class="dp-add__h"><span><small>ADD-ON</small><b>Order from the table</b></span><button type="button" data-act="pkgOrder" aria-pressed="false">+ Add</button></div>
+            <div class="dp-add__h"><span><small>ADD-ON</small><b>Order from the table</b></span><button type="button" data-act="tableOrder" aria-pressed="false">+ Add</button></div>
             <div class="dp-add__flow"><span>Guest</span><i>→</i><span>Your server</span><i>→</i><span>Kitchen</span></div>
             <div class="dp-add__f"><small>PRICED BY TABLES &amp; VOLUME</small><b>from ₱499/mo</b></div>
           </div>

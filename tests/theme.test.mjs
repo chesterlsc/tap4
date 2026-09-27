@@ -210,18 +210,18 @@ test('4-Tap Bar and the tapfour app popup', async t => {
   assert.doesNotMatch($('#tf-summary').textContent, /tapfour app/, 'not added until confirmed');
   assert.match($('#tf-app').textContent, /Order from the table/);
   assert.match($('#tf-app').textContent, /Tap-to-join Wi-Fi/);
-  $('#tf-app [data-act="feat"][data-arg="order"]').click(); // needs the live menu, so it switches that on too
-  assert.match($('#tf-app [data-act="appAdd"]').textContent, /₱997\/mo/); // 299 + 199 + 499
+  assert.match($('#tf-app').textContent, /Included in every plan/);
+  $('#tf-app [data-act="tableOrder"]').click(); // the one add-on: quote-priced, nothing charged now
+  assert.match($('#tf-app [data-act="appAdd"]').textContent, /₱299\/mo \+ quote/);
   $('#tf-app [data-act="appAdd"]').click();
   assert.match($('#tf-summary').textContent, /tapfour app · Solo/);
-  assert.match($('#tf-summary').textContent, /Then ₱997\/mo/);
+  assert.match($('#tf-summary').textContent, /Table ordering · we send your quote/);
+  assert.match($('#tf-summary').textContent, /Then ₱299\/mo/);
 
   input($('#tf-name'), 'Kape Norte');
   $('[data-act="order"]').click();
   assert.ok(!$('#tf-checkout').hidden, 'checkout opens with blank zone links');
-  $('.co-cta').click(); // review -> menu (live menu needs one)
-  input($('#co-menuText'), 'Latte — ₱150');
-  $('.co-cta').click();
+  $('.co-cta').click(); // review -> details (no printed menu on the bar)
   const fill = (id, v) => input($('#co-' + id), v);
   fill('name', 'Juan'); fill('phone', '0917 123 4567'); fill('address', 'Baguio');
   $('.co-cta').click();
@@ -229,46 +229,46 @@ test('4-Tap Bar and the tapfour app popup', async t => {
   const body = decodeURIComponent(opened.split('&body=')[1]);
   assert.match(body, /Setup: 4-Tap Bar \+ tapfour app/);
   assert.match(body, /Tap zones: Google, Facebook, Instagram, Website/);
-  assert.match(body, /Order from the table/);
-  assert.match(body, /Monthly: ₱997/);
+  assert.match(body, /Table ordering: Yes — send a quote/);
+  assert.match(body, /Monthly: ₱299/);
 });
 
-test('app section adds features to the setup builder', async t => {
+test('02 app section: table ordering add-on and the counter demo', async t => {
   const preview = await createPreview({ orderEmail: 'orders@example.com' });
   const { html } = await preview.renderPage('/');
   const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
   const w = dom.window;
   t.after(() => w.close());
-  let opened;
-  w.TF.open = url => { opened = url; };
   w.scrollTo = () => {};
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
   const $ = s => w.document.querySelector(s);
-  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
 
-  $('[data-ax="wifi"] .ax-btn').click();
+  assert.equal($('[data-ax-total]').textContent, '₱3,000 + ₱299/mo');
+  assert.ok($('[data-ax-guest] .ax-lock'), 'guest phone is locked until table ordering is added');
   $('[data-act="wifiH"][data-arg="2"]').click();
-  assert.ok($('[data-ax="wifi"]').classList.contains('on'));
-  assert.match($('[data-ax-chips]').textContent, /Wi-Fi · 2h/);
-  assert.equal($('[data-ax-total]').textContent, '₱398/mo'); // Solo 299 + Wi-Fi 99
-  $('[data-act="appFromSection"]').click();
-  assert.match($('#tf-summary').textContent, /tapfour app · Solo/);
-  assert.match($('#tf-summary').textContent, /Tap-to-join Wi-Fi/);
+  assert.match($('[data-wifi-note]').textContent, /2 hours/);
 
-  input($('#tf-name'), 'Kape Norte');
-  $('[data-act="order"]').click();
-  $('.co-cta').click(); // review -> menu (printed QR menu)
-  input($('#co-menuText'), 'Latte — ₱150');
-  $('.co-cta').click();
-  input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
-  $('.co-cta').click();
-  $('[data-co-submit]').click();
-  assert.match(decodeURIComponent(opened.split('&body=')[1]), /Wi-Fi per guest: 2 hours/);
+  $('.ax-f--order [data-act="tableOrder"]').click();
+  assert.ok($('.ax-f--order').classList.contains('on'));
+  assert.match($('[data-ax-chips]').textContent, /Table ordering/);
+  assert.match($('[data-ax-note]').textContent, /TABLE ORDERING FROM ₱499/);
+  assert.ok(!$('[data-ax-guest] .ax-lock'));
+  assert.match($('[data-ax-tablet] .ax-pop').textContent, /Table 7/); // sample order pops up on the counter tablet
+  $('[data-ax-tablet] [data-ax-later]').click();
+
+  $('[data-ax-qty="2"][data-d="1"]').click(); // + Ube Cold Brew (cart: 2 latte, 1 ensaymada, 1 ube)
+  assert.match($('[data-ax-send]').textContent, /4 items · ₱615/);
+  $('[data-ax-send]').click();
+  assert.match($('[data-ax-guest]').textContent, /Sent to the counter/);
+  assert.match($('[data-ax-tablet] .ax-pop').textContent, /Table 4.*Ube Cold Brew.*₱615/s);
+  $('[data-ax-tablet] [data-ax-accept]').click();
+  assert.match($('[data-ax-tablet] .ax-lo').textContent, /Table 4.*IN KITCHEN/s);
+  assert.equal(w.document.querySelector('[data-plans] [data-dp-view]').textContent, 'Orders', 'section 03 shows the live floor too');
 });
 
 test('every homepage section keeps its styles', async () => {
   const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
-  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.pkgc', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-tablet', '.ax-gphone', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.pkgc', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
     assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
 });
 
@@ -303,7 +303,7 @@ test('03 packages: slider, table-ordering demo and ordering a package', async t 
 
   // Table ordering: the add-on opens the live floor; a guest order lands on table 4 and the server's phone.
   slide(2);
-  $('.dp-plan:not([hidden]) [data-act="pkgOrder"]').click();
+  $('.dp-plan:not([hidden]) [data-act="tableOrder"]').click();
   assert.equal($('[data-dp-view]').textContent, 'Orders');
   assert.match($('[data-plan-total]', card()).textContent, /₱799 \+ from ₱499\/mo/);
   $('[data-to-qty="1"][data-d="1"]').click();
