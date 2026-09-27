@@ -3,11 +3,12 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
 import qrcode from 'qrcode-generator';
-import { CODE_RE, SLOT_RE, LINK_KEYS, PRODUCTS, newCode, normalizeCode, cleanUrl, slugify, initials, checklist, hashPassword, tempPassword, hasChip, hasQr, csvCell, productName } from './lib.js';
+import { CODE_RE, SLOT_RE, LINK_KEYS, PRODUCTS, newCode, normalizeCode, cleanUrl, slugify, initials, checklist, hashPassword, tempPassword, hasChip, hasQr, csvCell, productName, reviewLinkFromPlaceId, isMapsLink, slotsFor, parseProductChoice, designName } from './lib.js';
 import { tapUrl, hostUrl, back, audit, flashQ, text, getBusiness, linksOf, devicesOf, stats, RECENT, saveLinks } from './common.js';
 import { loginRoutes, requireRole, accountRoutes, setupRoutes } from './auth.js';
 import * as V from './views.js';
 import * as common from './common.js';
+import { reviewLinkFromMaps } from './google.js';
 
 export const admin = new Hono();
 admin.use('*', secureHeaders());
@@ -112,9 +113,9 @@ admin.post('/b/:id/links', async c => {
 });
 
 /* devices */
-async function createDevices(c, { sku, qty, business, branch }) {
-  const p = PRODUCTS[sku];
-  if (!p) throw new Error('Unknown product');
+async function createDevices(c, { sku, design, qty, business, branch }) {
+  const slots = slotsFor(sku, design);
+  if (!slots.length) throw new Error('Unknown product');
   const db = c.env.DB, prefix = `TF-${business ? initials(business.name) : 'STOCK'}-`;
   const { n: start } = await db.prepare('SELECT COUNT(*) n FROM devices WHERE label LIKE ?').bind(prefix + '%').first();
   const codes = [];
@@ -124,7 +125,7 @@ async function createDevices(c, { sku, qty, business, branch }) {
       try {
         await db.batch([
           db.prepare('INSERT INTO devices (code, label, business_id, product_sku, branch) VALUES (?, ?, ?, ?, ?)').bind(code, label, business?.id ?? null, sku, branch),
-          ...p.slots.map(([slot, key]) => db.prepare('INSERT INTO device_slots (device_code, slot, link_key) VALUES (?, ?, ?)').bind(code, slot, key))
+          ...slots.map(([slot, key]) => db.prepare('INSERT INTO device_slots (device_code, slot, link_key) VALUES (?, ?, ?)').bind(code, slot, key))
         ]);
         codes.push(code);
         break;
@@ -133,7 +134,7 @@ async function createDevices(c, { sku, qty, business, branch }) {
       }
     }
   }
-  await audit(c, business ? 'business' : 'stock', business?.id ?? sku, { created_devices: codes, sku }).run();
+  await audit(c, business ? 'business' : 'stock', business?.id ?? sku, { created_devices: codes, sku, design }).run();
   return codes;
 }
 const qtyOf = v => Math.min(100, Math.max(1, Number.parseInt(v, 10) || 1));
@@ -142,8 +143,9 @@ admin.post('/b/:id/devices', async c => {
   const b = await getBusiness(c.env.DB, c.req.param('id'));
   if (!b) return c.notFound();
   const f = await c.req.parseBody();
-  if (!PRODUCTS[f.sku]) return back(c, `/admin/b/${b.id}`, 'err', 'Pick a product.');
-  const codes = await createDevices(c, { sku: f.sku, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) });
+  const choice = parseProductChoice(f.sku);
+  if (!choice) return back(c, `/admin/b/${b.id}`, 'err', 'Pick a product and design.');
+  const codes = await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) });
   return codes.length === 1
     ? back(c, `/admin/d/${codes[0]}`, 'msg', 'Stand added. Follow the steps below to get it live.')
     : back(c, `/admin/b/${b.id}#stands`, 'msg', `${codes.length} stands added for ${b.name}. Open each one to get it live.`);
@@ -151,9 +153,10 @@ admin.post('/b/:id/devices', async c => {
 
 admin.post('/devices', async c => {
   const f = await c.req.parseBody();
-  if (!PRODUCTS[f.sku]) return back(c, '/admin/devices', 'err', 'Pick a product.');
-  const codes = await createDevices(c, { sku: f.sku, qty: qtyOf(f.qty), business: null, branch: null });
-  return back(c, '/admin/devices', 'msg', `${codes.length} blank ${PRODUCTS[f.sku].name} stands created.`);
+  const choice = parseProductChoice(f.sku);
+  if (!choice) return back(c, '/admin/devices', 'err', 'Pick a product and design.');
+  const codes = await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: null, branch: null });
+  return back(c, '/admin/devices', 'msg', `${codes.length} blank ${PRODUCTS[choice.sku].name} stands created.`);
 });
 
 admin.get('/devices', async c => {
@@ -360,9 +363,12 @@ admin.post('/b/:id/owners/:uid/remove', async c => {
 admin.get('/new', c => page(c, 'businesses', 'New client', V.quickView({ f: {}, q: flashQ(c) })));
 admin.post('/new', async c => {
   const f = await c.req.parseBody();
-  const name = text(f.name, 60), google = cleanUrl(f.google), sku = PRODUCTS[f.sku] ? f.sku : null;
+  const name = text(f.name, 60), choice = parseProductChoice(f.sku);
+  let google = cleanUrl(f.google);
+  if (google && isMapsLink(google)) google = (await reviewLinkFromMaps(google, c.env).catch(() => ({}))).review || false;
   const err = !name ? 'Type the business name.'
-    : google === null ? 'The Google review link doesn’t look right. Copy it again; it should start with https://'
+    : google === null ? 'The Google link doesn’t look right. Copy it again; it should start with https://'
+    : google === false ? 'That Google Maps link didn’t lead to one business. In Google Maps, open the business itself → Share → Copy link, and paste that.'
     : null;
   if (err) return page(c, 'businesses', 'New client', V.quickView({ f, q: { err } }));
   const b = await createBusiness(c, name, f);
@@ -371,7 +377,7 @@ admin.post('/new', async c => {
     c.env.DB.prepare('INSERT INTO business_links (business_id, key, url) VALUES (?, ?, ?)').bind(b.id, 'google', google),
     audit(c, 'business', b.id, { links: { google: { from: null, to: google } } })
   ]);
-  const codes = sku ? await createDevices(c, { sku, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) }) : [];
+  const codes = choice ? await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) }) : [];
   const parts = [google && 'Google link saved', codes.length && `${codes.length} ${codes.length > 1 ? 'stands' : 'stand'} added`].filter(Boolean).join(', ');
   return back(c, `/admin/b/${b.id}`, 'msg', `${b.name} added${parts ? ` (${parts})` : ''}. Follow the next step below.`);
 });
@@ -379,11 +385,12 @@ admin.post('/new', async c => {
 /* supplier files: CSV of chip/QR links + printable QR sheet for the chip & print supplier */
 async function supplierRows(c) {
   const bid = Number.parseInt(c.req.query('b'), 10) || 0, which = c.req.query('which') === 'all' ? 'all' : 'new';
-  const { results } = await c.env.DB.prepare(`SELECT d.code, d.label, d.product_sku, d.branch, b.name bname, s.slot
+  const { results } = await c.env.DB.prepare(`SELECT d.code, d.label, d.product_sku, d.branch, b.name bname, s.slot,
+    (SELECT group_concat(x.slot || ':' || x.link_key, ' ') FROM device_slots x WHERE x.device_code = d.code) slots
     FROM devices d JOIN device_slots s ON s.device_code = d.code LEFT JOIN businesses b ON b.id = d.business_id
     WHERE (?1 = 0 OR d.business_id = ?1) AND (?2 = 'all' OR (d.status = 'new' AND d.first_scan_at IS NULL))
     ORDER BY b.name, d.label, s.slot = 'main' DESC, s.slot LIMIT 1000`).bind(bid, which).all();
-  const rows = results.map(r => ({ ...r, chip: hasChip(r.slot) ? tapUrl(c.env, 't', r.code, r.slot) : '', qr: hasQr(r.product_sku, r.slot) ? tapUrl(c.env, 'q', r.code, r.slot) : '' }));
+  const rows = results.map(r => ({ ...r, design: designName(r.product_sku, r.slots), chip: hasChip(r.slot) ? tapUrl(c.env, 't', r.code, r.slot) : '', qr: hasQr(r.product_sku, r.slot) ? tapUrl(c.env, 'q', r.code, r.slot) : '' }));
   return { bid, which, rows };
 }
 
@@ -396,11 +403,59 @@ admin.get('/supplier', async c => {
 
 admin.get('/supplier.csv', async c => {
   const { bid, which, rows } = await supplierRows(c);
-  const head = ['label', 'code', 'client', 'product', 'branch', 'part', 'chip_link_write_to_nfc', 'qr_link_print_as_qr'];
-  const lines = [head, ...rows.map(r => [r.label, r.code, r.bname || 'not assigned', productName(r.product_sku), r.branch, V.partName(r.slot), r.chip, r.qr])];
+  const head = ['label', 'code', 'client', 'product', 'print_design', 'branch', 'part', 'chip_link_write_to_nfc', 'qr_link_print_as_qr'];
+  const lines = [head, ...rows.map(r => [r.label, r.code, r.bname || 'not assigned', productName(r.product_sku), r.design, r.branch, V.partName(r.slot), r.chip, r.qr])];
   const name = `tap4-supplier-${bid ? slugify(rows[0]?.bname || 'client') : 'all'}-${which}.csv`;
   // BOM so Excel opens accents (Café) correctly
   return c.body('\ufeff' + lines.map(l => l.map(csvCell).join(',')).join('\r\n') + '\r\n', 200, {
     'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store'
   });
+});
+
+/* Google review link finder. With GOOGLE_MAPS_KEY (Places API "New"), staff search by name;
+   without it, they paste a Place ID from Google's own Place ID Finder. Only IDs/names/addresses
+   are requested, the cheapest fields. */
+async function searchPlaces(key, q) {
+  const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.googleMapsUri' },
+    body: JSON.stringify({ textQuery: q, regionCode: 'PH', languageCode: 'en', pageSize: 6 })
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error?.message || `Google said ${r.status}`);
+  return (data.places || []).map(p => ({ id: p.id, name: p.displayName?.text || '', address: p.formattedAddress || '', maps: p.googleMapsUri || '', review: reviewLinkFromPlaceId(p.id) })).filter(p => p.review);
+}
+
+admin.get('/google', async c => {
+  const q = text(c.req.query('q'), 120), bid = Number.parseInt(c.req.query('b'), 10) || 0, link = cleanUrl(c.req.query('link'));
+  let pid = c.req.query('pid'), fromLink = null;
+  const businesses = (await c.env.DB.prepare('SELECT id, name FROM businesses ORDER BY name').all()).results;
+  let results = null, err = null, built = null;
+  if (q && c.env.GOOGLE_MAPS_KEY) {
+    try { results = await searchPlaces(c.env.GOOGLE_MAPS_KEY, q); } catch (e) { err = `Google search didn’t work: ${e.message}`; }
+  }
+  if (link) {
+    const r = isMapsLink(link) ? await reviewLinkFromMaps(link, c.env).catch(() => ({})) : {};
+    if (r.review) { pid = r.review.split('placeid=')[1]; fromLink = { link, name: r.name }; }
+    else err = 'That Google Maps link didn’t lead to one business. In Google Maps, open the business itself → Share → Copy link, and paste that.';
+  } else if (link === null) err = 'That doesn’t look like a link. Copy it again from Google Maps.';
+  if (pid) {
+    const review = reviewLinkFromPlaceId(pid);
+    if (review) built = { id: pid.trim().replace(/^place_id:/i, ''), review };
+    else err = 'That doesn’t look like a Place ID. It’s a long code that often starts with ChIJ. Copy it again from the finder.';
+  }
+  return page(c, 'businesses', 'Find Google review link', V.googleFinderView({ q, bid, businesses, results, built, fromLink, err, keyed: !!c.env.GOOGLE_MAPS_KEY, q2: flashQ(c) }));
+});
+
+admin.post('/google/use', async c => {
+  const f = await c.req.parseBody();
+  const b = await getBusiness(c.env.DB, f.b);
+  const review = reviewLinkFromPlaceId(f.pid);
+  if (!b || !review) return back(c, '/admin/google', 'err', !b ? 'Pick the client to save it to.' : 'That Place ID isn’t valid.');
+  const old = (await linksOf(c.env.DB, b.id)).google || null;
+  await c.env.DB.batch([
+    c.env.DB.prepare('INSERT INTO business_links (business_id, key, url) VALUES (?, ?, ?) ON CONFLICT (business_id, key) DO UPDATE SET url = excluded.url').bind(b.id, 'google', review),
+    audit(c, 'business', b.id, { links: { google: { from: old, to: review } }, via: 'google finder' })
+  ]);
+  return back(c, `/admin/b/${b.id}`, 'msg', `Google review link saved for ${b.name} ✓ Press “Test this link” to see the review box.`);
 });

@@ -1,5 +1,6 @@
 // Helpers shared by the admin (admin.tap4.ph) and owner (dashboard.tap4.ph) dashboards.
-import { URL_KEYS, cleanUrl } from './lib.js';
+import { URL_KEYS, cleanUrl, isMapsLink } from './lib.js';
+import { reviewLinkFromMaps } from './google.js';
 import * as V from './views.js';
 
 export const TZ = '+8 hours'; // group days in Philippine time
@@ -49,9 +50,16 @@ export async function saveLinks(c, b, f, path) {
   const { results } = await db.prepare('SELECT key, url FROM business_links WHERE business_id = ?').bind(b.id).all();
   const old = Object.fromEntries(results.map(r => [r.key, r.url]));
   const stmts = [], changes = {};
+  let converted = false;
   for (const [key, label] of URL_KEYS) {
-    const url = cleanUrl(f[key]);
+    let url = cleanUrl(f[key]);
     if (url === null) return back(c, path, 'err', `${label}: that doesn’t look like a full link. Copy it again; it should start with https://`);
+    // A pasted Google Maps link in the review box is turned into the business's review link.
+    if (key === 'google' && url && isMapsLink(url)) {
+      url = (await reviewLinkFromMaps(url, c.env).catch(() => ({}))).review;
+      if (!url) return back(c, path, 'err', 'That Google Maps link didn’t lead to one business. In Google Maps, open the business itself → Share → Copy link, and paste that.');
+      converted = true;
+    }
     if ((old[key] || '') === url) continue;
     changes[key] = { from: old[key] || null, to: url || null };
     stmts.push(url
@@ -60,5 +68,5 @@ export async function saveLinks(c, b, f, path) {
   }
   if (!stmts.length) return back(c, path, 'msg', 'Nothing changed.');
   await db.batch([...stmts, audit(c, 'business', b.id, { links: changes })]);
-  return back(c, path, 'msg', `Saved ✓ ${stmts.length} link${stmts.length > 1 ? 's' : ''} updated. Every stand uses the new link from the next tap.`);
+  return back(c, path, 'msg', `Saved ✓ ${stmts.length} link${stmts.length > 1 ? 's' : ''} updated${converted ? ' (the Google Maps link was turned into the review link)' : ''}. Every stand uses the new link from the next tap. Press “Test this link” to check.`);
 }

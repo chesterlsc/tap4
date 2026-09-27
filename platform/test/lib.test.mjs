@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile, hasChip, hasQr, csvCell } from '../src/lib.js';
+import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile, hasChip, hasQr, csvCell, reviewLinkFromPlaceId, placeIdFromFid, parseMapsUrl, isMapsLink, isReviewLink, isGoogleHost, designOf, productImage, parseProductChoice, slotsFor, productOptions } from '../src/lib.js';
 
 const tap = { code: 'K7M2QX', slot: 'main', source: 'nfc' };
 const live = { status: 'active', business_id: 1, link_key: 'google', url: 'https://g.page/r/x/review', slug: 'kape-norte' };
@@ -107,4 +107,49 @@ test('csvCell quotes and blocks spreadsheet formulas', () => {
   assert.equal(csvCell('=HYPERLINK("x")'), `"'=HYPERLINK(""x"")"`);
   assert.equal(csvCell('+639170000'), "'+639170000");
   assert.equal(csvCell(null), '');
+});
+
+test('Google review link from a Place ID', () => {
+  assert.equal(reviewLinkFromPlaceId(' ChIJN1t_tDeuEmsRUsoyG83frY4 '), 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4');
+  assert.equal(reviewLinkFromPlaceId('place_id:ChIJN1t_tDeuEmsRUsoyG83frY4'), 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4');
+  for (const bad of ['', 'short', 'ChIJ<script>alert(1)</script>', 'https://evil.example/ChIJN1t_tDeuEmsRUsoyG83frY4', 'ChIJN1t tDeuEmsRUsoyG83frY4']) assert.equal(reviewLinkFromPlaceId(bad), null, bad);
+});
+
+test('Maps link → Place ID without an API', () => {
+  // Sydney Opera House: feature ID in Maps links ↔ Google's published Place ID
+  assert.equal(placeIdFromFid('0x6b12ae665e892fdd:0x3133f8d75a1ac251'), 'ChIJ3S-JXmauEmsRUcIaWtf4MzE');
+  assert.equal(placeIdFromFid('not a fid'), null);
+  const full = 'https://www.google.com/maps/place/Sydney+Opera+House/@-33.8567844,151.213108,17z/data=!3m1!4b1!4m6!3m5!1s0x6b12ae665e892fdd:0x3133f8d75a1ac251!8m2!3d-33.8567844!4d151.2152967!16zL20vMDZfbmQ?entry=ttu';
+  assert.deepEqual(parseMapsUrl(full), { placeId: 'ChIJ3S-JXmauEmsRUcIaWtf4MzE', name: 'Sydney Opera House', fid: '0x6b12ae665e892fdd:0x3133f8d75a1ac251' });
+  assert.equal(parseMapsUrl('https://www.google.com/maps/search/?api=1&query=x&query_place_id=ChIJN1t_tDeuEmsRUsoyG83frY4').placeId, 'ChIJN1t_tDeuEmsRUsoyG83frY4');
+  assert.equal(parseMapsUrl('https://www.google.com/maps/place/?q=place_id%3AChIJN1t_tDeuEmsRUsoyG83frY4').placeId, 'ChIJN1t_tDeuEmsRUsoyG83frY4');
+  assert.equal(parseMapsUrl('https://maps.google.com/?cid=123').placeId, null);
+});
+
+test('only Google links are treated as Maps links / fetched', () => {
+  assert.ok(isMapsLink('https://maps.app.goo.gl/AbC123') && isMapsLink('https://www.google.com/maps/place/X'));
+  assert.ok(!isMapsLink('https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4'), 'already a review link');
+  assert.ok(!isMapsLink('https://g.page/r/CabcDEF/review') && isReviewLink('https://g.page/r/CabcDEF/review'));
+  for (const bad of ['evil.com', 'google.com.evil.com', 'maps.app.goo.gl.evil.com', 'localhost', '169.254.169.254']) assert.ok(!isGoogleHost(bad), bad);
+});
+
+
+test('real share-link shapes', () => {
+  // maps.app.goo.gl → maps.google.com/?q=…&ftid=… (Philippine café)
+  const q = parseMapsUrl('https://maps.google.com/?q=77V3+6JV+Lacafera-Malandag,+Malungon,+Sarangani&ftid=0x32f779004e157d59:0x4a8a4c9315dc2947&entry=gps');
+  assert.deepEqual([q.placeId, q.name], ['ChIJWX0VTgB59zIRRyncFZNMiko', 'Lacafera-Malandag']);
+  // a link to one person's review has an empty (0x0) half: not a business, must not produce an ID
+  assert.equal(parseMapsUrl('https://www.google.com/maps/reviews/data=!4m8!14m7!1m6!2m5!1sChdDSUhN!2m1!1s0x0:0xf31d0a7030cc7f1e').placeId, null);
+});
+
+test('TAP4.1 lineup: designs, photos, picker', () => {
+  assert.deepEqual(slotsFor('TF-L41-BLK', 'menu'), [['main', 'google'], ['menu', 'menu']]);
+  assert.equal(designOf('main:links'), 'links');
+  assert.equal(designOf([{ slot: 'main', link_key: 'google' }, { slot: 'menu', link_key: 'menu' }]), 'menu');
+  assert.equal(productImage('TF-L41-WHT', 'main:google'), 'tapfour-l-white-review.jpg');
+  assert.equal(productImage('TF-BAR', 'z1:google'), 'bar-4tap.jpg');
+  assert.deepEqual(parseProductChoice('TF-L41-BLK:links'), { sku: 'TF-L41-BLK', design: 'links' });
+  for (const bad of ['TF-L41-BLK', 'TF-L41-BLK:nope', 'TF-STAND-ACR', 'TF-BAR:menu', '']) assert.equal(parseProductChoice(bad), null, bad);
+  assert.ok(!productOptions().some(([v]) => v.startsWith('TF-STAND') || v === 'TF-CARD'), 'retired products are not offered');
+  assert.ok(!hasQr('TF-L41-BLK', 'main') && hasQr('TF-L41-BLK', 'menu'), 'only the menu design has a printed QR');
 });

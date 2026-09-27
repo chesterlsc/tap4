@@ -3,7 +3,7 @@
 // Writing rule: plain words a café owner understands. No "slots", "QC" or "destinations" on screen.
 import { html, raw } from 'hono/html';
 import sprite from '../../snippets/icon-sprite.liquid';
-import { LINK_KEYS, URL_KEYS, PRODUCTS, linkName, productName, checklist, initials } from './lib.js';
+import { LINK_KEYS, URL_KEYS, PRODUCTS, linkName, productName, checklist, initials, productImage, productOptions, designName } from './lib.js';
 
 export const SUPPORT_EMAIL = 'hello@tap4.ph';
 
@@ -162,7 +162,8 @@ const SPLIT_COLORS = { google: '#c8f23c', menu: '#f2f0eb', instagram: '#f27fa8',
 const kpi = (label, value, note, lime) => html`<div class="kpi"><span>${label}</span><b>${n(value)}</b><em${lime ? raw(' class="lime"') : ''}>${note}</em></div>`;
 const flash = q => html`${q.msg ? html`<div class="flash flash--ok" role="status">${q.msg}</div>` : ''}${q.err ? html`<div class="flash flash--err" role="alert">${q.err}</div>` : ''}`;
 const head = (eyebrow, title, aside = '', lead = '') => html`<div class="sec__head"><div class="sec__titles"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lead ? html`<p class="lead">${lead}</p>` : ''}</div>${aside}</div>`;
-const productSelect = (name = 'sku') => html`<label class="field">Product<select name="${name}">${Object.entries(PRODUCTS).map(([sku, p]) => html`<option value="${sku}">${p.name}</option>`)}</select></label>`;
+const productSelect = (name = 'sku') => html`<label class="field">Product & design<select name="${name}">${productOptions().map(([v, label]) => html`<option value="${v}">${label}</option>`)}</select></label>`;
+const pimg = (d, cls = 'thumb') => { const src = productImage(d.product_sku, d.slots); return src ? html`<img class="${cls}" src="/${src}" alt="" loading="lazy">` : html`<span class="thumb"></span>`; };
 const devLink = d => html`<a href="/admin/d/${d.code}">${d.label || d.code}</a>`;
 const zoneName = slot => slot === 'main' ? 'Main tap' : slot === 'menu' ? 'Menu QR' : /^z\d$/.test(slot) ? `Tap zone ${slot.slice(1)}` : `Extra: ${slot}`;
 const help = (summary, body, open = false) => html`<details class="help"${open ? raw(' open') : ''}><summary>${summary}</summary><div>${body}</div></details>`;
@@ -171,7 +172,7 @@ const next = ({ tag = 'NEXT STEP', title, text, action = '', calm = false }) => 
 
 // Where to find each link. Shown under the field for staff and owners alike.
 const LINK_HELP = {
-  google: html`Google Maps → your business → <b>Ask for reviews</b> (or “Share review form”) → Copy. It looks like <b>https://g.page/r/…/review</b> and opens the 5-star box directly.`,
+  google: html`<b>Easiest:</b> open the business in Google Maps → <b>Share</b> → <b>Copy link</b> and paste it here. We turn it into the review link automatically. (A review link like <b>https://g.page/r/…/review</b> works too.)`,
   menu: html`Any link to your menu: a menu page on your website, a Canva site, or a Google Drive PDF shared as <b>Anyone with the link</b>.`,
   website: html`Your own website, e.g. <b>https://yourshop.ph</b>.`,
   facebook: html`Open your Facebook Page → <b>Share</b> → <b>Copy link</b>.`,
@@ -327,7 +328,7 @@ const usedBy = (devices, owner) => {
   return m;
 };
 
-const linksForm = (action, links, devices, title = 'Their links', owner = false) => {
+const linksForm = (action, links, devices, title = 'Their links', owner = false, finder = null) => {
   const used = usedBy(devices, owner);
   return html`<form class="panel" method="post" action="${action}">
       <div class="panel__head"><span>${title.toUpperCase()}</span><span>CHANGE ANYTIME · NO REPRINT</span></div>
@@ -335,6 +336,7 @@ const linksForm = (action, links, devices, title = 'Their links', owner = false)
       ${URL_KEYS.map(([k, label]) => html`<div class="linkrow">
         <label class="field"><b class="row-wrap" style="gap:8px">${icon(k, 15)}${label}</b><input name="${k}" type="url" inputmode="url" placeholder="https://…" value="${links[k] || ''}"></label>
         <div class="hint">${LINK_HELP[k]}</div>
+        ${k === 'google' && finder ? html`<a class="btn btn--ghost btn--sm" href="${finder}" style="align-self:flex-start">Don’t have it? Find it for me →</a>` : ''}
         <div class="linkrow__foot"><span class="mono-11 m3">${used[k] ? `USED BY: ${[...new Set(used[k])].join(', ').toUpperCase()}` : 'NOT USED BY ANY STAND YET'}</span>${links[k] ? html`<a class="mono-11" href="${links[k]}" target="_blank" rel="noopener noreferrer">TEST THIS LINK ↗</a>` : ''}</div>
       </div>`)}
       <div><button class="btn btn--lime btn--lg">Save links</button></div>
@@ -344,7 +346,7 @@ const linksForm = (action, links, devices, title = 'Their links', owner = false)
 const opensList = d => (d.slots || '').split(' ').filter(Boolean).map(s => { const [slot, key] = s.split(':'); return (slot === 'main' ? '' : zoneName(slot) + ': ') + linkName(key); }).join(' · ');
 
 const deviceRows = devices => devices.map(d => html`<tr>
-    <td>${PRODUCTS[d.product_sku]?.img ? html`<img class="thumb" src="/${PRODUCTS[d.product_sku].img}" alt="" loading="lazy">` : html`<span class="thumb"></span>`}</td>
+    <td>${pimg(d)}</td>
     <td>${devLink(d)}<div class="mono-11 m3">${d.code}</div></td><td>${productName(d.product_sku)}</td><td class="m2">${d.branch || '—'}</td>
     <td class="wrap m2">${opensList(d)}</td>
     <td>${status(d)}</td><td class="mono lime">${n(d.taps)}</td><td class="mono m3">${ago(d.last_ts)}</td>
@@ -352,7 +354,7 @@ const deviceRows = devices => devices.map(d => html`<tr>
 const devicesTable = devices => devices.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>NAME</th><th>PRODUCT</th><th>BRANCH</th><th>A TAP OPENS</th><th>STATUS</th><th>TAPS</th><th>LAST TAP</th><th></th></tr></thead><tbody>${deviceRows(devices)}</tbody></table></div>` : html`<div class="empty">No stands or cards yet. Add one below.</div>`;
 
 const deviceCards = devices => devices.length ? html`<div class="devcards">${devices.map(d => html`<div class="devcard">
-    ${PRODUCTS[d.product_sku]?.img ? html`<img src="/${PRODUCTS[d.product_sku].img}" alt="" loading="lazy">` : html`<span class="thumb"></span>`}
+    ${pimg(d, '')}
     <div class="stack-10"><b>${productName(d.product_sku)}${d.branch ? ` · ${d.branch}` : ''}</b>
       <span>Opens: ${opensList(d) || '—'}</span>
       <div class="row-wrap" style="gap:10px">${status(d, true)}<span class="mono">${n(d.taps)} taps</span></div></div>
@@ -407,11 +409,11 @@ export function businessView({ b, tapBase, ownerViewUrl, links, devices, owners,
   ${steps(['Links added', 'Stand added', 'Stands live', 'Owner login'], now < 0 ? 4 : now)}
   ${todo ? next(todo) : next({ calm: true, tag: 'ALL SET', title: `${b.name} is fully set up.`, text: 'Their stands are live and the owner can log in. Come back here anytime to change links or add stands.' })}
   <div class="grid2">
-    <div id="links">${linksForm(`/admin/b/${b.id}/links`, links, devices)}</div>
+    <div id="links">${linksForm(`/admin/b/${b.id}/links`, links, devices, 'Their links', false, `/admin/google?b=${b.id}&q=${encodeURIComponent(b.name)}`)}</div>
     <div class="stack-14">
       <div class="panel" id="stands"><div class="panel__head"><span>THEIR STANDS & CARDS</span><span>${devices.length} TOTAL</span></div>
         ${devices.length ? html`<div class="stack-10">${devices.map(d => html`<a class="standrow" href="/admin/d/${d.code}">
-          ${PRODUCTS[d.product_sku]?.img ? html`<img class="thumb" src="/${PRODUCTS[d.product_sku].img}" alt="">` : html`<span class="thumb"></span>`}
+          ${pimg(d)}
           <span><b>${d.label || d.code}</b><small>${productName(d.product_sku)}${d.branch ? ` · ${d.branch}` : ''}</small><small>Opens: ${opensList(d)}</small></span>
           <span class="standrow__end">${status(d)}<span class="mono-11 lime">${d.status === 'active' ? `${n(d.taps)} TAPS` : 'CONTINUE →'}</span></span></a>`)}</div>` : html`<div class="empty">None yet.</div>`}
         <form class="fields" method="post" action="/admin/b/${b.id}/devices" style="align-items:end">
@@ -605,7 +607,8 @@ export function guideView({ tapBase }) {
 
   <section class="panel" id="setup"><h2>2. Set up a new client (about 10 minutes)</h2>
     <ol class="olist">
-      <li><b>Press “+ New client”</b> (top right, on every page). Type the business name exactly as printed on the stand, paste their Google review link, and pick the product they bought.</li>
+      <li><b>Press “+ New client”</b> (top right, on every page). Type the business name, paste their Google Maps link (from the order), and pick the stand, colour and design they bought.</li>
+      <li><b>No Google review link?</b> Press <b>Find it for me</b> under the Google box: search the business name, pick it, and it’s saved.</li>
       <li><b>Add their other links</b> on the client page (menu, Facebook, Instagram…). Under each box it says where to find it. Press <b>Test this link</b> after saving.</li>
       <li><b>Open the stand and follow the steps at the top:</b> choose what it opens → write the chip with NFC Tools → tap it (it opens the stand’s page = it works) → tick the quality check → <b>Go live</b>.</li>
       <li><b>Create the owner login</b> on the client page and send the ready-made message by Messenger or Viber.</li>
@@ -745,16 +748,16 @@ export function quickView({ f, q }) {
   <form class="panel" method="post" action="/admin/new" style="max-width:720px">
     <div class="panel__head"><span><span class="stepnum">1</span>THE BUSINESS</span><span>REQUIRED: NAME</span></div>
     <div class="fields">
-      <label class="field"><b>Business name</b><input name="name" required maxlength="60" placeholder="Kape Norte" value="${f.name || ''}" autofocus><span class="hint">Exactly as printed on the stand.</span></label>
+      <label class="field"><b>Business name</b><input name="name" required maxlength="60" placeholder="Kape Norte" value="${f.name || ''}" autofocus><span class="hint">For your records and their links page. Stands aren’t printed with it.</span></label>
       <label class="field"><b>Contact person</b><input name="contact_name" maxlength="60" placeholder="Ana Reyes" value="${f.contact_name || ''}"></label>
       <label class="field"><b>Phone / Viber</b><input name="phone" type="tel" maxlength="30" value="${f.phone || ''}"></label>
       <label class="field"><b>Email</b><input name="email" type="email" maxlength="120" value="${f.email || ''}"></label>
     </div>
     <div class="panel__head" style="margin-top:8px"><span><span class="stepnum">2</span>GOOGLE REVIEW LINK</span><span>OPTIONAL</span></div>
-    <label class="field">${icon('google', 15)}<input name="google" type="url" inputmode="url" placeholder="https://g.page/r/…/review" value="${f.google || ''}"><span class="hint">${LINK_HELP.google} Don’t have it yet? Leave it empty.</span></label>
+    <label class="field">${icon('google', 15)}<input name="google" type="url" inputmode="url" placeholder="https://g.page/r/…/review" value="${f.google || ''}"><span class="hint">${LINK_HELP.google} Don’t have it yet? Leave it empty, or <a href="/admin/google" target="_blank" rel="noopener">find it for me ↗</a>.</span></label>
     <div class="panel__head" style="margin-top:8px"><span><span class="stepnum">3</span>WHAT THEY BOUGHT</span><span>OPTIONAL</span></div>
     <div class="fields" style="align-items:end">
-      <label class="field"><b>Product</b><select name="sku"><option value="">No stand yet</option>${Object.entries(PRODUCTS).map(([sku, p]) => html`<option value="${sku}"${sel(f.sku, sku)}>${p.name}</option>`)}</select></label>
+      <label class="field"><b>Product</b><select name="sku"><option value="">No stand yet</option>${productOptions().map(([v, label]) => html`<option value="${v}"${sel(f.sku, v)}>${label}</option>`)}</select></label>
       <label class="field"><b>How many</b><input name="qty" type="number" min="1" max="100" value="${f.qty || 1}"></label>
       <label class="field"><b>Branch</b><input name="branch" maxlength="40" placeholder="optional, e.g. BGC" value="${f.branch || ''}"></label>
     </div>
@@ -778,6 +781,7 @@ Please:
 - NFC chips: NTAG213 or NTAG215. Write the "chip_link" of each row as a URL record, exactly as written. Then LOCK the chip (read-only).
 - Printed QR: use the QR from the sheet, or make one from the "qr_link". Black on white, at least 2.5 cm wide, keep the white border.
 - Important: chip links contain /t/ and QR links contain /q/. Please don't swap them.
+- Print each stand with the design in the "print_design" column (Google Review / Review + QR menu / Socials 4-in-1), in the colour of its product (Glossy Black / Glossy White).
 - Keep each stand's chip and QR together and label the package with its label (e.g. TF-KN-0001).
 - Test before shipping: tap each chip and scan each QR with a phone. It should open a tap4 page (a login page is normal). If nothing opens, rewrite that chip.
 
@@ -804,11 +808,61 @@ Please send one sample photo (or one test stand) before the full batch. Thank yo
     <div class="row-wrap"><button type="button" class="btn btn--lime" data-copy="${message}">Copy message</button><a class="btn btn--ghost" href="/admin/guide#supplier">Supplier guide</a></div></div>
   <div class="panel"><div class="panel__head"><span>WHAT’S IN THE LIST</span><span>${n} ROWS</span></div>
     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>LABEL</th><th>CLIENT</th><th>PRODUCT</th><th>PART</th><th>CHIP LINK (NFC)</th><th>QR LINK (PRINT)</th></tr></thead><tbody>
-      ${rows.map(r => html`<tr><td><a href="/admin/d/${r.code}">${r.label || r.code}</a></td><td>${r.bname || 'Not assigned'}</td><td>${productName(r.product_sku)}</td><td>${partName(r.slot)}</td><td class="mono-12">${r.chip || '—'}</td><td class="mono-12">${r.qr || '—'}</td></tr>`)}
+      ${rows.map(r => html`<tr><td><a href="/admin/d/${r.code}">${r.label || r.code}</a></td><td>${r.bname || 'Not assigned'}</td><td>${productName(r.product_sku)}${r.design ? html`<br><span class="m3">${r.design}</span>` : ''}</td><td>${partName(r.slot)}</td><td class="mono-12">${r.chip || '—'}</td><td class="mono-12">${r.qr || '—'}</td></tr>`)}
     </tbody></table></div></div>`}
   </div>
   ${prints ? html`<section class="panel" style="background:transparent;box-shadow:none;padding:0"><div class="panel__head no-print"><span>QR SHEET PREVIEW</span><span>${prints} QR${prints === 1 ? '' : 'S'}</span></div>
     <h2 class="print-title" style="display:none">tap4 QR sheet: ${who}</h2>
-    <div class="qrsheet">${rows.filter(r => r.qr).map(r => html`<div class="qrcell">${raw(qrs[r.qr])}<b>${r.label || r.code}</b><span>${r.bname || ''}${r.bname ? ' · ' : ''}${partName(r.slot)}</span><code>${r.qr}</code></div>`)}</div></section>` : ''}
+    <div class="qrsheet">${rows.filter(r => r.qr).map(r => html`<div class="qrcell">${raw(qrs[r.qr])}<b>${r.label || r.code}</b><span>${r.bname || ''}${r.bname ? ' · ' : ''}${partName(r.slot)}${r.design ? ` · ${r.design}` : ''}</span><code>${r.qr}</code></div>`)}</div></section>` : ''}
   <style>@media print{.print-title{display:block!important;margin-bottom:6mm}}</style>`;
+}
+
+export function googleFinderView({ q, bid, businesses, results, built, fromLink, err, keyed, q2 }) {
+  const clientPick = (pid, label = 'Save to client') => html`<form method="post" action="/admin/google/use" class="row-wrap" style="gap:8px">
+      <input type="hidden" name="pid" value="${pid}">
+      <select name="b" required style="background:var(--bg);color:var(--fg);border:1px solid var(--l4);border-radius:10px;padding:9px 10px;max-width:220px"><option value="">Choose client…</option>${businesses.map(b => html`<option value="${b.id}"${b.id === bid ? raw(' selected') : ''}>${b.name}</option>`)}</select>
+      <button class="btn btn--lime btn--sm">${label}</button></form>`;
+  const resultCard = r => html`<div class="linkrow">
+      <b style="font-size:16px">${r.name}</b><span class="hint">${r.address}</span>
+      <div class="row-wrap"><a class="btn btn--ghost btn--sm" href="${r.review}" target="_blank" rel="noopener noreferrer">Test review box ↗</a>${r.maps ? html`<a class="btn btn--ghost btn--sm" href="${r.maps}" target="_blank" rel="noopener noreferrer">See on Maps ↗</a>` : ''}</div>
+      ${clientPick(r.id)}</div>`;
+  const client = bid ? businesses.find(b => b.id === bid) : null;
+  const builtCard = built ? html`<div class="linkrow"><b>Review link ready${fromLink?.name ? html`: ${fromLink.name}` : ''}</b><code class="mono-12" style="overflow-wrap:anywhere">${built.review}</code>
+      <div class="row-wrap"><a class="btn btn--ghost btn--sm" href="${built.review}" target="_blank" rel="noopener noreferrer">Test review box ↗</a><button type="button" class="btn btn--ghost btn--sm" data-copy="${built.review}">Copy link</button></div>
+      <p class="hint">Test it first: the 5-star box should open for the right business. Then save it:</p>${clientPick(built.id)}</div>` : '';
+  return html`${flash(q2)}${err ? html`<div class="flash flash--err" role="alert">${err}</div>` : ''}
+  ${head('GOOGLE REVIEW LINK', 'Find a client’s review link.', client ? html`<a class="btn btn--ghost" href="/admin/b/${client.id}">Back to ${client.name}</a>` : '', 'Get the link that opens a business’s 5-star Google review box, without needing the owner’s Google login.')}
+  <div class="panel"><form method="get" action="/admin/google" class="stack-14">
+    <div class="panel__head"><span><span class="stepnum">1</span>PASTE THE GOOGLE MAPS LINK</span><span>EASIEST</span></div>
+    <p class="hint" style="font-size:13.5px">On your phone: open the business in <b>Google Maps</b> → <b>Share</b> → <b>Copy link</b>. Paste it here.</p>
+    ${bid ? html`<input type="hidden" name="b" value="${bid}">` : ''}
+    <div class="row-wrap" style="align-items:stretch"><label class="field" style="flex:1;min-width:220px"><input name="link" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" value="${fromLink?.link || ''}" ${keyed ? '' : raw('autofocus')}></label><button class="btn btn--lime">Get review link</button></div>
+  </form>${built && fromLink ? builtCard : ''}</div>
+  ${keyed ? html`<form method="get" action="/admin/google" class="panel">
+    <div class="panel__head"><span>OR: SEARCH GOOGLE BY NAME</span><span>NAME + AREA WORKS BEST</span></div>
+    ${bid ? html`<input type="hidden" name="b" value="${bid}">` : ''}
+    <div class="row-wrap" style="align-items:stretch"><label class="field" style="flex:1;min-width:220px"><input name="q" value="${q || ''}" placeholder="e.g. Kape Norte Maginhawa Quezon City" required></label><button class="btn btn--lime">Search</button></div>
+    ${results ? (results.length ? html`<div class="stack-10"><p class="hint">Pick the right one (check the address), press <b>Test review box</b> to be sure, then save it to the client.</p>${results.map(resultCard)}</div>` : html`<div class="empty">No match. Try adding the city or street, or use the Place ID method below.</div>`) : ''}
+  </form>` : ''}
+  <div class="panel">
+    <div class="panel__head"><span>OR: USE GOOGLE’S PLACE ID FINDER</span><span>IF THE LINK DOESN’T WORK</span></div>
+    <ol class="olist">
+      <li>Open Google’s finder: <a class="btn btn--lime btn--sm" href="https://developers.google.com/maps/documentation/places/web-service/place-id#find-id" target="_blank" rel="noopener noreferrer">Open Place ID Finder ↗</a></li>
+      <li>In its map, type the <b>business name</b> and pick the right one.</li>
+      <li>Copy the <b>Place ID</b>. It’s a long code that often starts with <b>ChIJ</b>.</li>
+      <li>Paste it below and press <b>Make link</b>.</li>
+    </ol>
+    <form method="get" action="/admin/google" class="row-wrap" style="align-items:stretch">
+      ${bid ? html`<input type="hidden" name="b" value="${bid}">` : ''}
+      <label class="field" style="flex:1;min-width:220px"><input name="pid" placeholder="ChIJ…" autocomplete="off" spellcheck="false" value="${built ? built.id : ''}"></label>
+      <button class="btn btn--lime">Make link</button>
+    </form>
+    ${built && !fromLink ? builtCard : ''}
+  </div>
+  ${!keyed ? help('Want a search box here instead? (one-time setup, free)', html`<ol>
+    <li>Go to <b>console.cloud.google.com</b> and create a project (e.g. “tap4”).</li>
+    <li>Search <b>Places API (New)</b> → <b>Enable</b>. Google asks you to add a billing card; normal use here stays inside the free monthly allowance.</li>
+    <li><b>APIs & Services → Credentials → Create credentials → API key</b>. Restrict it to <b>Places API (New)</b>.</li>
+    <li>In Terminal: <code>cd ~/tapfour/platform && npx wrangler secret put GOOGLE_MAPS_KEY</code>, then paste the key when asked.</li>
+  </ol>Then this page shows a search box: type a business name, pick it, save.`) : ''}`;
 }
