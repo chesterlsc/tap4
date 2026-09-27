@@ -2,11 +2,11 @@
 
 Shopify Online Store 2.0 theme for Tapfour, built from the *Tapfour Site v3* design: NFC review stands, QR menus and the tapfour app.
 
-The homepage builder adds the chosen hardware, add-ons, app plan and services to the Shopify cart in one step (`/cart/add.js`). The setup details go on the stand's line item as properties: business name, headline and tap URLs. Prices, compare-at prices and variant IDs come from your Shopify products.
+The homepage builder adds the chosen hardware, add-ons, app plan and services to the Shopify cart in one step (`/cart/add.js`). The setup details go on the stand's line item as properties: business name, finish (Glossy Black/White), design (Google Review, Review + QR menu, Socials 4-in-1) and tap links. Prices, compare-at prices and variant IDs come from your Shopify products.
 
 ## Set up the store
 
-1. **Import products.** In Shopify admin, go to Products → Import and choose `products.csv`. This creates the 15 products the theme expects, with the right handles and variants. Then add product photos. The originals are in `assets/*.jpg`.
+1. **Import products.** In Shopify admin, go to Products → Import and choose `products.csv`. This creates the 12 products the theme expects, with the right handles and variants. Then add product photos. The originals are in `assets/*.jpg`.
 2. **Subscriptions.** `tapfour-app`, `tapfour-app-add-ons` and `managed-dashboard` are monthly or yearly. Install a subscription app such as Shopify Subscriptions and give each variant **exactly one** recurring selling plan. Until you do, the builder blocks those items instead of charging them once.
 3. **Connect the theme.** Go to Online Store → Themes → Add theme → Connect from GitHub, then pick this repo and branch `main`. Pushes to `main` then sync automatically.
 4. **Sale settings.** In Theme settings → Sale, set a real end date and stock count. If you leave them empty, the countdown and stock messages stay hidden.
