@@ -23,7 +23,7 @@ export const devicesOf = (db, id) => db.prepare(`SELECT d.*, (SELECT group_conca
 export async function stats(db, col, val) {
   const w = col ? `AND ${col} = ?` : ''; // col is always a literal from this file, never user input
   const p = col ? [val] : [];
-  const [tot, days, split, hours, prev] = await db.batch([
+  const [tot, days, split, hours, prev, todayQ] = await db.batch([
     db.prepare(`SELECT SUM(source IN ('nfc','qr')) taps, SUM(source = 'nfc') nfc, SUM(source = 'qr') qr,
       COUNT(DISTINCT visitor) visitors, SUM(link_key = 'google') review, SUM(link_key = 'menu') menu
       FROM events WHERE bot = 0 AND ts >= datetime('now', '-30 days') ${w}`).bind(...p),
@@ -34,7 +34,9 @@ export async function stats(db, col, val) {
     db.prepare(`SELECT CAST(strftime('%H', ts, '${TZ}') AS INTEGER) h, COUNT(*) n FROM events WHERE bot = 0 AND source IN ('nfc','qr')
       AND ts >= datetime('now', '-30 days') ${w} GROUP BY h`).bind(...p),
     db.prepare(`SELECT COUNT(*) n FROM events WHERE bot = 0 AND source IN ('nfc','qr')
-      AND ts >= datetime('now', '-60 days') AND ts < datetime('now', '-30 days') ${w}`).bind(...p)
+      AND ts >= datetime('now', '-60 days') AND ts < datetime('now', '-30 days') ${w}`).bind(...p),
+    db.prepare(`SELECT SUM(source IN ('nfc','qr')) taps, SUM(source = 'nfc') nfc, SUM(source = 'qr') qr, SUM(link_key = 'google') review, SUM(link_key = 'menu') menu
+      FROM events WHERE bot = 0 AND ts >= datetime(date('now', '${TZ}'), '-8 hours') ${w}`).bind(...p)
   ]);
   const t = tot.results[0] || {};
   const byDay = Object.fromEntries(days.results.map(r => [r.d, r.n]));
@@ -44,11 +46,12 @@ export async function stats(db, col, val) {
     days: Array.from({ length: 14 }, (_, i) => { const d = new Date(today - (13 - i) * 864e5).toISOString().slice(0, 10); return { d, n: byDay[d] || 0 }; }),
     split: split.results,
     hours: Array.from({ length: 24 }, (_, h) => hours.results.find(r => r.h === h)?.n || 0),
-    prevTaps: prev.results[0]?.n || 0
+    prevTaps: prev.results[0]?.n || 0,
+    today: Object.fromEntries(['taps', 'nfc', 'qr', 'review', 'menu'].map(k => [k, todayQ.results[0]?.[k] || 0]))
   };
 }
 
-export const RECENT = `SELECT e.ts, e.source, e.link_key, e.device_code, d.label, b.name bname, b.id bid FROM events e
+export const RECENT = `SELECT e.ts, e.source, e.link_key, e.device_code, d.label, d.product_sku, d.branch, b.name bname, b.id bid FROM events e
   LEFT JOIN devices d ON d.code = e.device_code LEFT JOIN businesses b ON b.id = e.business_id WHERE e.bot = 0`;
 
 export async function saveLinks(c, b, f, path) {

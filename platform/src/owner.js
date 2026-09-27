@@ -58,6 +58,12 @@ owner.get('/', async c => {
   return page(c, 'overview', b.name, V.ownerOverview({ b, stats: s, devices: devices.results, recent: recent.results, links, needs, tapBase: c.env.TAP_BASE, q: flashQ(c) }));
 });
 
+owner.get('/stands', async c => {
+  const b = c.get('business');
+  return page(c, 'stands', 'My stands', V.ownerStands({ b, devices: (await devicesOf(c.env.DB, b.id)).results }));
+});
+owner.get('/wifi', c => page(c, 'wifi', 'Wi-Fi', V.ownerWifi({ b: c.get('business') })));
+
 owner.get('/destinations', async c => {
   const b = c.get('business');
   const [links, devices] = await Promise.all([linksOf(c.env.DB, b.id), devicesOf(c.env.DB, b.id)]);

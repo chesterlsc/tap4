@@ -113,6 +113,73 @@ details.help ol,details.help ul{margin:0;padding-left:20px}
 .qrcell b{font:700 12px var(--mono)}.qrcell span{font-size:10.5px;line-height:1.3}.qrcell code{font:500 8.5px var(--mono);word-break:break-all;color:#444}
 .stepnum{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:var(--bg);font:700 12px var(--mono);margin-right:8px}
 @media print{.report *{color:#000!important;box-shadow:none!important}.report .kpi,.report .panel{background:#fff!important;border:1px solid #ccc}.report .bars i{background:#ccc!important}.report .bars i.on,.report .split__bar i{background:#000!important}body{background:#fff!important;color:#000}.site-header,.no-print{display:none!important}.adm{padding:0;max-width:none}.qrsheet{grid-template-columns:repeat(4,1fr);gap:6mm}.qrcell{border:1px dashed #bbb;break-inside:avoid}.print-title{color:#000!important}}
+/* ---------- owner app shell (matches the landing page's sample dashboard) ---------- */
+.appbody{background:#0b0b0d}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100svh;background:linear-gradient(90deg,#0e0e10 0 235px,var(--l1) 235px 236px,transparent 236px)}
+.app__side{position:sticky;top:0;height:100svh;overflow-y:auto;border-right:1px solid var(--l1);background:#0e0e10;padding:22px 14px;display:flex;flex-direction:column;gap:6px}
+.app__brand{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:700;letter-spacing:-.04em;color:var(--fg);padding:0 10px 14px}
+.app__brand:hover{color:var(--fg)}
+.app__biz{display:flex;flex-direction:column;gap:3px;padding:12px;margin-bottom:8px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--l1)}
+.app__biz b{font-size:14px}.app__biz span{font:700 9.5px var(--mono);letter-spacing:.06em;color:var(--lime)}
+.app__nav{display:flex;flex-direction:column;gap:2px}
+.app__nav a,.app__foot a{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;color:var(--m2);font-size:14px;font-weight:600}
+.app__nav a:hover,.app__foot a:hover{color:var(--fg);background:#151518}
+.app__nav a.on,.app__foot a.on{background:var(--l2);color:var(--fg)}
+.app__nav a[data-only]{display:none}
+.app__nav small{font:700 8.5px var(--mono);letter-spacing:.06em;color:var(--m4);border:1px solid var(--l4);border-radius:99px;padding:2px 6px}
+.app__foot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:14px;border-top:1px solid var(--l1)}
+.app__foot button{width:100%;text-align:left;padding:10px 12px;border-radius:10px;color:var(--m3);font-size:14px;font-weight:600}.app__foot button:hover{color:var(--fg)}
+.app__foot span{font:500 10.5px var(--mono);color:var(--m4);padding:6px 12px;overflow-wrap:anywhere}
+.app__main{padding:26px 32px 80px;display:flex;flex-direction:column;gap:16px;max-width:1180px;width:100%}
+/* calmer page heads and boxes inside the app */
+.app__main .sec__head{align-items:center;gap:14px}.app__main .sec__titles{gap:4px}
+.app__main h1{font-size:26px;letter-spacing:-.04em;line-height:1.1}
+.app__main .eyebrow{font-size:10.5px;color:var(--m3)}
+.app__main .lead{font-size:14px;color:var(--m3);max-width:640px}
+.app__main .panel,.app__main .dash{border-radius:18px;padding:18px;gap:14px}
+.app__main .dash{padding:0}
+.app__main .next{padding:14px 18px;border-radius:16px}.app__main .next b{font-size:16px}.app__main .next p{font-size:13px;margin-top:3px}
+.app__main .kpi>b{font-size:30px}
+.app__main .btn--lg{padding:13px 22px;font-size:15px}
+/* cards like the landing sample */
+.card{border-radius:18px;background:var(--card);box-shadow:inset 0 0 0 1px var(--l1);padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card__head{display:flex;justify-content:space-between;align-items:center;gap:10px;font:500 10.5px var(--mono);letter-spacing:.05em;color:var(--m3)}
+.card__head a{color:var(--lime)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{border-radius:14px;background:#161619;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tile small{font:500 9.5px var(--mono);letter-spacing:.06em;color:var(--m3)}
+.tile b{font-size:28px;letter-spacing:-.05em;line-height:1.1}
+.tile em{font-size:11.5px;color:var(--m3);font-style:normal}
+.tile--hi{background:#16170f;box-shadow:inset 0 0 0 1px #2a2e17}.tile--hi small{color:var(--lime)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:14px;align-items:start}
+.lrows{display:flex;flex-direction:column}
+.lrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:11px 2px;border-top:1px solid var(--l1);font-size:13.5px;color:inherit}
+.lrow:first-child{border-top:0}
+a.lrow:hover{color:inherit;background:#141417}
+.lrow b{font-weight:600}.lrow span{color:var(--m3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow code{font:500 11.5px var(--mono);color:var(--m3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow--4{grid-template-columns:minmax(0,1.2fr) minmax(0,.9fr) minmax(0,.8fr) auto}
+.lrow__h{font:500 10px var(--mono);letter-spacing:.05em;color:var(--m4);padding-top:0}
+.pill{font:700 9.5px var(--mono);letter-spacing:.04em;padding:4px 9px;border-radius:99px;background:#16170f;color:var(--lime);white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill--warn{background:#1f1216;color:#f27fa8}.pill--info{background:#0f1a1f;color:#7fd8f2}.pill--mute{background:var(--l1);color:var(--m3)}
+.mini-bars{height:96px;display:flex;align-items:flex-end;gap:3px}
+.mini-bars i{flex:1;border-radius:4px 4px 1px 1px;background:#2e2e33}.mini-bars i.on{background:var(--lime)}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr;background:none}
+  .app__side{position:sticky;top:0;z-index:20;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 16px;border-right:0;border-bottom:1px solid var(--l1);background:rgba(14,14,16,.94);backdrop-filter:blur(12px)}
+  .app__brand{padding:0;font-size:17px}
+  .app__biz{flex-direction:row;align-items:center;gap:8px;margin:0 0 0 auto;padding:6px 10px;background:transparent;box-shadow:none}
+  .app__biz b{font-size:13px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .app__nav{order:3;width:100%;flex-direction:row;overflow-x:auto;scrollbar-width:none;gap:6px;margin:0 -16px;padding:0 16px 2px}
+  .app__nav::-webkit-scrollbar{display:none}
+  .app__nav a{flex-shrink:0;padding:8px 14px;border-radius:99px;box-shadow:inset 0 0 0 1px var(--l4);font-size:13px;gap:6px}
+  .app__nav a.on{background:var(--fg);color:var(--bg);box-shadow:none}
+  .app__foot{display:none}
+  .app__nav a[data-only]{display:flex}
+  .app__main{padding:18px 16px 72px}
+  .lrow--4{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto}.lrow--4>:nth-child(3){display:none}
+}
 @media (max-width:600px){.adm{padding:20px 16px 72px}.adm-head{padding:14px 16px}.slotcard{grid-template-columns:1fr}.next b{font-size:18px}}
 `;
 
@@ -191,12 +258,41 @@ const docHead = title => html`<!doctype html><html lang="en"><head><meta charset
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/tapfour-app.css"><style>${raw(ADMIN_CSS)}</style></head>`;
 
 // Owners see the app modules their plan includes (landing page: Solo / Business / Empire).
-const ownerTabs = b => [['', 'Home', 'overview'],
-  ...[['menu', 'Menu'], ['billing', 'Billing'], ['inventory', 'Inventory'], ['branches', 'Branches'], ['staff', 'Staff'], ['reports', 'Reports']].filter(([m]) => planHas(b, m)).map(([m, l]) => [`/${m}`, l, m]),
-  ['/destinations', 'My links', 'destinations'], ['/branding', 'My page', 'branding'], ['/help', 'Help', 'help'], ['/account', 'Account', 'account']];
+// Owner navigation mirrors the landing page's sample dashboard (Overview, My stands, Menu, Billing, Inventory, Wi-Fi, My links, Help)
+// plus the Business/Empire extras. Only what the client's plan includes is shown.
+const ownerTabs = b => [['', 'Overview', 'overview'], ['/stands', 'My stands', 'stands'],
+  ...[['menu', 'Menu'], ['billing', 'Billing'], ['inventory', 'Inventory']].filter(([m]) => planHas(b, m)).map(([m, l]) => [`/${m}`, l, m]),
+  ...(planHas(b, 'menu') ? [['/wifi', 'Wi-Fi', 'wifi', 'SOON']] : []),
+  ...[['branches', 'Branches'], ['staff', 'Staff'], ['reports', 'Reports']].filter(([m]) => planHas(b, m)).map(([m, l]) => [`/${m}`, l, m]),
+  ['/destinations', 'My links', 'destinations'], ['/branding', 'My page', 'branding'], ['/help', 'Help', 'help'], ['/account', 'Account', 'account', null, 'phone']];
+
+function appShell({ title, nav, user, adminView, business: b, body }) {
+  const tabs = ownerTabs(b);
+  const link = ([href, label, id, tag, only]) => html`<a href="/app${href}"${only ? raw(' data-only="phone"') : ''}${nav === id ? raw(' class="on" aria-current="page"') : ''}>${label}${tag ? html`<small>${tag}</small>` : ''}</a>`;
+  return html`${docHead(`${title} · ${b.name} · tapfour`)}
+<body class="appbody">${raw(sprite)}
+<div class="app">
+  <aside class="app__side">
+    <a class="app__brand" href="/app"><span class="tf-mark" style="font-size:22px" aria-hidden="true"></span>tapfour</a>
+    <div class="app__biz"><b>${b.name}</b><span>${b.plan ? `${PLANS[b.plan].name.toUpperCase()} PLAN${b.plan_status === 'cancelled' ? ' · CANCELLED' : ''}` : 'STANDS'}</span></div>
+    <nav class="app__nav" aria-label="Dashboard">${tabs.map(link)}</nav>
+    <div class="app__foot">
+      <a href="/app/account"${nav === 'account' ? raw(' class="on"') : ''}>Account</a>
+      <form method="post" action="/app/logout"><button>Log out</button></form>
+      <span>${user?.email}</span>
+    </div>
+  </aside>
+  <main class="app__main" id="main">${adminView ? html`<form method="get" action="/app/view" class="flash flash--ok row-between wrap" style="gap:10px">
+    <span>Admin view: you’re seeing ${b.name} exactly as the owner does.</span>
+    <label class="row-wrap" style="gap:8px"><span class="mono-12">BUSINESS</span><select name="id" onchange="this.form.submit()" style="background:var(--bg);color:var(--fg);border:1px solid var(--l4);border-radius:10px;padding:8px 10px">${adminView.businesses.map(x => html`<option value="${x.id}"${x.id === adminView.current ? raw(' selected') : ''}>${x.name}</option>`)}</select></label>
+  </form>` : ''}${body}</main>
+</div>
+<script>${raw(ADMIN_JS)}</script></body></html>`;
+}
 
 export function shell({ area, title, nav, user, adminView, business, body }) {
-  const a = area === 'owner' && business ? { ...AREA.owner, tabs: ownerTabs(business) } : AREA[area];
+  if (area === 'owner' && business) return appShell({ title, nav, user, adminView, business, body });
+  const a = AREA[area];
   return html`${docHead(`${title} · ${a.label}`)}
 <body>${raw(sprite)}
 <header class="sticky-header site-header"><div class="site-header__in adm-head">
@@ -306,7 +402,7 @@ export function statsBlock(s, { title, caption, extra = '' }) {
   <div class="dash__top"><b>${title}</b><span class="mono-12 m3">${caption}</span></div>
   <div class="dash__body">
     <div class="kpis">
-      ${kpi('TAPS & SCANS', s.taps, `${n(s.nfc)} taps · ${n(s.qr)} QR scans${s.prevTaps ? ` · ${s.taps >= s.prevTaps ? '▲' : '▼'} ${Math.abs(Math.round((s.taps - s.prevTaps) / s.prevTaps * 100))}% vs previous 30 days` : ''}`, true)}
+      ${kpi('TAPS & SCANS', s.taps, `${n(s.nfc)} taps · ${n(s.qr)} QR scans${s.prevTaps >= 20 ? ` · ${s.taps >= s.prevTaps ? '▲' : '▼'} ${Math.abs(Math.round((s.taps - s.prevTaps) / s.prevTaps * 100))}% vs previous 30 days` : ''}`, true)}
       ${kpi('OPENED GOOGLE REVIEW', s.review, 'Opened the review page (not everyone posts)')}
       ${kpi('OPENED MENU', s.menu, 'From a tap, scan or your links page')}
       ${kpi('DIFFERENT PEOPLE', s.visitors, 'Different phones, counted per day')}
@@ -329,7 +425,7 @@ export function statsBlock(s, { title, caption, extra = '' }) {
 
 const SOURCE = { nfc: 'Tap', qr: 'QR scan', page: 'Links page' };
 const recentTable = (rows, admin = true) => rows.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>WHEN</th>${admin ? html`<th>CLIENT</th>` : ''}<th>STAND / CARD</th><th>HOW</th><th>OPENED</th></tr></thead><tbody>
-  ${rows.map(r => html`<tr><td class="mono m3">${ago(r.ts)}</td>${admin ? html`<td>${r.bid ? html`<a href="/admin/b/${r.bid}">${r.bname}</a>` : '—'}</td>` : ''}<td>${!r.device_code ? '—' : admin ? html`<a href="/admin/d/${r.device_code}">${r.label || r.device_code}</a>` : r.label || r.device_code}</td><td>${SOURCE[r.source] || r.source}</td><td><span class="row-wrap" style="gap:8px;flex-wrap:nowrap">${icon(r.link_key)}${linkName(r.link_key)}</span></td></tr>`)}
+  ${rows.map(r => html`<tr><td class="mono m3">${ago(r.ts)}</td>${admin ? html`<td>${r.bid ? html`<a href="/admin/b/${r.bid}">${r.bname}</a>` : '—'}</td>` : ''}<td>${!r.device_code ? '—' : admin ? html`<a href="/admin/d/${r.device_code}">${r.label || r.device_code}</a>` : `${productName(r.product_sku || '').split(' · ')[0].replace(' (retired)', '') || 'Stand'}${r.branch ? ` · ${r.branch}` : ''}`}</td><td>${SOURCE[r.source] || r.source}</td><td><span class="row-wrap" style="gap:8px;flex-wrap:nowrap">${icon(r.link_key)}${linkName(r.link_key)}</span></td></tr>`)}
   </tbody></table></div>` : html`<div class="empty">No taps yet. They show up here the moment someone taps or scans.</div>`;
 
 // Which stands use each link, from the devices' "slot:key" list, for the "Used by" line.
@@ -697,24 +793,83 @@ export function guideView({ tapBase }) {
 }
 
 /* ---------- owner pages (dashboard.tap4.ph) ---------- */
-export function ownerOverview({ b, stats, devices, recent, links, needs, tapBase, q }) {
-  const hasGoogle = !!links.google, live = devices.filter(d => d.status === 'active').length;
-  const tip = !Object.values(links).some(Boolean) ? next({ tag: 'START HERE', title: 'Add your links', text: 'Tell us where your stands should send people: your Google review page, menu, Facebook and more.', action: html`<a class="btn" href="/app/destinations">Add my links →</a>` })
-    : !hasGoogle ? next({ tag: 'TIP', title: 'Add your Google review link', text: 'It’s the most useful link for a stand. We show you where to find it.', action: html`<a class="btn" href="/app/destinations">Add it →</a>` })
-    : !live && devices.length ? next({ calm: true, tag: 'ALMOST THERE', title: 'Tap4 is preparing your stands', text: 'They’ll show as “Live” here once they’re set up and handed to you.' })
-    : '';
-  return html`${flash(q)}${head('MY DASHBOARD', `Hi, ${b.name}`, html`<div class="row-wrap"><a class="btn btn--lime" href="/app/destinations">Change my links</a><a class="btn btn--ghost" href="${tapBase}/p/${b.slug}" target="_blank" rel="noopener">View my page ↗</a></div>`, 'Here’s how people are using your stands. Numbers update live.')}
+/* ---------- owner overview: laid out like the landing page's sample dashboard ---------- */
+const standName = d => (designName(d.product_sku, d.slots) || productName(d.product_sku)).replace(' (retired)', '');
+const standPill = d => d.status === 'active' ? html`<span class="pill">Online</span>` : d.status === 'disabled' ? html`<span class="pill pill--warn">Paused</span>` : html`<span class="pill pill--info">Setting up</span>`;
+const hour12 = h => `${h % 12 || 12}${h < 12 ? 'AM' : 'PM'}`;
+const standsRows = (devices, max = 99) => devices.length ? html`<div class="lrows">
+    <div class="lrow lrow--4 lrow__h"><span>STAND</span><span>WHERE</span><span>LAST TAP</span><span>STATUS</span></div>
+    ${devices.slice(0, max).map(d => html`<div class="lrow lrow--4"><b>${standName(d)}</b><span>${d.branch || '—'}</span><span class="mono">${ago(d.last_ts)}</span>${standPill(d)}</div>`)}
+  </div>` : html`<p class="hint">Your stands appear here once Tap4 sets them up.</p>`;
+
+export function ownerOverview({ b, stats: s, devices, recent, links, needs, tapBase, q }) {
+  const live = devices.filter(d => d.status === 'active').length;
+  const tip = !Object.values(links).some(Boolean) ? next({ tag: 'START HERE', title: 'Add your links', text: 'Tell us where your stands send people: Google review, menu, Facebook and more.', action: html`<a class="btn" href="/app/destinations">Add my links →</a>` })
+    : !links.google ? next({ tag: 'TIP', title: 'Add your Google review link', text: 'Paste your Google Maps link; we turn it into the review link.', action: html`<a class="btn" href="/app/destinations">Add it →</a>` })
+    : !live && devices.length ? next({ calm: true, tag: 'ALMOST THERE', title: 'Tap4 is setting up your stands', text: 'They show as Online here once they’re handed to you.' }) : '';
+  const peakH = s.hours.map((v, h) => [v, h]).sort((a, c) => c[0] - a[0]).filter(([v]) => v).slice(0, 3), maxH = Math.max(1, ...s.hours);
+  const total = s.split.reduce((a, x) => a + x.n, 0) || 1;
+  const trend = s.prevTaps >= 20 ? `${s.taps >= s.prevTaps ? '▲' : '▼'} ${Math.abs(Math.round((s.taps - s.prevTaps) / s.prevTaps * 100))}% vs last month` : 'Last 30 days';
+  const needRows = needs ? [
+    ...(needs.bills || []).map(x => html`<a class="lrow" href="/app/billing"><b>${x.name}</b><span>${x.due_date < needs.today ? 'Late' : 'Due'} ${x.due_date.slice(5)}${x.branch ? ` · ${x.branch}` : ''}</span><span class="pill ${x.due_date < needs.today ? 'pill--warn' : 'pill--info'}">${peso(x.amount_cents)}</span></a>`),
+    ...(needs.low || []).map(x => html`<a class="lrow" href="/app/inventory"><b>${x.name}</b><span>Low${x.branch ? ` · ${x.branch}` : ''}</span><span class="pill pill--warn">${Math.round(x.qty * 100) / 100} ${x.unit || ''}</span></a>`),
+    ...(needs.staffTotal != null ? [html`<a class="lrow" href="/app/staff"><b>Staff on shift</b><span>Right now</span><span class="pill">${needs.onShift} of ${needs.staffTotal}</span></a>`] : [])
+  ] : [];
+  const LINKS = [['google', 'Google review'], ['menu', 'Menu'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['website', 'Website']];
+  return html`${flash(q)}${head('OVERVIEW · TODAY', b.name, html`<div class="row-wrap"><a class="btn btn--lime btn--sm" href="/app/destinations">Change my links</a><a class="btn btn--ghost btn--sm" href="${tapBase}/p/${b.slug}" target="_blank" rel="noopener">View my page ↗</a></div>`)}
   ${tip}
-  ${needsPanel(needs)}
-  ${statsBlock(stats, { title: 'Last 30 days', caption: 'PH TIME' })}
-  ${!b.plan ? next({ calm: true, tag: 'TAPFOUR APP', title: 'Run the counter from your phone', text: 'Live QR menu, billing and inventory trackers, and more, from ₱299/mo. Your stands work either way.', action: html`<a class="btn" href="https://tap4.ph/#plans" target="_blank" rel="noopener">See plans ↗</a>` }) : ''}
+  <div class="card"><div class="card__head"><span>TODAY</span><span>PH TIME · LIVE</span></div>
+    <div class="tiles">
+      <div class="tile tile--hi"><small>TAPS</small><b>${n(s.today.nfc)}</b><em>30 days: ${n(s.nfc)}</em></div>
+      <div class="tile"><small>QR SCANS</small><b>${n(s.today.qr)}</b><em>Counted separately</em></div>
+      <div class="tile"><small>OPENED REVIEW</small><b>${n(s.today.review)}</b><em>30 days: ${n(s.review)}</em></div>
+      <div class="tile"><small>MENU VIEWS</small><b>${n(s.today.menu)}</b><em>30 days: ${n(s.menu)}</em></div>
+    </div>
+  </div>
+  <div class="dgrid">
+    <div class="card"><div class="card__head"><span>BUSIEST HOURS · 30 DAYS</span><span>${peakH.length ? `PEAK ${hour12(peakH[0][1])}` : '—'}</span></div>
+      <div class="mini-bars" role="img" aria-label="Taps by hour">${s.hours.map((v, h) => html`<i title="${hour12(h)}: ${v}" style="height:${Math.max(3, Math.round(v / maxH * 100))}%"${peakH.some(([, x]) => x === h) ? raw(' class="on"') : ''}></i>`)}</div>
+      <div class="bars-x"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>
+      <span class="hint">${peakH.length ? `Busiest at ${peakH.map(([, h]) => hour12(h)).join(', ')}. Put someone near the stand then.` : 'Shows up after your first taps.'}</span></div>
+    <div class="card"><div class="card__head"><span>NEEDS YOU</span><span>BILLS · STOCK${needs?.staffTotal != null ? ' · STAFF' : ''}</span></div>
+      ${!b.plan || b.plan_status === 'cancelled' ? html`<p class="hint">Billing, inventory and a live menu come with the tapfour app. <a href="https://tap4.ph/#plans" target="_blank" rel="noopener">See plans ↗</a></p>`
+        : needRows.length ? html`<div class="lrows">${needRows}</div>` : html`<p class="hint">Nothing due this week and nothing running low. 👌</p>`}</div>
+  </div>
+  <div class="dgrid">
+    <div class="card"><div class="card__head"><span>MY STANDS · ${live} OF ${devices.length} ONLINE</span><a href="/app/stands">SEE ALL →</a></div>${standsRows(devices, 5)}</div>
+    <div class="card"><div class="card__head"><span>MY LINKS</span><a href="/app/destinations">EDIT →</a></div>
+      <div class="lrows">${LINKS.filter(([k]) => links[k] || k === 'google').map(([k, label]) => html`<a class="lrow" href="/app/destinations"><b class="row-wrap" style="gap:8px;flex-wrap:nowrap">${icon(k, 14)}${label}</b><code>${links[k] ? links[k].replace(/^https?:\/\/(www\.)?/, '') : 'Not set yet'}</code><span class="mono-11 lime">EDIT</span></a>`)}</div></div>
+  </div>
+  <div class="card"><div class="card__head"><span>LAST 30 DAYS</span><span>${trend.toUpperCase()}</span></div>
+    <div class="tiles">
+      <div class="tile tile--hi"><small>TAPS & SCANS</small><b>${n(s.taps)}</b><em>${n(s.nfc)} taps · ${n(s.qr)} scans</em></div>
+      <div class="tile"><small>OPENED GOOGLE REVIEW</small><b>${n(s.review)}</b><em>Not everyone posts</em></div>
+      <div class="tile"><small>OPENED MENU</small><b>${n(s.menu)}</b><em>Tap, scan or links page</em></div>
+      <div class="tile"><small>DIFFERENT PEOPLE</small><b>${n(s.visitors)}</b><em>Counted per day</em></div>
+    </div>
+    ${s.split.length ? html`<div class="stack-10">${s.split.map(x => { const pct = Math.round(x.n / total * 100); return html`<div class="split"><div class="row-between"><span>${linkName(x.k)}</span><span class="mono m2">${pct}% · ${n(x.n)}</span></div><div class="split__bar"><i style="width:${pct}%;background:${SPLIT_COLORS[x.k] || '#b5b3ad'}"></i></div></div>`; })}</div>` : ''}
+  </div>
+  <div class="card"><div class="card__head"><span>LATEST TAPS</span><span>LIVE</span></div>${recentTable(recent, false)}</div>
   ${help('What do these numbers mean?', html`<ul>
-    <li><b>Taps & scans</b>: how many times someone tapped a stand or scanned its QR.</li>
-    <li><b>Opened Google review</b>: people who reached your review page. Not everyone posts, so it isn’t a review count.</li>
-    <li><b>Opened menu</b>: people who looked at your menu.</li>
-    <li><b>Different people</b>: different phones per day. We never collect names or numbers.</li></ul>`)}
-  <div class="panel"><div class="panel__head"><span>MY STANDS & CARDS</span><span>${live} OF ${devices.length} LIVE</span></div>${deviceCards(devices)}</div>
-  <div class="panel"><div class="panel__head"><span>LATEST TAPS</span><span>LIVE</span></div>${recentTable(recent, false)}</div>`;
+    <li><b>Taps</b>: someone tapped a stand with their phone. <b>QR scans</b>: someone scanned the QR.</li>
+    <li><b>Opened review</b>: people who reached your Google review page. Not everyone posts, so it isn’t a review count.</li>
+    <li><b>Menu views</b>: people who opened your menu.</li>
+    <li><b>Different people</b>: different phones per day. We never collect names or numbers.</li></ul>`)}`;
+}
+
+export function ownerStands({ b, devices }) {
+  const live = devices.filter(d => d.status === 'active').length;
+  return html`${head('MY STANDS', 'My stands', '', `${live} of ${devices.length} online. Each stand keeps working even if you change your links.`)}
+  <div class="card"><div class="card__head"><span>ALL STANDS</span><span>LAST TAP · STATUS</span></div>${standsRows(devices)}</div>
+  ${devices.length ? html`<div class="card"><div class="card__head"><span>WHAT EACH STAND OPENS</span><a href="/app/destinations">CHANGE LINKS →</a></div>${deviceCards(devices)}</div>` : ''}
+  <p class="hint">Want a stand to open something else, or moved to another branch? Message Tap4 at ${SUPPORT_EMAIL}.</p>`;
+}
+
+export function ownerWifi({ b }) {
+  return html`${head('WI-FI', 'Tap-to-join Wi-Fi', '', 'Guests tap the stand and join your Wi-Fi for 1 or 2 hours, with no password to type.')}
+  ${next({ calm: true, tag: 'SETTING UP', title: 'Tap4 will set this up with you', text: 'Tap-to-join Wi-Fi needs a quick setup on your internet router. We’ll message you to arrange it. Your stands, menu and links already work.', action: html`<a class="btn" href="mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Wi-Fi setup for ${b.name}`)}">Message Tap4</a>` })}
+  <div class="card"><div class="card__head"><span>ONCE IT’S ON</span></div>
+    <ul class="olist" style="font-size:14px"><li>Guests tap or scan, then press <b>Join</b>. Free for 1 or 2 hours; you choose.</li><li>This page shows <b>guests in now</b>, <b>average stay</b> and <b>busiest hours</b>.</li><li>No password to share or change.</li></ul></div>`;
 }
 
 export function ownerDestinations({ b, links, devices, q }) {
