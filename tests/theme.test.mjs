@@ -232,3 +232,42 @@ test('4-Tap Bar and the tapfour app popup', async t => {
   assert.match(body, /Order from the table/);
   assert.match(body, /Monthly: ₱997/);
 });
+
+test('app section adds features to the setup builder', async t => {
+  const preview = await createPreview({ orderEmail: 'orders@example.com' });
+  const { html } = await preview.renderPage('/');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let opened;
+  w.TF.open = url => { opened = url; };
+  w.scrollTo = () => {};
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+
+  $('[data-ax="wifi"] .ax-btn').click();
+  $('[data-act="wifiH"][data-arg="2"]').click();
+  assert.ok($('[data-ax="wifi"]').classList.contains('on'));
+  assert.match($('[data-ax-chips]').textContent, /Wi-Fi · 2h/);
+  assert.equal($('[data-ax-total]').textContent, '₱398/mo'); // Solo 299 + Wi-Fi 99
+  $('[data-act="appFromSection"]').click();
+  assert.match($('#tf-summary').textContent, /tapfour app · Solo/);
+  assert.match($('#tf-summary').textContent, /Tap-to-join Wi-Fi/);
+
+  input($('#tf-name'), 'Kape Norte');
+  $('[data-act="order"]').click();
+  $('.co-cta').click(); // review -> menu (printed QR menu)
+  input($('#co-menuText'), 'Latte — ₱150');
+  $('.co-cta').click();
+  input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
+  $('.co-cta').click();
+  $('[data-co-submit]').click();
+  assert.match(decodeURIComponent(opened.split('&body=')[1]), /Wi-Fi per guest: 2 hours/);
+});
+
+test('every homepage section keeps its styles', async () => {
+  const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
+  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dash', '.plan', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+    assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
+});

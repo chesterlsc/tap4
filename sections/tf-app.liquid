@@ -1,47 +1,143 @@
+{%- comment -%}
+  App section "2a": five phone screens, one per app feature, each with an Add button that shares state with the
+  setup builder (theme.js), then a sample dashboard where all of it lands. Numbers are illustrative sample data.
+{%- endcomment -%}
 {%- liquid
   assign s = section.settings
-  if s.image
-    assign img = s.image | image_url: width: 900
-  else
-    assign img = 'tapfour-l-white-menu.jpg' | asset_url
-  endif
+  assign menu = 'Sagada Latte|Double shot|₱165|#c9a27a|;Pour-over|Single origin|₱180|#8b5e3c|;Ube Cold Brew|Seasonal|₱190|#7a5aa8|;Spanish Latte|Sold out|₱170|#d8b98e|so' | split: ';'
+  assign order = 'Sagada Latte|₱165|×2;Ensaymada|₱95|×1;Ube Cold Brew|₱190|+' | split: ';'
+  assign hours = '20,35,60,45,90,100,70,40,55,80,65,30' | split: ','
+  assign kpis = 'TAPS|1,284|▲ 22%|hi;MENU VIEWS|3,902|Top: Ube Cold Brew|;ORDERS|63|₱21,480|;GUESTS IN NOW|38|Avg stay 46 min|;RETURNING|41%|62 this week|' | split: ';'
+  assign bars = '34,48,41,62,55,70,58,76,64,88,72,95,83,100' | split: ','
+  assign split = 'Google review|38|#c8f23c;Menu|27|#e9f8b8;Instagram|17|#8fae2a;TikTok|11|#5a6b22;Facebook|7|#3a4418' | split: ';'
+  assign tickets = 'Table 4|Latte ×2, Ensaymada|New|new;Table 2|Tapa Bowl|Preparing|;Table 7|Pour-over|Served|' | split: ';'
+  assign nav = 'Today,Taps,Menu,Orders,Guests,My links,My stands' | split: ','
 -%}
-<section id="app" class="sec">
-  <div class="sec__titles">
-    <div class="eyebrow">{{ s.eyebrow | escape }}</div>
-    <h2 class="h2" style="max-width:820px">{{ s.title | escape }}</h2>
+<section id="app" class="sec ax" data-app-section>
+  <div class="sec__head">
+    <div class="sec__titles">
+      <div class="eyebrow">{{ s.eyebrow | escape }}</div>
+      <h2 class="h2">{{ s.title_1 | escape }}<br>{{ s.title_2 | escape }}</h2>
+    </div>
+    <div class="ax__pill">App from <b>₱299/mo</b> · stand works without it</div>
   </div>
-  <div class="app-grid">
-    <div class="app-card">
-      <div class="phone"><div class="phone__screen phone__screen--light">
-        <div class="phone__hero">SAMPLE MENU · KAPE NORTE</div>
-        <div class="phone__body">
-          <div class="mini-tabs mini-tabs--lg"><span class="on">Coffee</span><span>Pastry</span><span>Meals</span></div>
-          <div class="pm"><div><b>Sagada Latte</b><span>Double shot, oat</span></div><i>₱165</i></div>
-          <div class="pm"><div><b>Benguet Pour-over</b><span>Single origin</span></div><i>₱180</i></div>
-          <div class="pm"><div><b>Ube Cold Brew</b><span>Seasonal · NEW</span></div><i>₱190</i></div>
-          <div class="pm-cta"><span>Loved it? Leave a review</span><span class="lime">★★★★★</span></div>
-        </div>
-      </div></div>
-      <div class="app-card__txt"><h3>{{ s.card1_title | escape }}</h3><p>{{ s.card1_text | escape }}</p></div>
+
+  <div class="ax-row">
+    <div class="ax-f" data-ax="reviews">
+      <div class="ax-card"><span class="ax-tag ax-tag--hi">INCLUDED</span>
+        <div class="ax-phone"><div class="ax-scr">
+          <div class="ax-rv">
+            <span class="ax-rv__id">{{ s.initials | escape }}</span>
+            <b>How was your visit?</b><span class="ax-rv__stars">★★★★★</span>
+            <span class="ax-rv__b on"><svg width="13" height="13" style="fill:#0a0a0b" aria-hidden="true"><use href="#i-google"/></svg>Post on Google</span>
+            <span class="ax-rv__b"><svg width="13" height="13" style="fill:#0866ff" aria-hidden="true"><use href="#i-facebook"/></svg>Like on Facebook</span>
+            <span class="ax-rv__b"><svg width="13" height="13" style="fill:#ff0069" aria-hidden="true"><use href="#i-instagram"/></svg>Follow on Instagram</span>
+            <span class="ax-rv__b"><svg width="13" height="13" style="fill:#f2f0eb" aria-hidden="true"><use href="#i-tiktok"/></svg>Watch on TikTok</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Tap for reviews</b><span>Review, follow, like, watch.</span></div>
+      <button type="button" class="ax-btn" disabled><span>✓ Included</span><small>FREE</small></button>
     </div>
-    <div class="app-card">
-      <div class="phone"><div class="phone__screen phone__screen--dark">
-        <div class="kn">{{ s.initials | escape }}</div>
-        <div class="kn-q">How was your visit?</div>
-        <div class="kn-stars">★★★★★</div>
-        <div class="kn-links">
-          <div class="kn-link on"><svg width="14" height="14" style="fill:#0a0a0b"><use href="#i-google"/></svg>Post on Google</div>
-          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-facebook"/></svg>Like on Facebook</div>
-          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-instagram"/></svg>Follow on Instagram</div>
-          <div class="kn-link"><svg width="14" height="14" style="fill:#f2f0eb"><use href="#i-tiktok"/></svg>Watch on TikTok</div>
-        </div>
-      </div></div>
-      <div class="app-card__txt"><h3>{{ s.card2_title | escape }}</h3><p>{{ s.card2_text | escape }}</p></div>
+
+    <div class="ax-f" data-ax="menu">
+      <div class="ax-card"><span class="ax-tag">+₱199/MO</span>
+        <div class="ax-phone"><div class="ax-scr ax-scr--light">
+          <div class="ax-list">
+            <div class="ax-list__h"><b>Menu</b><span>OPEN NOW</span></div>
+            <div class="ax-tabs"><span class="on">Coffee</span><span>Pastry</span><span>Meals</span></div>
+            {%- for m in menu -%}{%- assign r = m | split: '|' -%}
+              <div class="ax-mi{% if r[4] == 'so' %} ax-mi--so{% endif %}"><i style="background:{{ r[3] }}"></i><span><b>{{ r[0] }}</b><small>{{ r[1] }}</small></span><em>{{ r[2] }}</em></div>
+            {%- endfor -%}
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Live QR menu</b><span>Edit prices. Hide sold-out.</span></div>
+      <button type="button" class="ax-btn" data-act="feat" data-arg="menu" aria-pressed="false"><span>+ Add</span><small>₱199/MO</small></button>
     </div>
-    <div class="app-photo">
-      <img src="{{ img }}" alt="{{ s.card3_title | escape }}" loading="lazy" width="1122" height="1402">
-      <div class="app-photo__txt"><h3>{{ s.card3_title | escape }}</h3><p>{{ s.card3_text | escape }}</p></div>
+
+    <div class="ax-f" data-ax="order">
+      <div class="ax-card"><span class="ax-tag">+₱499/MO</span>
+        <div class="ax-phone"><div class="ax-scr ax-scr--light">
+          <div class="ax-list ax-list--full">
+            <div class="ax-list__h"><b>Table 4</b><span>ORDER</span></div>
+            {%- for o in order -%}{%- assign r = o | split: '|' -%}
+              <div class="ax-mi"><span><b>{{ r[0] }}</b><small class="mono">{{ r[1] }}</small></span><em class="ax-q{% if r[2] != '+' %} on{% endif %}">{{ r[2] }}</em></div>
+            {%- endfor -%}
+            <div class="ax-send"><span>Send to staff</span><span>₱355 →</span></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Order from the table</b><span>Straight to your staff phone.</span></div>
+      <button type="button" class="ax-btn" data-act="feat" data-arg="order" aria-pressed="false"><span>+ Add</span><small>₱499/MO</small></button>
+    </div>
+
+    <div class="ax-f" data-ax="crm">
+      <div class="ax-card"><span class="ax-tag">+₱299/MO</span>
+        <div class="ax-phone"><div class="ax-scr">
+          <div class="ax-list">
+            <b class="ax-list__t">Dashboard · Today</b>
+            <div class="ax-kp"><span class="hi"><small>IN NOW</small><b>38</b></span><span><small>AVG STAY</small><b>46m</b></span></div>
+            <small class="ax-lbl">BUSIEST HOURS</small>
+            <div class="ax-hours">{% for h in hours %}<i style="height:{{ h }}%"{% if h == '90' or h == '100' %} class="hi"{% endif %}></i>{% endfor %}</div>
+            <div class="ax-axis"><span>8AM</span><span>12</span><span>4PM</span><span>8</span></div>
+            <div class="ax-ret"><span>Returning</span><b>41%</b></div>
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Dashboard</b><span>Taps, orders and guests in one view.</span></div>
+      <button type="button" class="ax-btn" data-act="feat" data-arg="crm" aria-pressed="false"><span>+ Add</span><small>₱299/MO</small></button>
+    </div>
+
+    <div class="ax-f" data-ax="wifi">
+      <div class="ax-card"><span class="ax-tag">+₱99/MO</span>
+        <div class="ax-phone"><div class="ax-scr">
+          <div class="ax-wifi">
+            <span class="ax-wifi__ic" aria-hidden="true"><i></i><i></i><i></i></span>
+            <b>Join “YourShop-Guest”?</b>
+            <span class="ax-wifi__join">Join</span>
+            <small data-wifi-note>Free for 1 hour. No password to type.</small>
+          </div>
+        </div></div>
+      </div>
+      <div class="ax-f__txt"><b>Tap-to-join Wi-Fi</b><span>Time-limited access per guest.</span></div>
+      <div class="ax-hrs" role="group" aria-label="Wi-Fi time per guest">
+        <button type="button" class="on" data-act="wifiH" data-arg="1">1 hour per guest</button>
+        <button type="button" data-act="wifiH" data-arg="2">2 hours per guest</button>
+      </div>
+      <button type="button" class="ax-btn" data-act="feat" data-arg="wifi" aria-pressed="false"><span>+ Add</span><small>₱99/MO</small></button>
+    </div>
+  </div>
+
+  <div class="ax-bar">
+    <div class="ax-bar__chips"><span>Your app:</span><span data-ax-chips></span></div>
+    <div class="ax-bar__end"><b data-ax-total>₱299/mo</b><button type="button" class="btn btn--lime" data-act="appFromSection">Add to my stand →</button></div>
+  </div>
+
+  <div class="ax-div"><i></i><span>ALL OF IT LANDS HERE ↓</span><i></i></div>
+
+  <div class="ax-dash" aria-label="Sample tapfour dashboard">
+    <div class="ax-dash__nav">
+      <div class="ax-dash__logo">{% render 'tf-mark', px: 16 %}<b>tapfour</b></div>
+      {%- for n in nav -%}<span{% if forloop.first %} class="on"{% endif %}>{{ n }}</span>{%- endfor -%}
+    </div>
+    <div class="ax-dash__main">
+      <div class="ax-dash__h"><b>Today</b><span>SAMPLE DATA</span></div>
+      <div class="ax-kpis">
+        {%- for k in kpis -%}{%- assign r = k | split: '|' -%}
+          <div class="ax-kpi{% if r[3] == 'hi' %} hi{% endif %}"><small>{{ r[0] }}</small><b>{{ r[1] }}</b><span>{{ r[2] }}</span></div>
+        {%- endfor -%}
+      </div>
+      <div class="ax-dash__grid">
+        <div class="ax-box"><small>TAPS PER DAY</small><div class="ax-bars">{% for b in bars %}<i style="height:{{ b }}%" class="{% if forloop.last %}hi{% elsif forloop.index > 10 %}mid{% endif %}"></i>{% endfor %}</div></div>
+        <div class="ax-box"><small>WHERE TAPS GO</small>
+          <div class="ax-split">{% for x in split %}{% assign r = x | split: '|' %}<i style="width:{{ r[1] }}%;background:{{ r[2] }}"></i>{% endfor %}</div>
+          {%- for x in split -%}{%- assign r = x | split: '|' -%}<div class="ax-split__row"><span><i style="background:{{ r[2] }}"></i>{{ r[0] }}</span><b>{{ r[1] }}%</b></div>{%- endfor -%}
+        </div>
+        <div class="ax-box"><small>LIVE ORDERS</small>
+          {%- for t in tickets -%}{%- assign r = t | split: '|' -%}<div class="ax-tk"><span><b>{{ r[0] }}</b><small>{{ r[1] }}</small></span><em{% if r[3] == 'new' %} class="new"{% endif %}>{{ r[2] }}</em></div>{%- endfor -%}
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -51,15 +147,9 @@
   "name": "App showcase",
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "02 — THE TAPFOUR APP" },
-    { "type": "text", "id": "title", "label": "Title", "default": "Scan for the menu. Tap for the review." },
-    { "type": "text", "id": "card1_title", "label": "Card 1 title", "default": "QR digital menu" },
-    { "type": "text", "id": "card1_text", "label": "Card 1 text", "default": "Upload once, edit prices in seconds. Sold-out items hide automatically." },
-    { "type": "text", "id": "initials", "label": "Demo initials", "default": "KN" },
-    { "type": "text", "id": "card2_title", "label": "Card 2 title", "default": "Tap for reviews" },
-    { "type": "text", "id": "card2_text", "label": "Card 2 text", "default": "One tap opens a 4-in-1 page. Customers pick where to review, like, follow or watch." },
-    { "type": "image_picker", "id": "image", "label": "Card 3 photo" },
-    { "type": "text", "id": "card3_title", "label": "Card 3 title", "default": "Both on one stand" },
-    { "type": "text", "id": "card3_text", "label": "Card 3 text", "default": "Tap zone for reviews, QR for your menu. Guests use whichever they like." }
+    { "type": "text", "id": "title_1", "label": "Title line 1", "default": "One tap." },
+    { "type": "text", "id": "title_2", "label": "Title line 2", "default": "Five things done." },
+    { "type": "text", "id": "initials", "label": "Demo initials", "default": "KN" }
   ],
   "presets": [{ "name": "App showcase" }]
 }

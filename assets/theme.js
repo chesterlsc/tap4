@@ -45,7 +45,7 @@
     { id: 'reviews', name: 'Tap for reviews', desc: 'Your 4-in-1 page with live stats on every tap.', price: 0, points: ['Google, Facebook, Instagram, TikTok', 'Swap links anytime — no reprint', 'Taps & new reviews in your dashboard'] },
     { id: 'menu', handle: ADD, variant: 'Live QR menu', name: 'Live QR menu', desc: 'A mobile menu you edit yourself, in seconds.', price: 199, badge: 'RECOMMENDED', points: ['Change prices & photos from your phone', 'Mark items sold out instantly', 'See which dishes get viewed most'] },
     { id: 'order', handle: ADD, variant: 'Table ordering', name: 'Order from the table', desc: 'Guests order on their own phone — no waiting in line.', price: 499, points: ['Orders ping your staff phone or kitchen tablet', 'Table number attached to every order', 'Pay at counter or via GCash / Maya'] },
-    { id: 'crm', handle: ADD, variant: 'Customer in/out data', name: 'Customer in / out data', desc: 'Know who comes in, how long they stay, who returns.', price: 299, points: ['Tap-in on arrival, tap-out on payment', 'Busiest hours & average stay', 'Returning guests & visit history'] },
+    { id: 'crm', handle: ADD, variant: 'Customer in/out data', name: 'Dashboard · guests in / out', desc: 'Know who comes in, how long they stay, who returns.', price: 299, points: ['Tap-in on arrival, tap-out on payment', 'Busiest hours & average stay', 'Returning guests & visit history'] },
     { id: 'wifi', handle: ADD, variant: 'Tap-to-join Wi-Fi', name: 'Tap-to-join Wi-Fi', desc: 'Guests connect without typing passwords.', price: 99, points: ['Rotate the password anytime'] }
   ];
   const PLANS = [{ id: 'solo', name: 'Solo', price: 299 }, { id: 'business', name: 'Business', price: 799 }, { id: 'agency', name: 'Agency', price: 1999 }];
@@ -56,7 +56,7 @@
 
   const S = {
     name: '', finish: 'black', qty: 1, mode: 'direct', dest: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
-    app: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', yearly: false, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
+    app: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
   const set = o => { Object.assign(S, { error: '' }, o); render(); };
   // Monthly price of the app as configured in the popup (plan + paid features).
@@ -291,6 +291,25 @@
     });
   }
 
+  /* ---------- app section (2a): five feature phones share the app state with the builder ---------- */
+  function renderAppSection() {
+    const sec = $('[data-app-section]');
+    if (!sec) return;
+    $$('[data-ax]', sec).forEach(el => {
+      const id = el.dataset.ax, on = !!S.feats[id], btn = $('.ax-btn', el);
+      if (id === 'reviews') return;
+      el.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on);
+      btn.firstElementChild.textContent = on ? '✓ Added' : '+ Add';
+    });
+    $$('[data-act="wifiH"]', sec).forEach(b => { const on = +b.dataset.arg === S.wifiH; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    $('[data-wifi-note]', sec).textContent = `Free for ${S.wifiH} hour${S.wifiH > 1 ? 's' : ''}. No password to type.`;
+    const names = { menu: 'Live QR menu', order: 'Table ordering', crm: 'Dashboard', wifi: `Wi-Fi · ${S.wifiH}h` };
+    $('[data-ax-chips]', sec).innerHTML = ['Tap for reviews', ...Object.keys(names).filter(k => S.feats[k]).map(k => names[k])].map(n => `<em>${esc(n)}</em>`).join('');
+    $('[data-ax-total]', sec).textContent = peso(appMonthly(PLANS.find(p => p.id === S.plan) || PLANS[0])) + '/mo';
+    $('[data-act="appFromSection"]', sec).textContent = S.app ? '✓ In your setup · review →' : 'Add to my stand →';
+  }
+
   /* ---------- hero (1b): three faces + finish + selected offer, same state as the builder ---------- */
   const HERO = { review: ['Review', 'One tap opens your Google review box.'], menu: ['Review + Menu', 'Tap to review, scan the QR for your menu.'], links: ['4-in-1', 'One tap opens Google, Facebook, Instagram and TikTok.'] };
   let heroFace = null;
@@ -334,6 +353,7 @@
     renderPlans();
     renderServices();
     renderHero();
+    renderAppSection();
     if (!builder) return;
     const d = derive();
     builder.setAttribute('aria-busy', S.ordering);
@@ -404,6 +424,7 @@
       if (d.design === 'links') props['4-in-1 apps'] = d.activePl.map(p => p[1]).join(', ');
     }
     if (d.isApp) props['App page'] = 'Assigned during setup after checkout';
+    if (d.isApp && S.feats.wifi) props['Wi-Fi per guest'] = S.wifiH + (S.wifiH > 1 ? ' hours' : ' hour');
     destinations.forEach(dest => { props[dest.label + (dest.plat === 'google' ? ' link' : ' URL')] = dest.value || 'To be provided after checkout'; });
     if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
 
@@ -654,6 +675,8 @@
     appPop: () => openApp(),
     appAdd: () => { set({ app: true }); closeApp(); },
     appRemove: () => { set({ app: false }); closeApp(); },
+    appFromSection: () => { set({ app: true }); scrollTo('build'); },
+    wifiH: h => set({ wifiH: +h }),
     yearly: v => set({ yearly: v === '1' }),
     svc: id => set({ svcs: { ...S.svcs, [id]: !S.svcs[id] } }),
     order: () => order()
@@ -699,7 +722,7 @@
   /* ---------- gentle reveal on scroll ---------- */
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
-    $$('.sec__head, .sec > .sec__titles, .app-card, .app-photo, .dash, .plan, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
+    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-dash, .dash, .plan, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
   }
 
   document.addEventListener('click', e => { const a = e.target.closest('[data-open-checkout]'); if (a && builder) { e.preventDefault(); order(); } });
