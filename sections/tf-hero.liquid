@@ -16,7 +16,7 @@
           <div class="chip chip--lime"><span style="font-size:12px">↑</span>{{ s.chip_2 | escape }}</div>
         </div>
         <h1 class="hero__title">{{ s.title_1 | escape }}<br><span>{{ s.title_2 | escape }}</span></h1>
-        <p class="hero__sub">{{ s.subtitle | escape }}</p>
+        <p class="hero__sub"><span class="h4-sub--desk">{{ s.subtitle | escape }}</span><span class="h4-sub--mob">{{ s.subtitle_mobile | escape }}</span></p>
       </div>
 
       <div class="h4__stage">
@@ -62,6 +62,7 @@
     { "type": "text", "id": "title_1", "label": "Title line 1", "default": "Pick a stand." },
     { "type": "text", "id": "title_2", "label": "Title line 2 (lime)", "default": "Get reviewed." },
     { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "An NFC stand in glossy acrylic, with three faces for every counter. Each one is programmed to your links and ready out of the box." },
+    { "type": "textarea", "id": "subtitle_mobile", "label": "Subtitle (mobile)", "default": "An NFC stand in glossy acrylic. Three faces, programmed to your links and ready out of the box." },
     { "type": "text", "id": "teaser", "label": "App teaser", "default": "Table orders & guest data?" },
     { "type": "text", "id": "teaser_link", "label": "App teaser link text", "default": "tapfour app from ₱299/mo" }
   ],

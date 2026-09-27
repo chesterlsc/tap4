@@ -346,7 +346,8 @@
     // Mobile swipe row: keep the selected face centred.
     if (heroFace !== face) {
       const row = $('[data-hero-faces]', hero), card = $(`.h4-face[data-arg="${face}"]`, hero);
-      if (row.scrollWidth > row.clientWidth) setTimeout(() => row.scrollTo({ left: card.offsetLeft - (row.clientWidth - card.offsetWidth) / 2, behavior: heroFace ? 'smooth' : 'auto' }), heroFace ? 360 : 0);
+      const smooth = !!heroFace; // first centring is instant; later changes glide
+      if (row.scrollWidth > row.clientWidth) setTimeout(() => row.scrollTo({ left: card.offsetLeft - (row.clientWidth - card.offsetWidth) / 2, behavior: smooth ? 'smooth' : 'auto' }), smooth ? 360 : 0);
       heroFace = face;
     }
   }
@@ -707,6 +708,10 @@
   render();
   // Photos and fonts change the swipe row's widths, so centre the selected face again once they've loaded.
   addEventListener('load', () => { heroFace = null; renderHero(); });
+  // Mobile hero fills one screen: tell CSS how tall the sale bar + header are.
+  const heroTop = () => document.documentElement.style.setProperty('--hero-top', (($('.sale-bar')?.offsetHeight || 0) + ($('.site-header')?.offsetHeight || 0)) + 'px');
+  heroTop();
+  addEventListener('resize', heroTop, { passive: true });
 
   /* ---------- mobile: sticky order bar while configuring, hidden once the summary is on screen ---------- */
   const bar = $('#tf-bar');
