@@ -89,8 +89,9 @@
             "name": "Solo",
             "tag": "1 LOCATION",
             "price": 299,
-            "text": "For a single shop that wants reviews and a live menu.",
-            "features": "1 business page\nEdit links anytime\nTap & menu analytics\nQR menu editor\nEmail support"
+            "features": "Live QR menu editor\ntapfour dashboard · 1 location — taps, QR scans, guests\nBilling tracker\nInventory tracker\nTap-to-join Wi-Fi\ntapfour support",
+            "package_price": 3000,
+            "package_hw": "5 Review + Menu stands"
           }
         },
         "business": {
@@ -99,25 +100,27 @@
             "name": "Business",
             "tag": "UP TO 5 BRANCHES",
             "price": 799,
-            "text": "For growing brands with several branches.",
-            "features": "Up to 5 locations\nEverything in Solo\nReview alerts\nMonthly report PDF\nPriority chat support"
+            "features": "Everything in Solo\nDashboard for up to 5 branches\nReview alerts\nMonthly report PDF\nPriority chat support",
+            "package_price": 12000,
+            "package_hw": "20 Review + Menu stands"
           }
         },
-        "agency": {
+        "empire": {
           "type": "plan",
           "settings": {
-            "name": "Agency",
-            "tag": "RESELLERS",
+            "name": "Empire",
+            "tag": "UP TO 20 BRANCHES",
             "price": 1999,
-            "text": "For resellers managing many client businesses.",
-            "features": "Unlimited clients\nSales pipeline board\nWhite-label pages\nClient billing tracker\nDedicated manager"
+            "features": "Everything in Business\nDashboard for up to 20 branches\nBilling & inventory across branches\nStaff tracker\nDedicated manager",
+            "package_price": 40000,
+            "package_hw": "80 Review + Menu stands"
           }
         }
       },
       "block_order": [
         "solo",
         "business",
-        "agency"
+        "empire"
       ],
       "settings": {
         "product": "tapfour-app"

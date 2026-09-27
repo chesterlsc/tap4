@@ -1,6 +1,9 @@
 Handle,Title,Body (HTML),Vendor,Type,Tags,Published,Option1 Name,Option1 Value,Option2 Name,Option2 Value,Variant SKU,Variant Grams,Variant Inventory Tracker,Variant Inventory Policy,Variant Fulfillment Service,Variant Price,Variant Compare At Price,Variant Requires Shipping,Variant Taxable,Status
 tap4-l-stand,TAP4.1 L-Stand,"<p>Glossy L-shaped acrylic tap stand with a built-in NFC chip. Choose the Google Review, Review + QR menu or Socials 4-in-1 design. Clean tap4 print — no business branding. Programmed before it ships.</p>",tapfour,Review stand,hardware,TRUE,Finish,Glossy Black,,,TF-L41-BLK,300,,deny,manual,899,1499,TRUE,TRUE,active
 tap4-l-stand,,,,,,,,Glossy White,,,TF-L41-WHT,300,,deny,manual,899,1499,TRUE,TRUE,active
+tapfour-package,tapfour package,"<p>Review + Menu stands (TAP4.1 L-Stand, Glossy Black or White) programmed before they ship, paid once. Pair with the matching tapfour app plan.</p>",tapfour,Bundle,"hardware, package",TRUE,Package,Solo,,,TF-PKG-SOLO,1500,,deny,manual,3000,,TRUE,TRUE,active
+tapfour-package,,,,,,,,Business,,,TF-PKG-BIZ,6000,,deny,manual,12000,,TRUE,TRUE,active
+tapfour-package,,,,,,,,Empire,,,TF-PKG-EMP,24000,,deny,manual,40000,,TRUE,TRUE,active
 4-tap-bar,4-Tap Bar,<p>Long acrylic bar with 4 NFC zones. Each tap goes straight to its own app — no page in between.</p>,tapfour,Review stand,hardware,TRUE,Title,Default Title,,,TF-BAR,700,,deny,manual,1490,2479,TRUE,TRUE,active
 printed-qr-menu,Printed QR menu,<p>We build your mobile menu and print its QR right on the stand. Send a photo of your menu — we type it up. Includes 1 free price update per year.</p>,tapfour,Add-on,add-on,TRUE,Title,Default Title,,,TF-ADD-MENU,0,,deny,manual,499,829,FALSE,TRUE,active
 multi-link-page,4-in-1 links page,"<p>Hosted 4-in-1 page for 2, 3 or 4 apps. One-time — links stay live for life.</p>",tapfour,Add-on,add-on,TRUE,Title,Default Title,,,TF-ADD-LINKS,0,,deny,manual,350,579,FALSE,TRUE,active
@@ -8,8 +11,8 @@ tapfour-app,tapfour app,"<p>Dashboard for taps, reviews, followers and menu view
 tapfour-app,,,,,,,,Solo,,Yearly,TF-APP-SOLO-Y,0,,deny,manual,2870,3588,FALSE,TRUE,active
 tapfour-app,,,,,,,,Business,,Monthly,TF-APP-BIZ-M,0,,deny,manual,799,,FALSE,TRUE,active
 tapfour-app,,,,,,,,Business,,Yearly,TF-APP-BIZ-Y,0,,deny,manual,7670,9588,FALSE,TRUE,active
-tapfour-app,,,,,,,,Agency,,Monthly,TF-APP-AGY-M,0,,deny,manual,1999,,FALSE,TRUE,active
-tapfour-app,,,,,,,,Agency,,Yearly,TF-APP-AGY-Y,0,,deny,manual,19190,23988,FALSE,TRUE,active
+tapfour-app,,,,,,,,Empire,,Monthly,TF-APP-EMP-M,0,,deny,manual,1999,,FALSE,TRUE,active
+tapfour-app,,,,,,,,Empire,,Yearly,TF-APP-EMP-Y,0,,deny,manual,19190,23988,FALSE,TRUE,active
 tapfour-app-add-ons,tapfour app add-ons,<p>Monthly add-ons for the tapfour app.</p>,tapfour,Subscription,"subscription, monthly",TRUE,Feature,Live QR menu,,,TF-APP-MENU,0,,deny,manual,199,,FALSE,TRUE,active
 tapfour-app-add-ons,,,,,,,,Table ordering,,,TF-APP-ORDER,0,,deny,manual,499,,FALSE,TRUE,active
 tapfour-app-add-ons,,,,,,,,Customer in/out data,,,TF-APP-CRM,0,,deny,manual,299,,FALSE,TRUE,active

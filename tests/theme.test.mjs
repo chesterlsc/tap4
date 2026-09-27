@@ -268,36 +268,77 @@ test('app section adds features to the setup builder', async t => {
 
 test('every homepage section keeps its styles', async () => {
   const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
-  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dp-plan', '.dp-dash', '.dp-deal', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.pkgc', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
     assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
 });
 
-test('03 location slider picks the plan and its sample dashboard', async t => {
-  const { pages } = await site;
-  const dom = new JSDOM(pages.get('/'), { runScripts: 'dangerously', url: 'http://localhost/', virtualConsole: new VirtualConsole() });
+test('03 packages: slider, table-ordering demo and ordering a package', async t => {
+  const preview = await createPreview({ orderEmail: 'orders@example.com' });
+  const { html } = await preview.renderPage('/');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
   const w = dom.window;
   t.after(() => w.close());
+  let opened;
+  w.TF.open = url => { opened = url; };
   w.scrollTo = () => {};
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
-  const $ = s => w.document.querySelector(s);
-  const visible = sel => [...w.document.querySelectorAll(sel)].filter(el => !el.hidden);
+  const $ = (s, root = w.document) => root.querySelector(s);
+  const card = () => $('.dp-plan:not([hidden])');
   const slide = i => { const r = $('[data-dp-range]'); r.value = i; r.dispatchEvent(new w.Event('input', { bubbles: true })); };
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
 
-  assert.equal(visible('.dp-plan')[0].dataset.plan, 'solo');
+  assert.equal(card().dataset.plan, 'solo');
+  assert.equal($('[data-plan-up]', card()).textContent, '₱3,000');
   assert.equal($('[data-dp-view]').textContent, 'My stands');
   slide(2); // 3 locations
-  assert.equal(visible('.dp-plan')[0].dataset.plan, 'business');
-  assert.equal($('[data-dp-n]').textContent, '3');
-  assert.equal(visible('[data-br]').length, 3);
-  assert.equal($('[data-tot-t]').textContent, '3,786'); // 1,284 + 962 + 1,540
-  assert.match($('.dp-plan:not([hidden]) [data-dp-per]').textContent, /₱266 per branch/); // 799 / 3
-  slide(9);
-  assert.equal($('[data-dp-n]').textContent, '50+');
-  assert.equal($('[data-dp-view]').textContent, 'Pipeline');
-  $('[data-col="3"] [data-dp-move]').click(); // Won -> Active
-  assert.equal($('[data-dp-active]').textContent, '3');
-  $('[data-act="yearly"][data-arg="1"]').click();
-  assert.equal($('.dp-plan:not([hidden]) [data-plan-price]').textContent, '₱1,599'); // 1,999 × 0.8
+  assert.equal(card().dataset.plan, 'business');
+  assert.equal(w.document.querySelectorAll('[data-br]').length, 3);
+  assert.equal($('[data-tot-t]').textContent, '3,786');
+  slide(8); // 20 branches
+  assert.equal(card().dataset.plan, 'empire');
+  assert.equal($('[data-dp-n]').textContent, '20');
+  assert.equal($('[data-dp-view]').textContent, 'Inventory');
+  $('[data-dp-etab="2"]').click();
+  assert.equal($('[data-dp-view]').textContent, 'Staff');
+
+  // Table ordering: the add-on opens the live floor; a guest order lands on table 4 and the server's phone.
+  slide(2);
+  $('.dp-plan:not([hidden]) [data-act="pkgOrder"]').click();
+  assert.equal($('[data-dp-view]').textContent, 'Orders');
+  assert.match($('[data-plan-total]', card()).textContent, /₱799 \+ from ₱499\/mo/);
+  $('[data-to-qty="1"][data-d="1"]').click();
+  $('[data-to-qty="1"][data-d="1"]').click();
+  assert.match($('[data-to-send]').textContent, /2 items · ₱360/);
+  $('[data-to-send]').click();
+  assert.match($('[data-to-server]').textContent, /Beef bulgogi ×2/);
+  assert.match($('[data-to-guest]').textContent, /Order sent to your server/);
+  $('[data-dp-table="3"]').click();
+  assert.match($('.dp-det').textContent, /Beef bulgogi/);
+  $('[data-to-q="0:3"]').click();
+  assert.match($('[data-to-place]').textContent, /^50\+ tables/);
+  $('[data-to-quote]').click();
+  assert.match(decodeURIComponent(opened), /subject=Table ordering quote/);
+
+  // Choosing the package puts it in the setup and the order.
   $('.dp-plan:not([hidden]) [data-act="planCta"]').click();
-  assert.match($('#tf-summary').textContent, /tapfour app · Agency · first year/);
+  assert.ok(!$('#tf-pkg').hidden && $('#tf-step-stand').hidden, 'builder shows the package instead of the stand steps');
+  assert.match($('#tf-summary').textContent, /Business package · 20 × Review \+ Menu/);
+  assert.match($('#tf-summary').textContent, /₱12,000/);
+  assert.match($('#tf-summary').textContent, /Then ₱799\/mo/);
+  input($('#tf-name'), 'Kape Norte');
+  $('[data-act="order"]').click();
+  $('.co-cta').click(); // review -> menu (Review + Menu stands)
+  input($('#co-menuText'), 'Latte — ₱150');
+  $('.co-cta').click();
+  input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
+  $('.co-cta').click();
+  $('[data-co-submit]').click();
+  const body = decodeURIComponent(opened.split('&body=')[1]);
+  assert.match(body, /Setup: Business package/);
+  assert.match(body, /Stands: 20 × TAP4\.1 L-Stand/);
+  assert.match(body, /Table ordering: Yes — send a quote/);
+  assert.match(body, /One-time: ₱12,000/);
+  assert.match(body, /Monthly: ₱799/);
+  $('[data-act="pkgClear"]').click();
+  assert.ok($('#tf-pkg').hidden, 'back to a custom setup');
 });

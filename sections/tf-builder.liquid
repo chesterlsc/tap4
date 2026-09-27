@@ -11,21 +11,23 @@
     <div class="bld-pv" id="tf-preview"></div>
 
     <div class="stack-14">
-      <div class="step">
+      <div class="step step--pkg" id="tf-pkg" hidden></div>
+
+      <div class="step" id="tf-step-stand">
         <div class="step__h"><span class="step__n">1</span><b>Choose a stand</b><em>GLOSSY ACRYLIC · NFC</em></div>
         <div class="bld-2" id="tf-stands"></div>
       </div>
 
-      <div class="step">
+      <div class="step" id="tf-step-face">
         <div class="step__h"><span class="step__n">2</span><b id="tf-face-title">Pick the face</b><em id="tf-face-tag"></em></div>
         <div id="tf-faces"></div>
       </div>
 
       <div class="step">
-        <div class="step__h"><span class="step__n">3</span><b>Finish &amp; quantity</b></div>
+        <div class="step__h"><span class="step__n" id="tf-n-fin">3</span><b id="tf-fin-title">Finish &amp; quantity</b></div>
         <div class="row-between wrap">
           <div class="bld-fin" id="tf-finish" role="group" aria-label="Finish"></div>
-          <div class="qty">
+          <div class="qty" id="tf-qty-wrap">
             <button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button>
             <output id="tf-qty">1</output>
             <button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button>
@@ -34,7 +36,7 @@
       </div>
 
       <div class="step">
-        <div class="step__h"><span class="step__n">4</span><b>Your links</b><em>WE PROGRAM THESE</em></div>
+        <div class="step__h"><span class="step__n" id="tf-n-links">4</span><b>Your links</b><em>WE PROGRAM THESE</em></div>
         <label class="lf"><span class="lf__h"><span>Business name</span><em>For your order · not printed</em></span><input id="tf-name" maxlength="40" autocomplete="organization" placeholder="e.g. Kape Norte"></label>
         <div class="stack-14" id="tf-links"></div>
       </div>

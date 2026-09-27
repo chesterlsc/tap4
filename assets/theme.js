@@ -48,7 +48,12 @@
     { id: 'crm', handle: ADD, variant: 'Customer in/out data', name: 'Dashboard · guests in / out', desc: 'Know who comes in, how long they stay, who returns.', price: 299, points: ['Tap-in on arrival, tap-out on payment', 'Busiest hours & average stay', 'Returning guests & visit history'] },
     { id: 'wifi', handle: ADD, variant: 'Tap-to-join Wi-Fi', name: 'Tap-to-join Wi-Fi', desc: 'Guests connect without typing passwords.', price: 99, points: ['Rotate the password anytime'] }
   ];
-  const PLANS = [{ id: 'solo', name: 'Solo', price: 299 }, { id: 'business', name: 'Business', price: 799 }, { id: 'agency', name: 'Agency', price: 1999 }];
+  const PLANS = [{ id: 'solo', name: 'Solo', price: 299 }, { id: 'business', name: 'Business', price: 799 }, { id: 'empire', name: 'Empire', price: 1999 }];
+  // Packages: Review + Menu stands paid once, plus that plan's app monthly (03 · Dashboard & plans).
+  const PKG_FEATS = { solo: 'live QR menu editor, dashboard, billing & inventory trackers, Wi-Fi', business: 'everything in Solo for up to 5 branches, review alerts, monthly report', empire: 'everything in Business for up to 20 branches, staff tracker, dedicated manager' };
+  const PLAN_TAGS = { solo: '1 LOCATION', business: 'UP TO 5 BRANCHES', empire: 'UP TO 20 BRANCHES' };
+  const PKGS = { solo: { stands: 5, price: 3000 }, business: { stands: 20, price: 12000 }, empire: { stands: 80, price: 40000 } };
+  const pkgItem = id => { const p = PLANS.find(x => x.id === id); return { id: 'pkg', handle: 'tapfour-package', variant: p.name, name: `${p.name} package · ${PKGS[id].stands} Review + Menu stands`, price: PKGS[id].price }; };
   const planItem = (p, yearly) => ({ handle: 'tapfour-app', variant: `${p.name} / ${yearly ? 'Yearly' : 'Monthly'}`, name: `${p.name} plan`, price: yearly ? p.price * 0.8 * 12 : p.price });
   const planPrice = p => Math.round(priceOf(planItem(p, S.yearly)) / (S.yearly ? 12 : 1)); // per month, for display
   const SVCS = $$('[data-svc]').map(el => ({ id: el.dataset.svc, name: el.dataset.name, price: +el.dataset.price, monthly: 'monthly' in el.dataset, vid: +el.dataset.variant, sp: +el.dataset.sp || null, available: !el.disabled }));
@@ -56,38 +61,38 @@
 
   const S = {
     name: '', finish: 'black', qty: 1, mode: 'direct', dest: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
-    app: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', locIdx: 0, yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
+    app: false, pkg: null, pkgOrder: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', locIdx: 0, yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
   const set = o => { Object.assign(S, { error: '' }, o); render(); };
   // Monthly price of the app as configured in the popup (plan + paid features).
   const appMonthly = plan => planPrice(plan) + FEATS.filter(f => f.handle && S.feats[f.id]).reduce((a, f) => a + priceOf(f), 0);
 
   function derive() {
-    const isQuad = S.mode === 'quad', isApp = S.app;
-    const prod = isQuad ? BAR : standItem(S.finish);
-    const design = isQuad ? null : designOf();
-    const plan = PLANS.find(p => p.id === S.plan) || PLANS[0];
-    const activeFeats = isApp ? FEATS.filter(f => S.feats[f.id]) : [];
+    const pkg = S.pkg, isQuad = !pkg && S.mode === 'quad', isApp = !!pkg || S.app;
+    const prod = pkg ? pkgItem(pkg) : isQuad ? BAR : standItem(S.finish), units = pkg ? 1 : S.qty;
+    const design = isQuad ? null : pkg ? 'menu' : designOf();
+    const plan = PLANS.find(p => p.id === (pkg || S.plan)) || PLANS[0];
+    const activeFeats = isApp && !pkg ? FEATS.filter(f => S.feats[f.id]) : []; // a package's app already includes its features
     const activeSvcs = SVCS.filter(v => S.svcs[v.id]);
     const slotName = id => SLOT_OPTS.find(o => o[0] === id)[1];
     const activePl = isQuad ? PL.filter(p => S.slots.includes(p[0])) : design === 'links' ? PL.filter(p => S.plats[p[0]]) : PL.filter(p => p[0] === 'google');
-    const linkFee = design === 'links' ? priceOf(LINKS) : 0;
-    const hwMenuFee = design === 'menu' ? priceOf(HW_MENU) : 0;
-    const menuOn = !!hwMenuFee || (isApp && !!S.feats.menu);
-    const oneTime = priceOf(prod) * S.qty + linkFee + hwMenuFee + activeSvcs.filter(v => !v.monthly).reduce((a, v) => a + v.price, 0);
+    const linkFee = !pkg && design === 'links' ? priceOf(LINKS) : 0;
+    const hwMenuFee = !pkg && design === 'menu' ? priceOf(HW_MENU) : 0;
+    const menuOn = !!pkg || !!hwMenuFee || (isApp && !!S.feats.menu);
+    const oneTime = priceOf(prod) * units + linkFee + hwMenuFee + activeSvcs.filter(v => !v.monthly).reduce((a, v) => a + v.price, 0);
     const yearly = isApp && S.yearly ? priceOf(planItem(plan, true)) : 0;
     const monthly = (isApp ? (S.yearly ? 0 : priceOf(planItem(plan, false))) + activeFeats.reduce((a, f) => a + priceOf(f), 0) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
     const dueNow = oneTime + yearly + monthly;
-    const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * S.qty : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
+    const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * units : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
     const destUrl = isQuad ? S.slots.map(slotName).join(' · ') : design === 'links' ? '4-in-1 page · ' + activePl.map(p => p[1]).join(', ') : design === 'menu' ? 'Google review (tap) · Menu (scan)' : 'Your Google review box';
     const summary = [
-      S.qty + ' × ' + prod.name + (isQuad ? ' · ' + FINISHES.find(x => x.id === S.finish).name : ''),
-      isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : DESIGNS.find(x => x.id === design).name + ' design' + (design === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
+      units + ' × ' + prod.name + (isQuad || pkg ? ' · ' + FINISHES.find(x => x.id === S.finish).name : ''),
+      pkg ? (S.pkgOrder ? 'Table ordering (quote)' : null) : isQuad ? '4 taps → ' + S.slots.map(slotName).join(', ') : DESIGNS.find(x => x.id === design).name + ' design' + (design === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
       ...activeFeats.map(f => f.name), isApp ? 'tapfour app · ' + plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, ...activeSvcs.map(v => v.name)
     ].filter(Boolean).join(' · ');
     const catalogItems = [prod, ...(hwMenuFee ? [HW_MENU] : []), ...(linkFee ? [LINKS] : []), ...(isApp ? [planItem(plan, S.yearly), ...activeFeats.filter(f => f.handle)] : [])];
     const demoPrices = catalogItems.some(it => !variant(it.handle, it.variant));
-    return { isQuad, isApp, design, prod, plan, activeFeats, activeSvcs, slotName, activePl, linkFee, hwMenuFee, menuOn, oneTime, monthly, yearly, dueNow, demoPrices, saved, destUrl, summary };
+    return { pkg, units, isQuad, isApp, design, prod, plan, activeFeats, activeSvcs, slotName, activePl, linkFee, hwMenuFee, menuOn, oneTime, monthly, yearly, dueNow, demoPrices, saved, destUrl, summary };
   }
 
   /* ---------- builder views (01 · Build your setup v2) ---------- */
@@ -118,8 +123,9 @@
 
   function viewPreview(d) {
     const ph = shotFor(d.prod.id, d), fin = FINISHES.find(x => x.id === S.finish).name;
+    const cap = d.pkg ? `${d.plan.name.toUpperCase()} PACKAGE · ${PKGS[d.pkg].stands} STANDS` : d.isQuad ? '4-TAP BAR' : 'TAP4.1 L-STAND';
     return `<div class="pv-photo${ph.wide ? ' pv-photo--wide' : ''}${S.finish === 'white' ? ' pv-photo--white' : ''}"><img src="${ph.src}" alt="${esc(d.prod.name)}${d.isQuad ? '' : ', ' + DESIGNS.find(x => x.id === d.design).short + ' face'}">
-        <span class="pv-cap">${d.isQuad ? '4-TAP BAR' : 'TAP4.1 L-STAND'} · ${fin.toUpperCase()}</span></div>
+        <span class="pv-cap">${cap} · ${fin.toUpperCase()}</span></div>
       ${ph.note ? `<span class="pv-note">ⓘ ${esc(ph.note)}</span>` : ''}
       <div class="pv-url"><span class="lime">TAP OPENS →</span><span>${esc(d.destUrl)}</span></div>`;
   }
@@ -171,7 +177,7 @@
       return `<label class="lf"><span class="lf__h"><span>${brand(id, 16)}${esc(label)}</span><em class="${st}">${msg}</em></span><input id="tf-url-${k}" class="${st}" type="url" inputmode="url" autocomplete="url" data-url="${k}" value="${esc(v || '')}" placeholder="${id === 'google' ? 'https://maps.app.goo.gl/…' : 'https://…'}"></label>`;
     }).join('');
     if (keys.some(k => k[1] === 'google')) html += googleGuide();
-    if (d.menuOn) html += `<div class="bld-ok"><span>✓</span>Menu: send it at checkout (a file, a link or typed out). We type it up${d.hwMenuFee ? ' and print its QR on your stand' : ' and set up your live menu'}.</div>`;
+    if (d.menuOn) html += `<div class="bld-ok"><span>✓</span>Menu: send it at checkout (a file, a link or typed out). We type it up${d.pkg ? ' and print its QR on your stands' : d.hwMenuFee ? ' and print its QR on your stand' : ' and set up your live menu'}.</div>`;
     html += '<p class="bld-note">Not ready? Leave it blank and send your links after checkout.</p>';
     return html;
   }
@@ -198,8 +204,12 @@
   function viewExtra(d) {
     const picked = FEATS.filter(f => f.handle && S.feats[f.id]);
     const svcs = SVCS.filter(v => !v.monthly);
+    const appRow = d.pkg ? `<div class="appx on"><div class="appx__main"><span class="tgl tgl--lg on"></span>
+          <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app · ${d.plan.name}</b><em>${peso(planPrice(d.plan))}/mo</em></span>
+            <span class="appx__desc">Included in your package: ${esc(PKG_FEATS[d.pkg])}.</span><span class="mono-11 m3">CANCEL ANYTIME · YOUR STANDS KEEP WORKING</span></span></div>
+        <button type="button" class="appx__more" data-act="pkgOrder" aria-pressed="${S.pkgOrder}"><span>${S.pkgOrder ? '✓ Table ordering added · we send your quote' : 'Add table ordering · priced by your tables, from ₱499/mo'}</span><b>${S.pkgOrder ? 'Remove' : 'Add'} →</b></button></div>` : '';
     return `<div class="step__h"><span class="step__n step__n--plus">+</span><b>Optional extras</b><em>SKIP IF YOU LIKE</em></div>
-      <div class="appx${S.app ? ' on' : ''}">
+      ${appRow}<div class="appx${S.app ? ' on' : ''}"${d.pkg ? ' hidden' : ''}>
         <button type="button" class="appx__main" data-act="appPop" aria-haspopup="dialog" aria-label="tapfour app${S.app ? ', added' : ''}: see features">
           <span class="tgl tgl--lg${S.app ? ' on' : ''}"></span>
           <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app</b><em>${peso(appMonthly(d.plan))}/mo</em></span>
@@ -214,12 +224,14 @@
   function viewSummary(d) {
     const fin = S.finish === 'white' ? 'White' : 'Black';
     const lines = [
-      [`${S.qty} × ${d.isQuad ? '4-Tap Bar' : 'TAP4.1 L-Stand'} · ${fin}${d.isQuad ? '' : ' · ' + DESIGNS.find(x => x.id === d.design).short}`, peso(priceOf(d.prod) * S.qty)],
+      d.pkg ? [`${d.plan.name} package · ${PKGS[d.pkg].stands} × Review + Menu · ${fin}`, peso(priceOf(d.prod))]
+        : [`${S.qty} × ${d.isQuad ? '4-Tap Bar' : 'TAP4.1 L-Stand'} · ${fin}${d.isQuad ? '' : ' · ' + DESIGNS.find(x => x.id === d.design).short}`, peso(priceOf(d.prod) * S.qty)],
       d.hwMenuFee ? [HW_MENU.name, peso(d.hwMenuFee)] : null,
       d.linkFee ? [`${LINKS.name} (${d.activePl.length} apps)`, peso(d.linkFee)] : null,
       ...d.activeSvcs.map(v => [v.name, peso(v.price) + (v.monthly ? '/mo' : '')]),
       d.isApp ? [`tapfour app · ${d.plan.name} · first ${S.yearly ? 'year' : 'month'}`, peso(S.yearly ? d.yearly : priceOf(planItem(d.plan, false)))] : null,
-      ...d.activeFeats.filter(f => f.handle).map(f => [f.name + ' · first month', peso(priceOf(f))])
+      ...d.activeFeats.filter(f => f.handle).map(f => [f.name + ' · first month', peso(priceOf(f))]),
+      d.pkg && S.pkgOrder ? ['Table ordering · we send your quote', 'from ₱499/mo'] : null
     ].filter(Boolean);
     const label = TF.sale.label ? TF.sale.label + ' · ' : '', deadline = countdown();
     const then = d.monthly ? `Then ${peso(d.monthly)}/mo. Cancel anytime.` : d.yearly ? `Renews yearly at ${peso(d.yearly)}.` : '';
@@ -268,50 +280,128 @@
   }
 
   /* ---------- plans + services (other homepage sections share the same state) ---------- */
-  // 03 · Dashboard & plans: the location slider picks the plan and which sample dashboard shows.
-  const STOPS = [1, 2, 3, 4, 5, 8, 12, 20, 30, 50];
-  const planAt = i => i === 0 ? 'solo' : i <= 4 ? 'business' : 'agency';
-  const FIRST_STOP = { solo: 0, business: 1, agency: 5 };
+  // 03 · Dashboard & plans: the location slider picks the package and which sample dashboard shows.
+  const STOPS = [1, 2, 3, 4, 5, 8, 12, 16, 20];
+  const planAt = i => i === 0 ? 'solo' : i <= 4 ? 'business' : 'empire';
+  const FIRST_STOP = { solo: 0, business: 1, empire: 5 };
+  // Sample data for the demos (not wired to real accounts).
+  const DMENU = [['Pork belly refill', 'Unli set', 0], ['Beef bulgogi', '200 g', 180], ['Kimchi fried rice', 'Good for 2', 120], ['Cheese corn', 'Side', 90], ['Iced tea pitcher', '1 L', 150]];
+  const BRANCHES = [['Main branch', 3, 1284, 486], ['Katipunan', 2, 962, 351], ['BGC', 4, 1540, 602], ['Ortigas', 2, 740, 268], ['Cebu IT Park', 1, 610, 199]];
+  const EMP = [
+    ['Billing', ['BILL', 'BRANCH', 'DUE', 'STATUS'], [['Meat supplier', 'Main branch', '28 Sep', 'DUE'], ['Electricity', 'Katipunan', '30 Sep', 'DUE'], ['Rent', 'BGC', '01 Oct', 'PAID'], ['Water', 'Ortigas', '02 Oct', 'PAID'], ['LPG refill', 'Cebu IT Park', '03 Oct', 'PAID']]],
+    ['Inventory', ['ITEM', 'BRANCH', 'LEFT', 'STATUS'], [['Pork belly', 'Main branch', '4 kg', 'LOW'], ['Charcoal', 'BGC', '3 bags', 'LOW'], ['Rice', 'Katipunan', '2 sacks', 'LOW'], ['Beef', 'Ortigas', '11 kg', 'OK'], ['Iced tea mix', 'Cebu IT Park', '6 packs', 'OK']]],
+    ['Staff', ['NAME', 'BRANCH', 'SHIFT', 'STATUS'], [['Ana R.', 'Main branch', '10am–7pm', 'ON SHIFT'], ['Jomar D.', 'BGC', '11am–8pm', 'ON SHIFT'], ['Liza P.', 'Katipunan', '4pm–12am', 'LATER'], ['Paolo S.', 'Ortigas', '10am–7pm', 'ON SHIFT'], ['Mika T.', 'Cebu IT Park', 'Day off', 'OFF']]]
+  ];
+  const QGROUPS = [['TABLES', ['1–10', '11–25', '26–50', '50+']], ['WHAT YOU SERVE', ['Café', 'Restaurant', 'Samgyupsal / unli', 'Bar']], ['HOW BUSY', ['Quiet', 'Steady', 'Packed']]];
+  const TST = { '-1': ['FREE', 'free'], 0: ['NEW ORDER', 'new'], 1: ['IN KITCHEN', 'kit'], 2: ['SERVED', 'srv'], 3: ['BILL PLEASE', 'bill'] };
+  const DP = {
+    eTab: 1, oView: false, oSel: 3, toast: '', qty: [0, 0, 0, 0, 0], quote: [1, 2, 2],
+    tables: [
+      { g: 4, t: '52m', items: [[0, 3], [2, 1], [4, 1]], st: 2 }, { g: 2, t: '18m', items: [[0, 2]], st: 1 }, { st: -1, items: [] },
+      { g: 3, t: '38m', items: [[1, 1], [3, 1]], st: 0 }, { g: 6, t: '1h 10m', items: [[0, 6], [1, 2], [4, 2]], st: 3 }, { st: -1, items: [] },
+      { g: 2, t: '9m', items: [[4, 1], [3, 1]], st: 0 }, { g: 4, t: '25m', items: [[0, 4], [1, 2]], st: 1 }, { st: -1, items: [] },
+      { g: 2, t: '44m', items: [[2, 2]], st: 2 }, { st: -1, items: [] }, { g: 5, t: '31m', items: [[0, 5], [4, 2]], st: 1 }
+    ],
+    tickets: [
+      { id: 2, table: 'Table 7', items: 'Iced tea pitcher ×1, Cheese corn ×1', order: true, st: 0 },
+      { id: 1, table: 'Table 2', items: 'Pork belly refill ×2', order: true, st: 1 },
+      { id: 0, table: 'Table 9', items: 'Bill please', order: false, st: 1 }
+    ]
+  };
+  const tkLabel = t => (t.order ? ['NEW', 'IN KITCHEN', 'SERVED'] : ['NEW', 'ON THE WAY', 'DONE'])[Math.min(t.st, 2)];
+  const tkCls = t => t.st === 0 ? 'new' : t.st >= 2 ? 'done' : 'kit';
+
+  function viewDash(id, n) {
+    const tbl = (cls, head, rows) => `<div class="dp-tbl ${cls}"><div class="dp-tbl__h">${head.map(h => `<span>${h}</span>`).join('')}</div>${rows.join('')}</div>`;
+    if (S.pkgOrder && DP.oView) {
+      const sel = DP.tables[DP.oSel], [slabel, scls] = TST[sel.st], count = t => t.items.reduce((a, r) => a + r[1], 0);
+      const acts = { 0: 'Accept · send to kitchen', 1: 'Mark served', 3: 'Bill sent · clear table' };
+      const stats = [['NEW ORDERS', DP.tables.filter(t => t.st === 0).length, 1], ['IN KITCHEN', DP.tables.filter(t => t.st === 1).length], ['TABLES SEATED', DP.tables.filter(t => t.st !== -1).length + '/12']];
+      return `<div class="dp-stats dp-stats--row">${stats.map(([l, v, hi]) => `<div${hi ? ' class="hi"' : ''}><small>${l}</small><b>${v}</b></div>`).join('')}</div>
+        <div class="dp-floor">
+          <div class="dp-floor__map"><div class="dp-floor__h"><span>FLOOR · TAP A TABLE</span><span>MAIN FLOOR · 12 TABLES</span></div>
+            <div class="dp-tiles">${DP.tables.map((t, i) => { const [l, c] = TST[t.st]; return `<button type="button" class="dp-tile dp-tile--${c}${DP.oSel === i ? ' sel' : ''}" data-dp-table="${i}" aria-pressed="${DP.oSel === i}"><span><b>T${i + 1}</b><em>${t.st === -1 ? '' : t.t}</em></span><span><small>${l}</small><i>${t.st === -1 ? 'Open' : t.g + ' guests · ' + count(t) + ' items'}</i></span></button>`; }).join('')}</div>
+            <div class="dp-recent"><small>RECENT FROM TABLES</small>${DP.tickets.map(t => `<div><b>${esc(t.table.replace('Table ', 'T'))}</b><span>${esc(t.items)}</span><em class="dp-pill dp-pill--${tkCls(t)}">${tkLabel(t)}</em></div>`).join('')}</div>
+            <div class="dp-legend"><span><i class="new"></i>New order</span><span><i class="kit"></i>In kitchen</span><span><i class="bill"></i>Bill please</span><span><i class="srv"></i>Served</span><span><i class="free"></i>Free</span></div>
+          </div>
+          <div class="dp-det"><div class="dp-det__h"><span><b>Table ${DP.oSel + 1}</b><small>${sel.st === -1 ? 'Free' : sel.g + ' guests · seated ' + sel.t}</small></span><em class="dp-pill dp-pill--${scls}">${slabel}</em></div>
+            ${sel.st === -1 ? '<p class="dp-det__free">No one seated yet. When guests scan this table’s QR and send an order, it shows up here and on your server’s phone.</p>' : `
+            <div class="dp-det__items">${sel.items.map(([i, q]) => `<div><span>${DMENU[i][0]}</span><em>×${q}</em><b>${DMENU[i][2] ? peso(DMENU[i][2] * q) : 'Unli'}</b></div>`).join('')}
+              <div class="dp-det__tot"><b>Total so far</b><b>${peso(sel.items.reduce((a, [i, q]) => a + DMENU[i][2] * q, 0))}</b></div></div>
+            <div class="dp-det__steps"><small>WHERE IT IS</small><div>${['Sent', 'In kitchen', 'Served', 'Bill'].map((l, i) => `<span class="${sel.st === 3 || (sel.st >= i && i < 3) ? 'on' : ''}"><i></i>${l}</span>`).join('')}</div></div>
+            ${acts[sel.st] ? `<button type="button" class="dp-det__act" data-dp-tact>${acts[sel.st]}</button>` : ''}${sel.st === 2 ? '<button type="button" class="dp-det__clear" data-dp-tclear>Clear table</button>' : ''}`}
+          </div>
+        </div>`;
+    }
+    if (id === 'solo') {
+      const stands = [['Counter', '2 min ago'], ['Table 1', '6 min ago'], ['Table 2', '9 min ago'], ['Table 3', '24 min ago'], ['Table 4', '1 h ago']];
+      const links = [['Google review', 'g.page/r/your-shop/review'], ['Menu', 'tap4.ph/m/your-shop'], ['Facebook', 'facebook.com/yourshop'], ['Instagram', 'instagram.com/yourshop'], ['TikTok', 'tiktok.com/@yourshop']];
+      return tbl('dp-tbl--stands', ['STAND', 'WHERE', 'LAST TAP', 'STATUS'], stands.map(([w, t]) => `<div class="dp-tbl__r"><b>Review + Menu</b><span>${w}</span><span class="mono">${t}</span><span class="dp-ok"><i></i>Online</span></div>`)) + `
+        <div class="dp-2"><div class="dp-box"><small>MY LINKS</small>${links.map(([k, u]) => `<div class="dp-link"><b>${k}</b><span>${u}</span><em>Edit</em></div>`).join('')}</div>
+          <div class="dp-box"><small>THIS MONTH</small>${[['Taps', '1,284', 1], ['QR scans', '612'], ['Menu opens', '903'], ['Wi-Fi guests', '318']].map(([l, v, hi]) => `<div class="dp-kv"><span>${l}</span><b${hi ? ' class="lime"' : ''}>${v}</b></div>`).join('')}<p>Guests counted from Wi-Fi joins. Taps and QR scans counted separately.</p></div></div>`;
+    }
+    if (id === 'business') {
+      const br = BRANCHES.slice(0, Math.min(n, 5)), max = Math.max(...br.map(b => b[2])), sum = k => br.reduce((a, b) => a + b[k], 0);
+      return `<div class="chips-row"><span class="dp-chip dp-chip--hi">Monthly report · September PDF ↓</span><span class="dp-chip">Review alerts · on</span></div>` +
+        tbl('dp-tbl--br', ['BRANCH', 'STANDS', 'TAPS · 30D', 'OPENED REVIEW'], [...br.map(b => `<div class="dp-tbl__r" data-br><b>${b[0]}</b><span class="mono">${b[1]}</span><span class="dp-meter"><span><i style="width:${Math.round(b[2] / 1540 * 100)}%"${b[2] === max ? ' class="hi"' : ''}></i></span><em>${b[2].toLocaleString('en-US')}</em></span><span class="mono">${b[3]}</span></div>`),
+          `<div class="dp-tbl__r dp-tbl__tot"><b>All branches</b><span class="mono">${sum(1)}</span><span class="mono dp-tbl__tt" data-tot-t>${sum(2).toLocaleString('en-US')}</span><span class="mono">${sum(3)}</span></div>`]);
+    }
+    const [, head, rows] = EMP[DP.eTab], hot = v => ['DUE', 'LOW', 'ON SHIFT'].includes(v);
+    const stats = [['BILLS DUE THIS WEEK', '2', '₱48,200 total'], ['LOW STOCK', '3', 'Across ' + n + ' branches'], ['STAFF ON SHIFT', String(n * 4 + 2), 'Right now']];
+    return `<div class="dp-stats">${stats.map(([l, v, sub], i) => `<div${i === DP.eTab ? ' class="hi"' : ''}><small>${l}</small><b>${v}</b><span>${sub}</span></div>`).join('')}</div>
+      <div class="seg seg--sm dp-etabs">${EMP.map(([l], i) => `<button type="button" class="${DP.eTab === i ? 'on' : ''}" data-dp-etab="${i}" aria-pressed="${DP.eTab === i}">${l} tracker</button>`).join('')}</div>` +
+      tbl('dp-tbl--emp', head, rows.map(([a, b, c, st]) => `<div class="dp-tbl__r"><b>${a}</b><span>${b}</span><span class="mono">${c}</span><em class="dp-pill dp-pill--${hot(st) ? 'new' : 'srv'}">${st}</em></div>`));
+  }
+
+  function renderTableOrdering(sec) {
+    const cart = DMENU.map((m, i) => ({ n: m[0], p: m[2], i, q: DP.qty[i] })).filter(m => m.q), count = cart.reduce((a, m) => a + m.q, 0), sum = cart.reduce((a, m) => a + m.q * m.p, 0);
+    $('[data-to-guest]', sec).innerHTML = `<div class="dp-g__h"><span><b>Table 4</b><small>YOUR SHOP · MENU</small></span><em>OPEN</em></div>
+      <div class="dp-g__menu">${DMENU.map(([n, sub, p], i) => `<div class="dp-g__mi"><span><b>${n}</b><small>${sub}</small></span><em>${p ? peso(p) : 'Unli'}</em><span class="dp-g__q">${DP.qty[i] ? `<button type="button" data-to-qty="${i}" data-d="-1" aria-label="Remove one ${n}">−</button><b>${DP.qty[i]}</b>` : ''}<button type="button" class="add" data-to-qty="${i}" data-d="1" aria-label="Add one ${n}">+</button></span></div>`).join('')}</div>
+      <div class="dp-g__foot"><div class="dp-g__quick"><button type="button" data-to-quick="refill">Refill</button><button type="button" data-to-quick="call">Call server</button><button type="button" data-to-quick="bill">Bill please</button></div>
+        <button type="button" class="dp-g__send${count ? ' on' : ''}" data-to-send${count ? '' : ' disabled'}><span>Send to server</span><span>${count ? count + ' item' + (count > 1 ? 's' : '') + (sum ? ' · ' + peso(sum) : '') : 'Add items'}</span></button></div>
+      ${DP.toast ? `<div class="dp-g__toast" role="status"><b>✓</b>${esc(DP.toast)}</div>` : ''}`;
+    $('[data-to-server]', sec).innerHTML = `<div class="dp-s__h"><span><b>Orders</b><small>SERVER · FLOOR 1</small></span><em>${DP.tickets.filter(t => t.st === 0).length} NEW</em></div>
+      <div class="dp-s__list">${DP.tickets.map(t => `<div class="dp-tk dp-tk--${tkCls(t)}"><div><b>${esc(t.table)}</b><em class="dp-pill dp-pill--${tkCls(t)}">${tkLabel(t)}</em></div><span>${esc(t.items)}</span>${t.st < 2 ? `<button type="button" data-to-tk="${t.id}">${(t.order ? ['Accept · send to kitchen', 'Mark served'] : ['On my way', 'Done'])[t.st]}</button>` : ''}</div>`).join('')}</div>`;
+    $('[data-to-groups]', sec).innerHTML = QGROUPS.map(([label, opts], g) => `<div class="dp-qg"><small>${label}</small><div>${opts.map((o, i) => `<button type="button" class="${DP.quote[g] === i ? 'on' : ''}" data-to-q="${g}:${i}" aria-pressed="${DP.quote[g] === i}">${o}</button>`).join('')}</div></div>`).join('');
+    $('[data-to-place]', sec).textContent = quoteLine() + ' We’ll message you a monthly price.';
+  }
+  const quoteLine = () => { const [t, k, b] = QGROUPS.map(([, opts], g) => opts[DP.quote[g]]); return `${t} tables · ${k} · ${b}.`; };
+
   function renderPlans() {
     $$('[data-act="yearly"]').forEach(b => { const on = (b.dataset.arg === '1') === S.yearly; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     const sec = $('[data-plans]');
     if (!sec) return;
     if (planAt(S.locIdx) !== S.plan) S.locIdx = FIRST_STOP[S.plan] || 0;
-    const id = S.plan, n = STOPS[S.locIdx], nLabel = n === 50 ? '50+' : String(n);
+    const id = S.plan, n = STOPS[S.locIdx];
     const range = $('[data-dp-range]', sec);
     if (range !== document.activeElement) range.value = S.locIdx;
-    $('[data-dp-n]', sec).textContent = nLabel;
-    $('[data-dp-word]', sec).textContent = n === 1 ? 'location' : id === 'agency' ? 'client businesses' : 'branches';
-    $$('[data-z]', sec).forEach(z => z.classList.toggle('on', +z.dataset.z === ['solo', 'business', 'agency'].indexOf(id)));
+    $('[data-dp-n]', sec).textContent = n;
+    $('[data-dp-word]', sec).textContent = n === 1 ? 'location' : 'branches';
+    $$('[data-z]', sec).forEach(z => z.classList.toggle('on', +z.dataset.z === ['solo', 'business', 'empire'].indexOf(id)));
     $$('.dp-plan', sec).forEach(el => {
       el.hidden = el.dataset.plan !== id;
       if (el.hidden) return;
       const plan = PLANS.find(p => p.id === id);
-      const monthly = plan ? planPrice(plan) : +(S.yearly ? el.dataset.y : el.dataset.m);
-      $('[data-plan-price]', el).textContent = peso(monthly);
-      $('[data-plan-billing]', el).textContent = S.yearly ? 'Billed yearly · ' + peso(plan ? priceOf(planItem(plan, true)) : monthly * 12) : 'Billed monthly';
-      $('[data-dp-per]', el).textContent = id === 'solo' ? 'One shop, one page' : peso(Math.round(monthly / n)) + (id === 'business' ? ' per branch' : ' per client') + ' / mo';
-      $('.dp-plan__cta', el).textContent = S.app ? '✓ In your setup ↑' : 'Choose ' + $('h3', el).textContent + ' →';
+      const monthly = plan ? planPrice(plan) : Math.round(+(S.yearly ? el.dataset.y : el.dataset.m));
+      $('[data-plan-up]', el).textContent = peso(plan ? priceOf(pkgItem(id)) : +el.dataset.up);
+      $('[data-plan-price]', el).textContent = '+ ' + peso(monthly);
+      $('[data-plan-billing]', el).textContent = 'MONTHLY · ' + (S.yearly ? 'BILLED YEARLY' : 'BILLED MONTHLY');
+      $('[data-plan-total]', el).textContent = peso(monthly) + (S.pkgOrder ? ' + from ₱499/mo' : '/mo');
+      const add = $('.dp-add', el), btn = $('[data-act="pkgOrder"]', el);
+      add.classList.toggle('on', S.pkgOrder);
+      btn.textContent = S.pkgOrder ? '✓ Added' : '+ Add';
+      btn.setAttribute('aria-pressed', S.pkgOrder);
+      $('.dp-plan__cta', el).textContent = S.pkg === id ? '✓ In your setup ↑' : 'Choose ' + $('h3', el).textContent + ' →';
     });
-    $$('[data-dp-for]', sec).forEach(v => { v.hidden = v.dataset.dpFor !== id; });
-    const rows = $$('[data-br]', sec), shown = rows.slice(0, Math.min(n, 5)), max = Math.max(...shown.map(r => +r.dataset.t));
-    $('[data-dp-view]', sec).textContent = { solo: 'My stands', business: 'Branches', agency: 'Pipeline' }[id];
-    $('[data-dp-scope]', sec).textContent = id === 'solo' ? 'SAMPLE DATA · YOUR SHOP' : id === 'business' ? `SAMPLE DATA · ${shown.length} BRANCHES` : 'SAMPLE DATA · WHITE-LABEL';
-    rows.forEach((r, i) => {
-      const t = +r.dataset.t, bar = $('.dp-meter i', r);
-      r.hidden = i >= shown.length;
-      bar.style.width = Math.round(t / 1540 * 100) + '%';
-      bar.classList.toggle('hi', t === max);
-      $('.dp-meter em', r).textContent = t.toLocaleString('en-US');
-    });
-    const sum = k => shown.reduce((a, r) => a + +r.dataset[k], 0);
-    $('[data-tot-s]', sec).textContent = sum('s');
-    $('[data-tot-t]', sec).textContent = sum('t').toLocaleString('en-US');
-    $('[data-tot-r]', sec).textContent = sum('r');
-    const cols = $$('.dp-col', sec);
-    cols.forEach(c => { $('[data-count]', c).textContent = $$('.dp-deal', c).length; });
-    $('[data-dp-clients]', sec).textContent = nLabel;
-    $('[data-dp-active]', sec).textContent = $$('.dp-deal', cols[cols.length - 1]).length;
+    const navs = { solo: ['Overview', 'My stands', 'Menu', 'Billing', 'Inventory', 'Wi-Fi', 'My links', 'Help'], business: ['Overview', 'Branches', 'My links', 'My stands', 'Reports', 'Help'], empire: ['Overview', 'Branches', 'Billing', 'Inventory', 'Staff', 'Help'] };
+    const home = { solo: 'My stands', business: 'Branches', empire: EMP[DP.eTab][0] }[id];
+    const nav = S.pkgOrder ? [...navs[id].slice(0, 2), 'Orders', ...navs[id].slice(2)] : navs[id];
+    const ov = S.pkgOrder && DP.oView, active = ov ? 'Orders' : home, fresh = DP.tables.filter(t => t.st === 0).length;
+    $('[data-dp-nav]', sec).innerHTML = nav.map(l => `<button type="button" class="${l === active ? 'on' : ''}${l === 'Orders' ? ' ord' : ''}" data-dp-nav-item="${l}">${l}${l === 'Orders' && fresh ? `<small>${fresh} NEW</small>` : ''}</button>`).join('');
+    $('[data-dp-view]', sec).textContent = active;
+    $('[data-dp-scope]', sec).textContent = ov ? 'SAMPLE DATA · LIVE FLOOR' : id === 'solo' ? 'SAMPLE DATA · YOUR SHOP' : `SAMPLE DATA · ${n} BRANCHES`;
+    $('[data-dp-body]', sec).innerHTML = viewDash(id, n);
+    renderTableOrdering(sec);
   }
   function renderServices() {
     $$('.svc[data-svc]').forEach(el => {
@@ -389,6 +479,14 @@
     const d = derive();
     builder.setAttribute('aria-busy', S.ordering);
     $('#tf-preview').innerHTML = viewPreview(d);
+    $('#tf-pkg').hidden = !d.pkg;
+    ['#tf-step-stand', '#tf-step-face', '#tf-qty-wrap'].forEach(sel => { $(sel).hidden = !!d.pkg; });
+    $('#tf-n-fin').textContent = d.pkg ? '1' : '3';
+    $('#tf-n-links').textContent = d.pkg ? '2' : '4';
+    $('#tf-fin-title').textContent = d.pkg ? 'Finish for all stands' : 'Finish & quantity';
+    if (d.pkg) $('#tf-pkg').innerHTML = `<div class="step__h"><span class="step__n">★</span><b>${d.plan.name} package</b><em>${esc(PLAN_TAGS[d.pkg])}</em></div>
+      <div class="pkgc"><div><b>${PKGS[d.pkg].stands} Review + Menu stands</b><span>TAP4.1 L-Stands, programmed before they ship · ${peso(priceOf(d.prod))} one-time</span></div><div><b>tapfour app · ${d.plan.name}</b><span>${peso(planPrice(d.plan))}/mo${S.yearly ? ' · billed yearly' : ''} · cancel anytime</span></div></div>
+      <button type="button" class="pkgc__x" data-act="pkgClear">Build a custom setup instead</button>`;
     $('#tf-stands').innerHTML = viewStands();
     $('#tf-face-title').textContent = d.isQuad ? 'Set the four zones' : 'Pick the face';
     $('#tf-face-tag').textContent = d.isQuad ? 'TAP A ZONE TO CHANGE IT' : 'PRINTED · NO BUSINESS BRANDING';
@@ -448,7 +546,8 @@
       if (recurring) line.selling_plan = v.sp;
       items.push(line);
     };
-    const props = { 'Business name': S.name.trim(), Setup: (d.isQuad ? '4-Tap Bar' : 'TAP4.1 L-Stand') + (d.isApp ? ' + tapfour app' : ''), Finish: FINISHES.find(x => x.id === S.finish).name };
+    const props = { 'Business name': S.name.trim(), Setup: d.pkg ? d.plan.name + ' package' : (d.isQuad ? '4-Tap Bar' : 'TAP4.1 L-Stand') + (d.isApp ? ' + tapfour app' : ''), Finish: FINISHES.find(x => x.id === S.finish).name };
+    if (d.pkg) Object.assign(props, { Stands: PKGS[d.pkg].stands + ' × TAP4.1 L-Stand', 'Table ordering': S.pkgOrder ? 'Yes — send a quote (from ₱499/mo)' : 'No' });
     if (d.isQuad) props['Tap zones'] = S.slots.map(d.slotName).join(', ');
     else {
       Object.assign(props, { Design: DESIGNS.find(x => x.id === d.design).name, 'Tap opens': d.destUrl });
@@ -459,7 +558,7 @@
     destinations.forEach(dest => { props[dest.label + (dest.plat === 'google' ? ' link' : ' URL')] = dest.value || 'To be provided after checkout'; });
     if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
 
-    add(d.prod, S.qty, props);
+    add(d.prod, d.units, props);
     if (d.hwMenuFee) add(HW_MENU, 1);
     if (d.linkFee) add(LINKS, 1);
     if (d.isApp) {
@@ -559,13 +658,13 @@
     } else if (cur === 'Review') {
       body = `<div class="co-item"><img src="${ph.src}" alt="">
           <div class="co-item__txt"><b>${esc(d.prod.name)}</b><small>${esc(d.isQuad ? S.name.trim() : DESIGNS.find(x => x.id === d.design).name + ' design · for ' + S.name.trim())}</small><small class="lime">${esc(d.destUrl)}</small>
-            <div class="qty qty--sm"><button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button><output>${S.qty}</output><button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button></div></div>
-          <em>${peso(priceOf(d.prod) * S.qty)}</em></div>
+            ${d.pkg ? '' : `<div class="qty qty--sm"><button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button><output>${S.qty}</output><button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button></div>`}</div>
+          <em>${peso(priceOf(d.prod) * d.units)}</em></div>
         ${extras ? `<div class="co-lines">${extras}</div>` : ''}${totals}
         <button type="button" class="co-edit" data-co-edit>✎ Edit setup</button>`;
     } else if (cur === 'Menu') {
       body = `<div class="co-form">
-        <div class="co-menu-intro"><span class="co-menu-intro__qr">${QR}</span><div><b>Send us your menu</b><span>We type it up, build your mobile menu${d.hwMenuFee ? ' and print its QR on your stand' : ' and pair it with your stand'}.${S.svcs['menu-setup'] ? ' Menu setup is included, so we also price and photograph it.' : ''}</span></div></div>
+        <div class="co-menu-intro"><span class="co-menu-intro__qr">${QR}</span><div><b>Send us your menu</b><span>We type it up, build your mobile menu${d.hwMenuFee || d.pkg ? ' and print its QR on your stand' : ' and pair it with your stand'}.${S.svcs['menu-setup'] ? ' Menu setup is included, so we also price and photograph it.' : ''}</span></div></div>
         ${TF.menuUploadUrl ? `<label class="co-drop"><input type="file" id="co-menuFiles" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/*" multiple>
           <span class="co-drop__ic">↑</span><b>Upload your menu</b><small>PDF, JPG, PNG or HEIC · up to 10 MB each · drop files here</small></label>
           ${i.menuFiles.length ? `<div class="co-files">${i.menuFiles.map(f => `<div class="co-file is-${f.status}"><span class="co-file__ic">${esc((f.name.split('.').pop() || 'file').slice(0, 4).toUpperCase())}</span>
@@ -620,7 +719,7 @@
         i.note.trim() ? 'Notes: ' + i.note.trim() : null,
         ...(needsMenu() ? ['', '— MENU —', ...menuLines(), ...(i.menuAttach ? ['📎 Remember to attach your menu photos before sending.'] : [])] : [])
       ].filter(v => v !== null).join('\n');
-      (TF.open || (url => { location.href = url; }))('mailto:' + TF.orderEmail + '?subject=' + encodeURIComponent('Order: ' + S.qty + ' × ' + d.prod.name + ' — ' + S.name.trim()) + '&body=' + encodeURIComponent(body));
+      (TF.open || (url => { location.href = url; }))('mailto:' + TF.orderEmail + '?subject=' + encodeURIComponent('Order: ' + d.units + ' × ' + d.prod.name + ' — ' + S.name.trim()) + '&body=' + encodeURIComponent(body));
       CO.done = true;
       return renderCheckout();
     }
@@ -685,10 +784,10 @@
   const scrollTo = id => { const el = document.getElementById(id); if (el) window.scrollTo({ top: el.getBoundingClientRect().top + scrollY - 70, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
   const ACTS = {
     finish: id => set({ finish: id }),
-    stand: id => set({ mode: id }),
+    stand: id => set({ mode: id, pkg: null }),
     heroFace: id => ACTS.design(id, 'direct'),
-    heroOrder: () => { set({ mode: 'direct' }); scrollTo('build'); },
-    design: (id, mode) => set({ dest: id === 'links' ? 'links' : 'google', hw: { ...S.hw, menu: id === 'menu' }, plats: id === 'links' ? { ...ALL_PLATS } : S.plats, ...(typeof mode === 'string' && { mode }) }),
+    heroOrder: () => { set({ mode: 'direct', pkg: null }); scrollTo('build'); },
+    design: (id, mode) => set({ dest: id === 'links' ? 'links' : 'google', hw: { ...S.hw, menu: id === 'menu' }, plats: id === 'links' ? { ...ALL_PLATS } : S.plats, pkg: null, ...(typeof mode === 'string' && { mode }) }),
     qty: n => set({ qty: Math.max(1, S.qty + +n) }),
     plat: id => {
       if (S.dest === 'links' && S.plats[id] && PL.filter(p => S.plats[p[0]]).length <= 2) return set({ error: 'Choose at least two apps for your multi-link page.' });
@@ -702,11 +801,13 @@
       set({ feats });
     },
     plan: id => set({ plan: id }),
-    planCta: id => { set({ plan: id, app: true }); if (builder) scrollTo('build'); },
+    planCta: id => { set({ plan: id, pkg: id }); if (builder) scrollTo('build'); },
+    pkgOrder: () => { DP.oView = !S.pkgOrder; set({ pkgOrder: !S.pkgOrder }); }, // adding it opens the live floor demo
+    pkgClear: () => set({ pkg: null }),
     appPop: () => openApp(),
     appAdd: () => { set({ app: true }); closeApp(); },
     appRemove: () => { set({ app: false }); closeApp(); },
-    appFromSection: () => { set({ app: true }); scrollTo('build'); },
+    appFromSection: () => { set({ app: true, pkg: null }); scrollTo('build'); },
     wifiH: h => set({ wifiH: +h }),
     yearly: v => set({ yearly: v === '1' }),
     svc: id => set({ svcs: { ...S.svcs, [id]: !S.svcs[id] } }),
@@ -766,17 +867,49 @@
   const mnav = $('.mobile-nav');
   if (mnav) document.addEventListener('click', e => { if (mnav.open && (!mnav.contains(e.target) || e.target.closest('a'))) mnav.open = false; });
 
-  /* ---------- 03 · slider + sample pipeline ---------- */
+  /* ---------- 03 · slider, sample dashboards and the table-ordering demo ---------- */
   const plansSec = $('[data-plans]');
   if (plansSec) {
+    let toastT;
+    const toast = msg => { DP.toast = msg; clearTimeout(toastT); toastT = setTimeout(() => { DP.toast = ''; renderPlans(); }, 2400); };
+    // Guest actions land on Table 4 in the floor view and as a new ticket on the server's phone.
+    const push = (items, order, msg, opt = {}) => {
+      const tb = DP.tables[3];
+      if (opt.add) {
+        if (tb.st === -1) Object.assign(tb, { g: 2, t: 'now' });
+        opt.add.forEach(([i, q]) => { const r = tb.items.find(x => x[0] === i); if (r) r[1] += q; else tb.items.push([i, q]); });
+        tb.st = 0;
+      }
+      if (opt.bill && tb.st !== -1) tb.st = 3;
+      DP.tickets = [{ id: Date.now(), table: 'Table 4', items, order, st: 0 }, ...DP.tickets].slice(0, 4);
+      toast(msg);
+    };
     $('[data-dp-range]', plansSec).addEventListener('input', e => set({ locIdx: +e.target.value, plan: planAt(+e.target.value) }));
-    $$('.dp-col:last-child [data-dp-move]', plansSec).forEach(b => b.remove());
     plansSec.addEventListener('click', e => {
-      const mv = e.target.closest('[data-dp-move]');
-      if (!mv) return;
-      const next = mv.closest('.dp-col').nextElementSibling;
-      next.append(mv.closest('.dp-deal'));
-      if (!next.nextElementSibling) mv.remove();
+      const t = e.target.closest('[data-dp-nav-item],[data-dp-table],[data-dp-tact],[data-dp-tclear],[data-dp-etab],[data-to-qty],[data-to-quick],[data-to-send],[data-to-tk],[data-to-q],[data-to-quote]');
+      if (!t) return;
+      const ds = t.dataset, sel = DP.tables[DP.oSel];
+      if (ds.dpNavItem) DP.oView = ds.dpNavItem === 'Orders';
+      else if (ds.dpTable) DP.oSel = +ds.dpTable;
+      else if ('dpTact' in ds) Object.assign(sel, sel.st === 3 ? { st: -1, items: [] } : { st: sel.st + 1 });
+      else if ('dpTclear' in ds) Object.assign(sel, { st: -1, items: [] });
+      else if (ds.dpEtab) DP.eTab = +ds.dpEtab;
+      else if (ds.toQty) DP.qty[+ds.toQty] = Math.max(0, DP.qty[+ds.toQty] + +ds.d);
+      else if (ds.toQuick === 'refill') push('Pork belly refill ×1', true, 'Refill sent to your server', { add: [[0, 1]] });
+      else if (ds.toQuick === 'call') push('Call server', false, 'Your server is on the way');
+      else if (ds.toQuick === 'bill') push('Bill please', false, 'Bill requested', { bill: true });
+      else if ('toSend' in ds) {
+        const cart = DMENU.map((m, i) => [i, DP.qty[i]]).filter(([, q]) => q);
+        if (!cart.length) return;
+        push(cart.map(([i, q]) => DMENU[i][0] + ' ×' + q).join(', '), true, 'Order sent to your server', { add: cart });
+        DP.qty = DP.qty.map(() => 0);
+      } else if (ds.toTk) { const tk = DP.tickets.find(x => x.id === +ds.toTk); if (tk) tk.st++; }
+      else if (ds.toQ) { const [g, i] = ds.toQ.split(':').map(Number); DP.quote[g] = i; }
+      else if ('toQuote' in ds) {
+        const to = TF.orderEmail || 'hello@tapfour.ph';
+        const body = ['Hi tapfour, I’d like a price for table ordering.', '', quoteLine(), '', 'Business: ' + (S.name.trim() || '—')].join('\n');
+        return (TF.open || (url => { location.href = url; }))('mailto:' + to + '?subject=' + encodeURIComponent('Table ordering quote') + '&body=' + encodeURIComponent(body));
+      }
       renderPlans();
     });
   }
