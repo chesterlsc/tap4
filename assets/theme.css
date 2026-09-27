@@ -192,7 +192,7 @@ h1, h2, h3, p { margin: 0; }
 .feat__pts { display: flex; flex-direction: column; gap: 4px; }
 .feat__pts span { display: flex; gap: 8px; font-size: 12px; color: var(--m1); }
 .feat__pts i { color: var(--lime); font-style: normal; }
-.feat__p { font: 700 13px var(--mono); color: var(--lime); white-space: nowrap; }
+.feat__p { font-size: 14px; font-weight: 700; color: var(--lime); white-space: nowrap; }
 .seg { display: flex; gap: 4px; background: var(--card); border-radius: 99px; padding: 4px; box-shadow: inset 0 0 0 1px var(--l2); }
 .seg button { padding: 10px 20px; border-radius: 99px; font-size: 14px; font-weight: 700; color: var(--m2); }
 .seg button.on { background: var(--lime); color: var(--bg); }
@@ -247,7 +247,7 @@ h1, h2, h3, p { margin: 0; }
 .bo--face { gap: 8px; }
 .bo--face > b { font-size: 15px; }
 .bo--face > span:not(.rec):not(.mf) { font-size: 12.5px; }
-.bo--face > em { margin-top: auto; font: 500 12px var(--mono); color: var(--lime); font-style: normal; }
+.bo--face > em { margin-top: auto; font-size: 13px; font-weight: 700; color: var(--lime); font-style: normal; }
 /* mini printed face: ink follows the finish */
 .mf { --ink: #f2f0eb; --ring: var(--lime); align-self: center; width: 64px; height: 96px; margin-bottom: 6px; padding: 8px 6px; border-radius: 7px; background: #0a0a0b; box-shadow: inset 0 0 0 1px #34343a; color: var(--ink); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .mf--white { --ink: #0a0a0b; --ring: #0a0a0b; background: #f4f3ef; box-shadow: none; }
@@ -285,7 +285,7 @@ h1, h2, h3, p { margin: 0; }
 .lf input:focus { box-shadow: inset 0 0 0 1.5px var(--lime); }
 .lf input::placeholder { color: var(--m5); }
 .pchip--svc { height: 38px; padding: 0 14px; gap: 8px; font-size: 13px; }
-.pchip--svc em { font: 500 11px var(--mono); font-style: normal; color: var(--m3); }
+.pchip--svc em { font-size: 12px; font-weight: 600; font-style: normal; color: var(--m3); }
 .pchip--svc.on em { color: #4a6b00; }
 /* optional extras: tapfour app */
 .appx { border-radius: 16px; background: #18181b; box-shadow: inset 0 0 0 1px var(--l4); overflow: hidden; transition: background .2s, box-shadow .2s; }

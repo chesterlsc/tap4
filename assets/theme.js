@@ -200,7 +200,7 @@
     const svcs = SVCS.filter(v => !v.monthly);
     return `<div class="step__h"><span class="step__n step__n--plus">+</span><b>Optional extras</b><em>SKIP IF YOU LIKE</em></div>
       <div class="appx${S.app ? ' on' : ''}">
-        <button type="button" class="appx__main" data-act="app" aria-pressed="${S.app}">
+        <button type="button" class="appx__main" data-act="appPop" aria-haspopup="dialog" aria-label="tapfour app${S.app ? ', added' : ''}: see features">
           <span class="tgl tgl--lg${S.app ? ' on' : ''}"></span>
           <span class="appx__body"><span class="appx__name">${leaf(17)}<b>tapfour app</b><em>${peso(appMonthly(d.plan))}/mo</em></span>
             <span class="appx__desc">Edit your links anytime, with no reprint. See taps, review page opens and menu opens for every stand.</span>
@@ -651,7 +651,6 @@
     },
     plan: id => set({ plan: id }),
     planCta: id => { set({ plan: id, app: true }); if (builder) scrollTo('build'); },
-    app: () => set({ app: !S.app }),
     appPop: () => openApp(),
     appAdd: () => { set({ app: true }); closeApp(); },
     appRemove: () => { set({ app: false }); closeApp(); },

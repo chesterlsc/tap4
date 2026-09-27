@@ -205,8 +205,9 @@ test('4-Tap Bar and the tapfour app popup', async t => {
   assert.match($('.pv-url').textContent, /Google · Facebook · Instagram · Website/);
   assert.match($('#tf-summary').textContent, /₱1,490/);
 
-  $('[data-act="appPop"]').click();
+  $('.appx__main').click(); // tapping the app in Optional extras opens its features
   assert.ok(!$('#tf-app').hidden, 'app popup opens');
+  assert.doesNotMatch($('#tf-summary').textContent, /tapfour app/, 'not added until confirmed');
   assert.match($('#tf-app').textContent, /Order from the table/);
   assert.match($('#tf-app').textContent, /Tap-to-join Wi-Fi/);
   $('#tf-app [data-act="feat"][data-arg="order"]').click(); // needs the live menu, so it switches that on too
