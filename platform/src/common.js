@@ -8,7 +8,7 @@ export const tapUrl = (env, src, code, slot) => `${env.TAP_BASE}/${src}/${code}$
 export const hostUrl = (host, path) => (host ? `https://${host}` : '') + path;
 
 // Signed-in pages are private (one shows a one-time password): never cache them.
-export const page = (c, area, nav, title, body) => c.html(V.shell({ area, title, nav, user: c.get('user'), adminView: c.get('adminView'), body }), 200, { 'Cache-Control': 'no-store' });
+export const page = (c, area, nav, title, body) => c.html(V.shell({ area, title, nav, user: c.get('user'), adminView: c.get('adminView'), business: c.get('business'), body }), 200, { 'Cache-Control': 'no-store' });
 export const back = (c, path, key, text) => c.redirect(`${path}${path.includes('?') ? '&' : '?'}${key}=${encodeURIComponent(text)}`, 303);
 export const audit = (c, entity, id, change) => c.env.DB.prepare('INSERT INTO audit_log (actor, entity, entity_id, change) VALUES (?, ?, ?, ?)').bind(c.get('actor'), entity, String(id), typeof change === 'string' ? change : JSON.stringify(change));
 export const flashQ = c => ({ msg: c.req.query('msg'), err: c.req.query('err') });
@@ -23,14 +23,18 @@ export const devicesOf = (db, id) => db.prepare(`SELECT d.*, (SELECT group_conca
 export async function stats(db, col, val) {
   const w = col ? `AND ${col} = ?` : ''; // col is always a literal from this file, never user input
   const p = col ? [val] : [];
-  const [tot, days, split] = await db.batch([
+  const [tot, days, split, hours, prev] = await db.batch([
     db.prepare(`SELECT SUM(source IN ('nfc','qr')) taps, SUM(source = 'nfc') nfc, SUM(source = 'qr') qr,
       COUNT(DISTINCT visitor) visitors, SUM(link_key = 'google') review, SUM(link_key = 'menu') menu
       FROM events WHERE bot = 0 AND ts >= datetime('now', '-30 days') ${w}`).bind(...p),
     db.prepare(`SELECT date(ts, '${TZ}') d, COUNT(*) n FROM events WHERE bot = 0 AND source IN ('nfc','qr')
       AND ts >= datetime('now', '-15 days') ${w} GROUP BY d`).bind(...p),
     db.prepare(`SELECT link_key k, COUNT(*) n FROM events WHERE bot = 0 AND ts >= datetime('now', '-30 days')
-      AND link_key IS NOT NULL AND link_key != 'links' ${w} GROUP BY k ORDER BY n DESC`).bind(...p)
+      AND link_key IS NOT NULL AND link_key != 'links' ${w} GROUP BY k ORDER BY n DESC`).bind(...p),
+    db.prepare(`SELECT CAST(strftime('%H', ts, '${TZ}') AS INTEGER) h, COUNT(*) n FROM events WHERE bot = 0 AND source IN ('nfc','qr')
+      AND ts >= datetime('now', '-30 days') ${w} GROUP BY h`).bind(...p),
+    db.prepare(`SELECT COUNT(*) n FROM events WHERE bot = 0 AND source IN ('nfc','qr')
+      AND ts >= datetime('now', '-60 days') AND ts < datetime('now', '-30 days') ${w}`).bind(...p)
   ]);
   const t = tot.results[0] || {};
   const byDay = Object.fromEntries(days.results.map(r => [r.d, r.n]));
@@ -38,7 +42,9 @@ export async function stats(db, col, val) {
   return {
     taps: t.taps || 0, nfc: t.nfc || 0, qr: t.qr || 0, visitors: t.visitors || 0, review: t.review || 0, menu: t.menu || 0,
     days: Array.from({ length: 14 }, (_, i) => { const d = new Date(today - (13 - i) * 864e5).toISOString().slice(0, 10); return { d, n: byDay[d] || 0 }; }),
-    split: split.results
+    split: split.results,
+    hours: Array.from({ length: 24 }, (_, h) => hours.results.find(r => r.h === h)?.n || 0),
+    prevTaps: prev.results[0]?.n || 0
   };
 }
 

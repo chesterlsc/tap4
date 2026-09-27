@@ -3,7 +3,7 @@
 // Writing rule: plain words a café owner understands. No "slots", "QC" or "destinations" on screen.
 import { html, raw } from 'hono/html';
 import sprite from '../../snippets/icon-sprite.liquid';
-import { LINK_KEYS, URL_KEYS, PRODUCTS, linkName, productName, checklist, initials, productImage, productOptions, designName } from './lib.js';
+import { LINK_KEYS, URL_KEYS, PRODUCTS, PLANS, planHas, linkName, productName, checklist, initials, productImage, productOptions, designName } from './lib.js';
 
 export const SUPPORT_EMAIL = 'hello@tap4.ph';
 
@@ -112,7 +112,7 @@ details.help ol,details.help ul{margin:0;padding-left:20px}
 .qrcell svg{width:100%;height:auto;display:block}
 .qrcell b{font:700 12px var(--mono)}.qrcell span{font-size:10.5px;line-height:1.3}.qrcell code{font:500 8.5px var(--mono);word-break:break-all;color:#444}
 .stepnum{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--lime);color:var(--bg);font:700 12px var(--mono);margin-right:8px}
-@media print{body{background:#fff!important;color:#000}.site-header,.no-print{display:none!important}.adm{padding:0;max-width:none}.qrsheet{grid-template-columns:repeat(4,1fr);gap:6mm}.qrcell{border:1px dashed #bbb;break-inside:avoid}.print-title{color:#000!important}}
+@media print{.report *{color:#000!important;box-shadow:none!important}.report .kpi,.report .panel{background:#fff!important;border:1px solid #ccc}.report .bars i{background:#ccc!important}.report .bars i.on,.report .split__bar i{background:#000!important}body{background:#fff!important;color:#000}.site-header,.no-print{display:none!important}.adm{padding:0;max-width:none}.qrsheet{grid-template-columns:repeat(4,1fr);gap:6mm}.qrcell{border:1px dashed #bbb;break-inside:avoid}.print-title{color:#000!important}}
 @media (max-width:600px){.adm{padding:20px 16px 72px}.adm-head{padding:14px 16px}.slotcard{grid-template-columns:1fr}.next b{font-size:18px}}
 `;
 
@@ -159,16 +159,16 @@ export const stageOf = d => d.status === 'new' && d.first_scan_at ? 'scanned' : 
 const stage = d => STAGES.find(x => x[0] === stageOf(d));
 export const status = (d, owner = false) => { const s = stage(d); return html`<span class="st"><i style="background:${s[2]}"></i>${owner ? s[4] : s[1]}</span>`; };
 const SPLIT_COLORS = { google: '#c8f23c', menu: '#f2f0eb', instagram: '#f27fa8', tiktok: '#7fd8f2', facebook: '#f2b23c', website: '#8a8883' };
-const kpi = (label, value, note, lime) => html`<div class="kpi"><span>${label}</span><b>${n(value)}</b><em${lime ? raw(' class="lime"') : ''}>${note}</em></div>`;
-const flash = q => html`${q.msg ? html`<div class="flash flash--ok" role="status">${q.msg}</div>` : ''}${q.err ? html`<div class="flash flash--err" role="alert">${q.err}</div>` : ''}`;
-const head = (eyebrow, title, aside = '', lead = '') => html`<div class="sec__head"><div class="sec__titles"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lead ? html`<p class="lead">${lead}</p>` : ''}</div>${aside}</div>`;
+export const kpi = (label, value, note, lime) => html`<div class="kpi"><span>${label}</span><b>${n(value)}</b><em${lime ? raw(' class="lime"') : ''}>${note}</em></div>`;
+export const flash = q => html`${q.msg ? html`<div class="flash flash--ok" role="status">${q.msg}</div>` : ''}${q.err ? html`<div class="flash flash--err" role="alert">${q.err}</div>` : ''}`;
+export const head = (eyebrow, title, aside = '', lead = '') => html`<div class="sec__head"><div class="sec__titles"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lead ? html`<p class="lead">${lead}</p>` : ''}</div>${aside}</div>`;
 const productSelect = (name = 'sku') => html`<label class="field">Product & design<select name="${name}">${productOptions().map(([v, label]) => html`<option value="${v}">${label}</option>`)}</select></label>`;
-const pimg = (d, cls = 'thumb') => { const src = productImage(d.product_sku, d.slots); return src ? html`<img class="${cls}" src="/${src}" alt="" loading="lazy">` : html`<span class="thumb"></span>`; };
+export const pimg = (d, cls = 'thumb') => { const src = productImage(d.product_sku, d.slots); return src ? html`<img class="${cls}" src="/${src}" alt="" loading="lazy">` : html`<span class="thumb"></span>`; };
 const devLink = d => html`<a href="/admin/d/${d.code}">${d.label || d.code}</a>`;
 const zoneName = slot => slot === 'main' ? 'Main tap' : slot === 'menu' ? 'Menu QR' : /^z\d$/.test(slot) ? `Tap zone ${slot.slice(1)}` : `Extra: ${slot}`;
-const help = (summary, body, open = false) => html`<details class="help"${open ? raw(' open') : ''}><summary>${summary}</summary><div>${body}</div></details>`;
-const steps = (labels, now) => html`<ol class="steps">${labels.map((l, i) => html`<li class="${i < now ? 'done' : i === now ? 'now' : ''}">${l}</li>`)}</ol>`;
-const next = ({ tag = 'NEXT STEP', title, text, action = '', calm = false }) => html`<div class="next${calm ? ' next--calm' : ''}"><div><small>${tag}</small><b>${title}</b>${text ? html`<p>${text}</p>` : ''}</div>${action}</div>`;
+export const help = (summary, body, open = false) => html`<details class="help"${open ? raw(' open') : ''}><summary>${summary}</summary><div>${body}</div></details>`;
+export const steps = (labels, now) => html`<ol class="steps">${labels.map((l, i) => html`<li class="${i < now ? 'done' : i === now ? 'now' : ''}">${l}</li>`)}</ol>`;
+export const next = ({ tag = 'NEXT STEP', title, text, action = '', calm = false }) => html`<div class="next${calm ? ' next--calm' : ''}"><div><small>${tag}</small><b>${title}</b>${text ? html`<p>${text}</p>` : ''}</div>${action}</div>`;
 
 // Where to find each link. Shown under the field for staff and owners alike.
 const LINK_HELP = {
@@ -188,10 +188,15 @@ const AREA = {
 const docHead = title => html`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0a0b"><meta name="robots" content="noindex">
 <title>${title}</title><link rel="preload" href="/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/theme.css"><style>${raw(ADMIN_CSS)}</style></head>`;
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/tapfour-app.css"><style>${raw(ADMIN_CSS)}</style></head>`;
 
-export function shell({ area, title, nav, user, adminView, body }) {
-  const a = AREA[area];
+// Owners see the app modules their plan includes (landing page: Solo / Business / Empire).
+const ownerTabs = b => [['', 'Home', 'overview'],
+  ...[['menu', 'Menu'], ['billing', 'Billing'], ['inventory', 'Inventory'], ['branches', 'Branches'], ['staff', 'Staff'], ['reports', 'Reports']].filter(([m]) => planHas(b, m)).map(([m, l]) => [`/${m}`, l, m]),
+  ['/destinations', 'My links', 'destinations'], ['/branding', 'My page', 'branding'], ['/help', 'Help', 'help'], ['/account', 'Account', 'account']];
+
+export function shell({ area, title, nav, user, adminView, business, body }) {
+  const a = area === 'owner' && business ? { ...AREA.owner, tabs: ownerTabs(business) } : AREA[area];
   return html`${docHead(`${title} · ${a.label}`)}
 <body>${raw(sprite)}
 <header class="sticky-header site-header"><div class="site-header__in adm-head">
@@ -245,7 +250,7 @@ function publicPage(title, body, color) {
   const lime = /^#[0-9a-f]{6}$/i.test(color || '') ? raw(`<style>:root{--lime:${color}}</style>`) : '';
   return html`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0a0b"><meta name="robots" content="noindex"><title>${title}</title>
-<link rel="stylesheet" href="/theme.css">${lime}<style>
+<link rel="stylesheet" href="/tapfour-app.css">${lime}<style>
 .pub{min-height:100svh;max-width:440px;margin:0 auto;padding:40px 20px 28px;display:flex;flex-direction:column;gap:14px}
 .pub .kn{width:84px;height:84px;font-size:26px;overflow:hidden;margin-top:12px}.pub .kn img{width:100%;height:100%;object-fit:cover}
 .pub h1{text-align:center;font-size:30px;letter-spacing:-.045em}
@@ -284,6 +289,16 @@ export function messagePage(kind) {
 }
 
 /* ---------- numbers (the site's demo dashboard, with real data and plain labels) ---------- */
+const hourLabel = h => `${h % 12 || 12}${h < 12 ? 'AM' : 'PM'}`;
+function hoursChart(hours = []) {
+  const max = Math.max(1, ...hours), top = hours.map((v, h) => [v, h]).sort((a, b) => b[0] - a[0]).filter(([v]) => v).slice(0, 3);
+  return html`<div class="kpi">
+    <div class="row-between mono-11 m3"><span>BUSIEST HOURS · 30 DAYS</span><span>${top.length ? `PEAK ${hourLabel(top[0][1])}` : '—'}</span></div>
+    <div class="bars" style="height:120px;gap:3px" role="img" aria-label="Taps by hour of day">${hours.map((v, h) => html`<i title="${hourLabel(h)}: ${v} taps & scans" style="height:${Math.max(2, Math.round(v / max * 100))}%"${top.some(([, t]) => t === h) ? raw(' class="on"') : ''}></i>`)}</div>
+    <div class="bars-x"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span><span>11PM</span></div>
+    ${top.length ? html`<em style="font-size:12px;color:var(--m3);font-style:normal">Busiest: ${top.map(([, h]) => hourLabel(h)).join(', ')}. Put staff at the stand then.</em>` : ''}
+  </div>`;
+}
 export function statsBlock(s, { title, caption, extra = '' }) {
   const max = Math.max(1, ...s.days.map(d => d.n));
   const total = s.split.reduce((a, x) => a + x.n, 0) || 1;
@@ -291,7 +306,7 @@ export function statsBlock(s, { title, caption, extra = '' }) {
   <div class="dash__top"><b>${title}</b><span class="mono-12 m3">${caption}</span></div>
   <div class="dash__body">
     <div class="kpis">
-      ${kpi('TAPS & SCANS', s.taps, `${n(s.nfc)} taps · ${n(s.qr)} QR scans`, true)}
+      ${kpi('TAPS & SCANS', s.taps, `${n(s.nfc)} taps · ${n(s.qr)} QR scans${s.prevTaps ? ` · ${s.taps >= s.prevTaps ? '▲' : '▼'} ${Math.abs(Math.round((s.taps - s.prevTaps) / s.prevTaps * 100))}% vs previous 30 days` : ''}`, true)}
       ${kpi('OPENED GOOGLE REVIEW', s.review, 'Opened the review page (not everyone posts)')}
       ${kpi('OPENED MENU', s.menu, 'From a tap, scan or your links page')}
       ${kpi('DIFFERENT PEOPLE', s.visitors, 'Different phones, counted per day')}
@@ -303,6 +318,7 @@ export function statsBlock(s, { title, caption, extra = '' }) {
         <div class="bars" role="img" aria-label="Taps per day, last 14 days: ${s.days.map(d => d.n).join(', ')}">${s.days.map((d, i) => html`<i title="${d.d}: ${d.n} taps & scans" style="height:${Math.max(2, Math.round(d.n / max * 100))}%"${i === s.days.length - 1 ? raw(' class="on"') : ''}></i>`)}</div>
         <div class="bars-x"><span>${s.days[0].d.slice(5)}</span><span>TODAY</span></div>
       </div>
+      ${hoursChart(s.hours)}
       <div class="kpi" style="gap:12px">
         <span>WHAT PEOPLE OPENED · 30 DAYS</span>
         ${s.split.length ? s.split.map(x => { const pct = Math.round(x.n / total * 100); return html`<div class="split"><div class="row-between"><span>${linkName(x.k)}</span><span class="mono m2">${pct}% · ${n(x.n)}</span></div><div class="split__bar"><i style="width:${pct}%;background:${SPLIT_COLORS[x.k] || '#b5b3ad'}"></i></div></div>`; }) : html`<div class="empty">Nothing yet. Numbers appear after the first tap.</div>`}
@@ -388,8 +404,8 @@ export function businessesView({ rows, q }) {
   return html`${flash(q)}${head('CLIENTS', 'Your clients.', html`<a class="btn btn--lime" href="/admin/new">+ New client</a>`, 'Each client is one business. Open a client to set up their links, stands and login.')}
   ${next({ calm: true, tag: 'NEW CLIENT', title: 'Add a client in one form', text: 'Name, their Google review link and the stand they bought. The rest you can do after.', action: html`<a class="btn" href="/admin/new">+ New client</a>` })}
   <div class="panel"><div class="panel__head"><span>${rows.length} CLIENT${rows.length === 1 ? '' : 'S'}</span><span>TAPS · 30 DAYS</span></div>
-    ${rows.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>CLIENT</th><th>STANDS</th><th>LIVE</th><th>TAPS · 30D</th><th>CONTACT</th></tr></thead><tbody>
-    ${rows.map(b => html`<tr><td><a href="/admin/b/${b.id}">${b.name}</a></td><td class="mono">${n(b.devices)}</td><td class="mono">${b.devices ? `${n(b.active)} / ${n(b.devices)}` : '—'}</td><td class="mono lime">${n(b.taps)}</td><td class="m3">${b.contact_name || b.email || b.phone || '—'}</td></tr>`)}
+    ${rows.length ? html`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>CLIENT</th><th>PLAN</th><th>STANDS</th><th>LIVE</th><th>TAPS · 30D</th><th>CONTACT</th></tr></thead><tbody>
+    ${rows.map(b => html`<tr><td><a href="/admin/b/${b.id}">${b.name}</a></td><td>${planChip(b)}</td><td class="mono">${n(b.devices)}</td><td class="mono">${b.devices ? `${n(b.active)} / ${n(b.devices)}` : '—'}</td><td class="mono lime">${n(b.taps)}</td><td class="m3">${b.contact_name || b.email || b.phone || '—'}</td></tr>`)}
     </tbody></table></div>` : html`<div class="empty">No clients yet. Press “+ New client” to add your first one.</div>`}
   </div>`;
 }
@@ -423,6 +439,7 @@ export function businessView({ b, tapBase, ownerViewUrl, links, devices, owners,
           <div><button class="btn btn--lime btn--block">Add →</button></div>
         </form>
       </div>
+      ${planPanel(b, ownerViewUrl)}
       <div class="panel" id="owner"><div class="panel__head"><span>OWNER LOGIN</span><span>DASHBOARD.TAP4.PH</span></div>
         ${owners.length ? html`<div class="stack-10">${owners.map(u => html`<div class="url">
           <span style="flex:1;min-width:0"><b>${u.email}</b>${u.name ? html` <span class="m3">· ${u.name}</span>` : ''}<br><span class="mono-11 m3">LAST LOGIN: ${u.last_login_at ? ago(u.last_login_at).toUpperCase() : 'NEVER'}</span></span>
@@ -680,7 +697,7 @@ export function guideView({ tapBase }) {
 }
 
 /* ---------- owner pages (dashboard.tap4.ph) ---------- */
-export function ownerOverview({ b, stats, devices, recent, links, tapBase, q }) {
+export function ownerOverview({ b, stats, devices, recent, links, needs, tapBase, q }) {
   const hasGoogle = !!links.google, live = devices.filter(d => d.status === 'active').length;
   const tip = !Object.values(links).some(Boolean) ? next({ tag: 'START HERE', title: 'Add your links', text: 'Tell us where your stands should send people: your Google review page, menu, Facebook and more.', action: html`<a class="btn" href="/app/destinations">Add my links →</a>` })
     : !hasGoogle ? next({ tag: 'TIP', title: 'Add your Google review link', text: 'It’s the most useful link for a stand. We show you where to find it.', action: html`<a class="btn" href="/app/destinations">Add it →</a>` })
@@ -688,7 +705,9 @@ export function ownerOverview({ b, stats, devices, recent, links, tapBase, q }) 
     : '';
   return html`${flash(q)}${head('MY DASHBOARD', `Hi, ${b.name}`, html`<div class="row-wrap"><a class="btn btn--lime" href="/app/destinations">Change my links</a><a class="btn btn--ghost" href="${tapBase}/p/${b.slug}" target="_blank" rel="noopener">View my page ↗</a></div>`, 'Here’s how people are using your stands. Numbers update live.')}
   ${tip}
+  ${needsPanel(needs)}
   ${statsBlock(stats, { title: 'Last 30 days', caption: 'PH TIME' })}
+  ${!b.plan ? next({ calm: true, tag: 'TAPFOUR APP', title: 'Run the counter from your phone', text: 'Live QR menu, billing and inventory trackers, and more, from ₱299/mo. Your stands work either way.', action: html`<a class="btn" href="https://tap4.ph/#plans" target="_blank" rel="noopener">See plans ↗</a>` }) : ''}
   ${help('What do these numbers mean?', html`<ul>
     <li><b>Taps & scans</b>: how many times someone tapped a stand or scanned its QR.</li>
     <li><b>Opened Google review</b>: people who reached your review page. Not everyone posts, so it isn’t a review count.</li>
@@ -865,4 +884,78 @@ export function googleFinderView({ q, bid, businesses, results, built, fromLink,
     <li><b>APIs & Services → Credentials → Create credentials → API key</b>. Restrict it to <b>Places API (New)</b>.</li>
     <li>In Terminal: <code>cd ~/tapfour/platform && npx wrangler secret put GOOGLE_MAPS_KEY</code>, then paste the key when asked.</li>
   </ol>Then this page shows a search box: type a business name, pick it, save.`) : ''}`;
+}
+
+/* ---------- public live QR menu (go.tap4.ph/menu/<slug>) ---------- */
+export const peso = cents => cents == null ? '' : '₱' + (cents / 100).toLocaleString('en-PH', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 });
+export function menuPage(b, items, hasGoogle, d) {
+  const cats = [...new Set(items.map(i => i.category))];
+  const slug = c => 'c-' + cats.indexOf(c);
+  const lime = /^#[0-9a-f]{6}$/i.test(b.brand_color || '') ? raw(`<style>:root{--lime:${b.brand_color}}</style>`) : '';
+  return html`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0b"><meta name="robots" content="noindex"><title>${b.name} · Menu</title>
+<link rel="stylesheet" href="/tapfour-app.css">${lime}<style>
+.mn{max-width:520px;margin:0 auto;padding:0 0 40px;min-height:100svh;display:flex;flex-direction:column}
+.mn__head{padding:28px 20px 16px;display:flex;align-items:center;gap:14px}
+.mn__logo{width:52px;height:52px;border-radius:50%;box-shadow:0 0 0 2px var(--lime);display:grid;place-items:center;font-weight:700;color:var(--lime);overflow:hidden;flex-shrink:0}
+.mn__logo img{width:100%;height:100%;object-fit:cover}
+.mn__head h1{font-size:26px;letter-spacing:-.04em}.mn__head small{font:500 11px var(--mono);color:var(--m3);letter-spacing:.06em}
+.mn__tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:10px 20px;background:rgba(10,10,11,.92);backdrop-filter:blur(10px);scrollbar-width:none}
+.mn__tabs::-webkit-scrollbar{display:none}
+.mn__tabs a{padding:8px 14px;border-radius:99px;font-size:14px;font-weight:600;color:var(--m1);box-shadow:inset 0 0 0 1px var(--l4);white-space:nowrap}
+.mn__tabs a:first-child{background:var(--lime);color:var(--bg);box-shadow:none}
+.mn__cat{padding:18px 20px 4px;font:700 12px var(--mono);letter-spacing:.08em;color:var(--lime);scroll-margin-top:60px}
+.mn__item{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;padding:14px 20px;border-bottom:1px solid var(--l1)}
+.mn__item b{font-size:16px;display:block}.mn__item span{font-size:13.5px;color:var(--m3);line-height:1.4}
+.mn__item em{font:700 15px var(--mono);font-style:normal;white-space:nowrap}
+.mn__item.out{opacity:.45}.mn__item.out em{text-decoration:line-through}
+.mn__out{display:inline-block;margin-top:4px;font:700 10px var(--mono);letter-spacing:.05em;color:#f27fa8}
+.mn__foot{margin:24px 20px 0;display:flex;flex-direction:column;gap:14px}
+.mn__rev{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-radius:16px;background:var(--lime);color:var(--bg);font-weight:700}
+.mn__rev:hover{color:var(--bg);filter:brightness(1.05)}
+.mn .powered{font-size:10px}.mn .powered b{color:var(--fg);letter-spacing:0;font-family:'Instrument Sans',sans-serif;font-size:13px}
+</style></head><body><main class="mn">
+  <header class="mn__head"><span class="mn__logo">${b.logo_url ? html`<img src="${b.logo_url}" alt="">` : initials(b.name)}</span><span><small>MENU</small><h1>${b.name}</h1></span></header>
+  ${cats.length > 1 ? html`<nav class="mn__tabs" aria-label="Menu sections">${cats.map(c => html`<a href="#${slug(c)}">${c}</a>`)}</nav>` : ''}
+  ${cats.map(c => html`<section><h2 class="mn__cat" id="${slug(c)}">${c.toUpperCase()}</h2>
+    ${items.filter(i => i.category === c).map(i => html`<div class="mn__item${i.sold_out ? ' out' : ''}"><div><b>${i.name}</b>${i.note ? html`<span>${i.note}</span>` : ''}${i.sold_out ? html`<br><span class="mn__out">SOLD OUT</span>` : ''}</div><em>${peso(i.price_cents)}</em></div>`)}
+  </section>`)}
+  <div class="mn__foot">
+    ${hasGoogle ? html`<a class="mn__rev" href="/p/${b.slug}/go/google${d ? `?d=${d}` : ''}" rel="noopener"><span>Loved it? Leave us a review</span><span>★★★★★</span></a>` : ''}
+    <div class="powered">POWERED BY <b>tapfour</b></div>
+  </div>
+</main></body></html>`;
+}
+
+const needsPanel = needs => {
+  if (!needs) return '';
+  const rows = [
+    ...(needs.bills || []).map(x => html`<a class="url" href="/app/billing" style="color:inherit"><span style="flex:1"><b>${x.name}</b><br><span class="mono-11" style="${x.due_date < needs.today ? 'color:#f27fa8' : 'color:var(--m3)'}">BILL · ${x.due_date < needs.today ? 'LATE' : 'DUE'} ${x.due_date}${x.branch ? ' · ' + x.branch.toUpperCase() : ''}</span></span><b class="mono">${peso(x.amount_cents)}</b></a>`),
+    ...(needs.low || []).map(x => html`<a class="url" href="/app/inventory" style="color:inherit"><span style="flex:1"><b>${x.name}</b><br><span class="mono-11" style="color:#f27fa8">STOCK · LOW${x.branch ? ' · ' + x.branch.toUpperCase() : ''}</span></span><b class="mono">${Math.round(x.qty * 100) / 100} ${x.unit || ''}</b></a>`)
+  ];
+  const staff = needs.staffTotal != null ? html`<a class="kpi kpi--lime" href="/app/staff" style="color:inherit"><span>ON SHIFT NOW</span><b>${needs.onShift}</b><em>of ${needs.staffTotal} staff</em></a>` : '';
+  if (!rows.length && !staff) return '';
+  return html`<div class="panel"><div class="panel__head"><span>NEEDS YOU</span><span>BILLS DUE THIS WEEK · LOW STOCK</span></div>
+    ${staff ? html`<div class="kpis">${staff}</div>` : ''}${rows.length ? html`<div class="stack-10">${rows}</div>` : html`<p class="hint">Nothing due and nothing running low. 👌</p>`}</div>`;
+};
+
+/* ---------- admin: what the client bought ---------- */
+const planChip = b => b.plan ? html`<span class="tag ${b.plan_status === 'cancelled' ? 'tag--glass' : 'tag--lime'}">${PLANS[b.plan].name.toUpperCase()}${b.plan_status === 'cancelled' ? ' · CANCELLED' : ''}${b.table_ordering === 'active' ? ' + ORDERING' : ''}</span>` : html`<span class="mono-11 m3">STANDS ONLY</span>`;
+function planPanel(b, ownerViewUrl) {
+  const opt = (v, cur, label) => html`<option value="${v}"${(cur || '') === v ? raw(' selected') : ''}>${label}</option>`;
+  const open = m => `${ownerViewUrl}&to=/app/${m}`;
+  const modules = b.plan ? PLANS[b.plan].modules : [];
+  return html`<form class="panel" id="plan" method="post" action="/admin/b/${b.id}/plan">
+    <div class="panel__head"><span>PLAN & ADD-ONS</span>${planChip(b)}</div>
+    <div class="fields">
+      <label class="field"><b>tapfour app plan</b><select name="plan">${opt('', b.plan, 'None: stands only')}${Object.entries(PLANS).map(([k, p]) => opt(k, b.plan, `${p.name} · up to ${p.branches} branch${p.branches > 1 ? 'es' : ''}`))}</select></label>
+      <label class="field"><b>Billing</b><select name="billing">${opt('monthly', b.billing, 'Monthly')}${opt('yearly', b.billing, 'Yearly (−20%)')}</select></label>
+      <label class="field"><b>Stand package</b><select name="package">${opt('', b.package, 'None')}${opt('solo', b.package, 'Solo · 5 stands')}${opt('business', b.package, 'Business · 20 stands')}${opt('empire', b.package, 'Empire · 80 stands')}</select></label>
+      <label class="field"><b>Table ordering</b><select name="table_ordering">${opt('', b.table_ordering, 'No')}${opt('quote', b.table_ordering, 'Asked for a quote')}${opt('active', b.table_ordering, 'Active (paying)')}</select></label>
+      <label class="field"><b>Status</b><select name="plan_status">${opt('active', b.plan_status, 'Active')}${opt('cancelled', b.plan_status, 'Cancelled (stands keep working)')}</select></label>
+    </div>
+    <div><button class="btn btn--ghost">Save plan</button></div>
+    ${modules.length ? html`<div class="stack-10"><span class="lbl">Set up their app (opens their dashboard as them):</span><div class="row-wrap">${modules.map(m => html`<a class="btn btn--ghost btn--sm" href="${open(m)}" target="_blank" rel="noopener">${{ menu: 'Menu', billing: 'Billing', inventory: 'Inventory', branches: 'Branches', staff: 'Staff', reports: 'Report' }[m]} ↗</a>`)}</div></div>` : html`<p class="hint">Pick a plan to switch on their menu, billing and inventory tools. Their stands work either way.</p>`}
+    ${b.table_ordering ? html`<p class="hint"><b>Table ordering</b> is noted here, but the ordering screens aren’t built yet. See the roadmap.</p>` : ''}
+  </form>`;
 }

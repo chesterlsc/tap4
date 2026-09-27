@@ -5,8 +5,8 @@ compatibility_date = "2025-09-01"
 # The live theme's assets (theme.css, fonts, product photos) are served as-is: one design source.
 assets = { directory = "../assets" }
 
-# Inline the theme's icon sprite from snippets/icon-sprite.liquid.
-rules = [{ type = "Text", globs = ["**/*.liquid"], fallthrough = true }]
+# Inline the theme's icon sprite (.liquid) and the dashboard's own frozen stylesheet (src/base.css).
+rules = [{ type = "Text", globs = ["**/*.liquid", "**/*.css"], fallthrough = true }]
 
 # Backup address that works even while a network's DNS still has stale tap4.ph answers.
 workers_dev = true

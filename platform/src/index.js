@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { CODE_RE, SLOT_RE, normalizeCode, isBot, resolve } from './lib.js';
 import { hostUrl } from './common.js';
 import { admin } from './admin.js';
+import baseCss from './base.css';
 import { owner } from './owner.js';
 import { uploads } from './uploads.js';
 import * as V from './views.js';
@@ -14,6 +15,7 @@ const under = (path, prefix) => path === prefix || path.startsWith(prefix + '/')
 app.use('*', async (c, next) => {
   const { ADMIN_HOST, APP_HOST } = c.env;
   const host = new URL(c.req.url).hostname, path = c.req.path;
+  if (path === '/tapfour-app.css') return next(); // every host needs the stylesheet
   if ((!ADMIN_HOST && !APP_HOST) || host === c.env.PREVIEW_HOST) return next();
   const own = host === ADMIN_HOST ? '/admin' : host === APP_HOST ? '/app' : null;
   if (own) return under(path, own) ? next() : c.redirect(own, 302);
@@ -60,6 +62,10 @@ app.get('/:src{t|q}/:code/:slot?', async c => {
     console.error('tap lookup failed', err);
     return c.html(V.messagePage('down'), 503, { ...NO_STORE, 'Retry-After': '3' });
   }
+  // Only a menu tap with no saved link looks for a tapfour menu, and a failure there never blocks the tap.
+  if (row?.link_key === 'menu' && !row.url && row.business_id) {
+    row.has_menu = await c.env.DB.prepare('SELECT 1 FROM menu_items WHERE business_id = ? LIMIT 1').bind(row.business_id).first().catch(() => null);
+  }
   const r = resolve(row, { code, slot, source });
   if (r.page) return c.html(V.messagePage(r.page), r.page === 'notfound' ? 404 : 200, NO_STORE);
   if (r.qcScan) later(c, c.env.DB.prepare('UPDATE devices SET first_scan_at = COALESCE(first_scan_at, CURRENT_TIMESTAMP) WHERE code = ?').bind(code).run());
@@ -71,9 +77,23 @@ app.get('/:src{t|q}/:code/:slot?', async c => {
 async function businessLinks(db, slug) {
   const b = await db.prepare('SELECT * FROM businesses WHERE slug = ?').bind(slug).first();
   if (!b) return {};
-  const { results } = await db.prepare('SELECT key, url FROM business_links WHERE business_id = ? AND url IS NOT NULL').bind(b.id).all();
-  return { b, links: Object.fromEntries(results.map(r => [r.key, r.url])) };
+  const [{ results }, menu] = await db.batch([
+    db.prepare('SELECT key, url FROM business_links WHERE business_id = ? AND url IS NOT NULL').bind(b.id),
+    db.prepare('SELECT 1 x FROM menu_items WHERE business_id = ? LIMIT 1').bind(b.id)
+  ]);
+  const links = Object.fromEntries(results.map(r => [r.key, r.url]));
+  if (!links.menu && menu.results.length) links.menu = `/menu/${b.slug}`; // the client's tapfour menu
+  return { b, links };
 }
+
+// The client's live QR menu (edited in their dashboard). Short cache so price/sold-out edits show fast.
+app.get('/menu/:slug', async c => {
+  const { b, links } = await businessLinks(c.env.DB, c.req.param('slug'));
+  if (!b) return c.html(V.messagePage('notfound'), 404);
+  const { results: items } = await c.env.DB.prepare('SELECT category, name, note, price_cents, sold_out FROM menu_items WHERE business_id = ? ORDER BY sort, id').bind(b.id).all();
+  if (!items.length) return c.redirect(`/p/${b.slug}`, 302);
+  return c.html(V.menuPage(b, items, !!links.google, refCode(c)), 200, { 'Cache-Control': 'public, max-age=15' });
+});
 const refCode = c => { const d = normalizeCode(c.req.query('d')); return CODE_RE.test(d) ? d : null; };
 
 app.get('/p/:slug', async c => {
@@ -89,6 +109,9 @@ app.get('/p/:slug/go/:key', async c => {
   later(c, logEvent(c, { code: refCode(c), business_id: b.id, source: 'page', link_key: key }));
   return go(c, links[key]);
 });
+
+// The dashboard's own stylesheet, so storefront redesigns of assets/theme.css can't break it.
+app.get('/tapfour-app.css', c => c.body(baseCss, 200, { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=300' }));
 
 app.get('/', c => c.env.SITE_URL ? c.redirect(c.env.SITE_URL, 302) : c.html(V.messagePage('notfound'), 404));
 

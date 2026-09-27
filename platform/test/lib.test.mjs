@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile, hasChip, hasQr, csvCell, reviewLinkFromPlaceId, placeIdFromFid, parseMapsUrl, isMapsLink, isReviewLink, isGoogleHost, designOf, productImage, parseProductChoice, slotsFor, productOptions } from '../src/lib.js';
+import { resolve, cleanUrl, newCode, normalizeCode, CODE_RE, isBot, checklist, slugify, initials, hashPassword, verifyPassword, passwordProblem, tempPassword, newToken, safeNext, sniffMenuFile, hasChip, hasQr, csvCell, reviewLinkFromPlaceId, placeIdFromFid, parseMapsUrl, isMapsLink, isReviewLink, isGoogleHost, designOf, productImage, parseProductChoice, slotsFor, productOptions, PLANS, planHas, pesosToCents, parseMenuText, addMonth, staffStatus } from '../src/lib.js';
 
 const tap = { code: 'K7M2QX', slot: 'main', source: 'nfc' };
 const live = { status: 'active', business_id: 1, link_key: 'google', url: 'https://g.page/r/x/review', slug: 'kape-norte' };
@@ -152,4 +152,48 @@ test('TAP4.1 lineup: designs, photos, picker', () => {
   for (const bad of ['TF-L41-BLK', 'TF-L41-BLK:nope', 'TF-STAND-ACR', 'TF-BAR:menu', '']) assert.equal(parseProductChoice(bad), null, bad);
   assert.ok(!productOptions().some(([v]) => v.startsWith('TF-STAND') || v === 'TF-CARD'), 'retired products are not offered');
   assert.ok(!hasQr('TF-L41-BLK', 'main') && hasQr('TF-L41-BLK', 'menu'), 'only the menu design has a printed QR');
+});
+
+test('plans gate modules; cancelled plans keep stands but not modules', () => {
+  assert.ok(planHas({ plan: 'solo' }, 'menu') && !planHas({ plan: 'solo' }, 'branches'));
+  assert.ok(planHas({ plan: 'empire' }, 'staff') && !planHas({ plan: 'business' }, 'staff'));
+  assert.ok(!planHas({ plan: null }, 'menu') && !planHas({ plan: 'empire', plan_status: 'cancelled' }, 'menu'));
+  assert.deepEqual(Object.values(PLANS).map(p => p.branches), [1, 5, 20]);
+});
+
+test('peso amounts', () => {
+  assert.equal(pesosToCents('₱1,299.50'), 129950);
+  assert.equal(pesosToCents('165'), 16500);
+  assert.equal(pesosToCents(''), null);
+  for (const bad of ['abc', '1.234', '-5', '12e3']) assert.equal(pesosToCents(bad), undefined, bad);
+});
+
+test('menu text: categories, notes, prices', () => {
+  const items = parseMenuText('Coffee\nSagada Latte | Double shot, oat | 165\nPour-over | 180\n\n# Pastry\nEnsaymada | Butter & queso | ₱95\nFree water | ');
+  assert.deepEqual(items.map(i => [i.category, i.name, i.note, i.price_cents]), [
+    ['Coffee', 'Sagada Latte', 'Double shot, oat', 16500], ['Coffee', 'Pour-over', null, 18000],
+    ['Pastry', 'Ensaymada', 'Butter & queso', 9500], ['Pastry', 'Free water', null, null]]);
+});
+
+test('monthly bills roll to the same day next month', () => {
+  assert.equal(addMonth('2026-09-28'), '2026-10-28');
+  assert.equal(addMonth('2026-01-31'), '2026-02-28');
+  assert.equal(addMonth('2026-12-15'), '2027-01-15');
+});
+
+test('staff status in PH time', () => {
+  const at = (iso) => Date.parse(iso) - 8 * 3600e3; // PH wall clock → UTC ms
+  const s = { days: '1111100', shift_start: '10:00', shift_end: '19:00' }; // Mon–Fri
+  assert.equal(staffStatus(s, at('2026-09-28T12:00:00Z')), 'on');    // Monday noon
+  assert.equal(staffStatus(s, at('2026-09-28T08:00:00Z')), 'later');
+  assert.equal(staffStatus(s, at('2026-09-28T20:00:00Z')), 'done');
+  assert.equal(staffStatus(s, at('2026-09-27T12:00:00Z')), 'off');   // Sunday
+  assert.equal(staffStatus({ days: '1111111', shift_start: '16:00', shift_end: '00:00' }, at('2026-09-28T23:00:00Z')), 'on'); // overnight
+});
+
+test('resolve: menu tap opens the tapfour menu when no menu link is saved', () => {
+  const row = { status: 'active', business_id: 1, link_key: 'menu', url: null, slug: 'kape-norte', has_menu: 1 };
+  assert.equal(resolve(row, tap).location, '/menu/kape-norte?d=K7M2QX');
+  assert.equal(resolve({ ...row, url: 'https://kapenorte.example/menu' }, tap).location, 'https://kapenorte.example/menu', 'a saved link still wins');
+  assert.equal(resolve({ ...row, has_menu: 0 }, tap).location, '/p/kape-norte?d=K7M2QX');
 });

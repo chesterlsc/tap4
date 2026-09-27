@@ -101,6 +101,8 @@ export function resolve(row, { code, slot, source }) {
   if (row.status === 'new') return { location: `/admin/d/${code}?scan=${source}&slot=${slot}`, qcScan: true };
   if (!row.business_id) return { page: 'unassigned' };
   if (row.link_key && row.link_key !== 'links' && row.url) return { location: row.url, log: true };
+  // no menu link saved but the client built a tapfour menu → open it
+  if (row.link_key === 'menu' && row.has_menu) return { location: `/menu/${row.slug}?d=${code}`, log: true };
   return { location: `/p/${row.slug}?d=${code}`, log: true };
 }
 
@@ -229,4 +231,57 @@ export const isReviewLink = url => /^https:\/\/(search\.google\.com\/local\/writ
 export const isGoogleHost = host => /^(maps\.app\.goo\.gl|goo\.gl|g\.co|share\.google|g\.page|consent\.google\.com|maps\.google\.com(\.ph)?|(www\.)?google\.com(\.ph)?)$/.test(String(host));
 export function isMapsLink(url) {
   try { return !isReviewLink(url) && isGoogleHost(new URL(url).hostname); } catch { return false; }
+}
+
+/* ---------- tapfour app plans & modules (landing page §02/§03) ---------- */
+export const PLANS = {
+  solo: { name: 'Solo', branches: 1, modules: ['menu', 'billing', 'inventory'] },
+  business: { name: 'Business', branches: 5, modules: ['menu', 'billing', 'inventory', 'branches', 'reports'] },
+  empire: { name: 'Empire', branches: 20, modules: ['menu', 'billing', 'inventory', 'branches', 'reports', 'staff'] }
+};
+// A cancelled or hardware-only client keeps working stands, but not the app modules.
+export const planHas = (b, module) => !!(b?.plan && b.plan_status !== 'cancelled' && PLANS[b.plan]?.modules.includes(module));
+
+// "₱1,299.50" / "165" → cents; '' → null; anything else → undefined (invalid)
+export function pesosToCents(v) {
+  const s = String(v ?? '').replace(/[₱,\s]/g, '').replace(/^php/i, '');
+  if (!s) return null;
+  return /^\d{1,7}(\.\d{1,2})?$/.test(s) ? Math.round(Number(s) * 100) : undefined;
+}
+
+// Menu typed or pasted as text:  a line without "|" starts a category; items are "name | note | price" or "name | price".
+export function parseMenuText(text) {
+  let category = 'Menu';
+  const items = [];
+  for (const raw of String(text || '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (!line.includes('|')) { category = line.replace(/^#+\s*/, '').slice(0, 40) || 'Menu'; continue; }
+    const parts = line.split('|').map(s => s.trim());
+    const last = pesosToCents(parts[parts.length - 1]);
+    const price_cents = parts.length > 1 && last !== undefined ? last : null;
+    const [name, note] = price_cents !== null || (parts.length > 1 && last === null) ? [parts[0], parts.length > 2 ? parts.slice(1, -1).join(' | ') : null] : [parts[0], parts.slice(1).join(' | ')];
+    if (name) items.push({ category, name: name.slice(0, 60), note: note ? note.slice(0, 80) : null, price_cents });
+  }
+  return items;
+}
+
+// Philippine time helpers (UTC+8, no daylight saving)
+export const phNow = (ms = Date.now()) => new Date(ms + 8 * 3600e3);
+export const ymd = d => d.toISOString().slice(0, 10);
+export function addMonth(ymdStr) {
+  const [y, m, d] = ymdStr.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); // days in next month
+  return ymd(new Date(Date.UTC(y, m, Math.min(d, last))));
+}
+
+// Staff status right now: 'on' shift, 'later' today, 'done' for today, or 'off' (not working today).
+export function staffStatus(s, ms = Date.now()) {
+  const now = phNow(ms), day = (now.getUTCDay() + 6) % 7; // Mon = 0
+  if ((s.days || '')[day] !== '1') return 'off';
+  if (!/^\d\d:\d\d$/.test(s.shift_start || '') || !/^\d\d:\d\d$/.test(s.shift_end || '')) return 'on';
+  const t = now.toISOString().slice(11, 16);
+  const overnight = s.shift_end <= s.shift_start;
+  if (overnight ? (t >= s.shift_start || t < s.shift_end) : (t >= s.shift_start && t < s.shift_end)) return 'on';
+  return t < s.shift_start ? 'later' : 'done';
 }

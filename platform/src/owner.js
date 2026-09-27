@@ -4,7 +4,8 @@ import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { csrf } from 'hono/csrf';
 import { secureHeaders } from 'hono/secure-headers';
-import { cleanUrl } from './lib.js';
+import { cleanUrl, planHas } from './lib.js';
+import { registerModules, needsYou } from './modules.js';
 import { back, audit, flashQ, getBusiness, linksOf, devicesOf, stats, RECENT, saveLinks } from './common.js';
 import { loginRoutes, requireRole, accountRoutes } from './auth.js';
 import * as common from './common.js';
@@ -22,7 +23,8 @@ owner.get('/view', c => {
   if (c.get('user').role !== 'admin') return c.redirect('/app', 302);
   const id = Number.parseInt(c.req.query('id'), 10);
   if (id > 0) setCookie(c, VIEW, String(id), { httpOnly: true, secure: new URL(c.req.url).protocol === 'https:', sameSite: 'Lax', path: '/app' });
-  return c.redirect('/app', 302);
+  const to = c.req.query('to') || '';
+  return c.redirect(/^\/app\/[a-z]+$/.test(to) ? to : '/app', 302); // admin shortcuts, e.g. straight to /app/menu
 });
 owner.use('*', async (c, next) => {
   const db = c.env.DB, user = c.get('user');
@@ -46,13 +48,14 @@ const page = (c, nav, title, body) => common.page(c, 'owner', nav, title, body);
 
 owner.get('/', async c => {
   const db = c.env.DB, b = c.get('business');
-  const [s, devices, recent, links] = await Promise.all([
+  const [s, devices, recent, links, needs] = await Promise.all([
     stats(db, 'business_id', b.id),
     devicesOf(db, b.id),
     db.prepare(RECENT + ' AND e.business_id = ? ORDER BY e.ts DESC, e.id DESC LIMIT 10').bind(b.id).all(),
-    linksOf(db, b.id)
+    linksOf(db, b.id),
+    needsYou(db, b)
   ]);
-  return page(c, 'overview', b.name, V.ownerOverview({ b, stats: s, devices: devices.results, recent: recent.results, links, tapBase: c.env.TAP_BASE, q: flashQ(c) }));
+  return page(c, 'overview', b.name, V.ownerOverview({ b, stats: s, devices: devices.results, recent: recent.results, links, needs, tapBase: c.env.TAP_BASE, q: flashQ(c) }));
 });
 
 owner.get('/destinations', async c => {
@@ -77,3 +80,5 @@ owner.post('/branding', async c => {
   ]);
   return back(c, path, 'msg', 'Saved ✓ Your page is updated.');
 });
+
+registerModules(owner);

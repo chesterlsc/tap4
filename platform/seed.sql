@@ -1,5 +1,5 @@
 -- LOCAL DEMO DATA ONLY (npm run db:init). Same sample businesses as the marketing site.
-DELETE FROM sessions; DELETE FROM users; DELETE FROM events; DELETE FROM audit_log; DELETE FROM device_slots; DELETE FROM devices; DELETE FROM business_links; DELETE FROM businesses;
+DELETE FROM menu_items; DELETE FROM bills; DELETE FROM stock_items; DELETE FROM staff; DELETE FROM branches; DELETE FROM sessions; DELETE FROM users; DELETE FROM events; DELETE FROM audit_log; DELETE FROM device_slots; DELETE FROM devices; DELETE FROM business_links; DELETE FROM businesses;
 
 INSERT INTO businesses (id, slug, name, brand_color, contact_name, email, phone) VALUES
   (1, 'kape-norte', 'Kape Norte', '#c8f23c', 'Ana Reyes', 'hello@kapenorte.example', '+63 917 000 0001'),
@@ -57,3 +57,22 @@ FROM n JOIN t ON t.k = (i * 5 + i / 7) % 16;
 INSERT INTO users (email, name, password_hash, role, business_id) VALUES
   ('admin@tap4.local', 'Local admin', 'pbkdf2$100000$OLa/WNIDuNl9cDvNvR//ig==$FM3ZG1+LC9d61iRxexP35VhzbgokojNpzn7zu4pU6D8=', 'admin', NULL),
   ('owner@kapenorte.example', 'Ana Reyes', 'pbkdf2$100000$UBTH5XXpFLUrzJkAlNwr2A==$vpMjcPzpN2qpXqhUV81GcizsFfAM+dYLj1mq36CMtZA=', 'owner', 1);
+
+-- tapfour app demo: Kape Norte on Business (2 branches), Salon Ligaya on Solo, Hapag Grill stands only.
+UPDATE businesses SET plan = 'business', billing = 'monthly', package = 'business' WHERE id = 1;
+UPDATE businesses SET plan = 'solo', billing = 'yearly', package = 'solo' WHERE id = 3;
+INSERT INTO branches (business_id, name, address) VALUES (1, 'Maginhawa', 'Maginhawa St, Quezon City'), (1, 'BGC', '5th Ave, Taguig');
+INSERT INTO menu_items (business_id, category, name, note, price_cents, sold_out, sort) VALUES
+  (1, 'Coffee', 'Sagada Latte', 'Double shot, oat', 16500, 0, 1), (1, 'Coffee', 'Benguet Pour-over', 'Single origin', 18000, 0, 2),
+  (1, 'Coffee', 'Ube Cold Brew', 'Seasonal', 19000, 0, 3), (1, 'Coffee', 'Spanish Latte', 'Condensed milk', 17000, 1, 4),
+  (1, 'Pastry', 'Ensaymada', 'Butter & queso', 9500, 0, 5), (1, 'Pastry', 'Ube Cheese Pandesal', '3 pcs', 12000, 0, 6),
+  (1, 'Meals', 'Longganisa Plate', 'Garlic rice, egg', 24500, 0, 7), (1, 'Meals', 'Tapa Bowl', 'Cured beef', 26500, 0, 8);
+INSERT INTO bills (business_id, branch, name, amount_cents, due_date, repeat_monthly) VALUES
+  (1, 'Maginhawa', 'Bean supplier', 840000, date('now', '+8 hours', '+2 days'), 1),
+  (1, 'BGC', 'Electricity', 1260000, date('now', '+8 hours', '-1 days'), 1),
+  (1, 'BGC', 'Rent', 4500000, date('now', '+8 hours', '+12 days'), 1);
+INSERT INTO stock_items (business_id, branch, name, unit, qty, low_at) VALUES
+  (1, 'Maginhawa', 'Oat milk', 'L', 3, 5), (1, 'Maginhawa', 'Coffee beans', 'kg', 9, 3),
+  (1, 'BGC', 'Cups · 12 oz', 'pcs', 80, 100), (1, 'BGC', 'Ube syrup', 'btl', 6, 2);
+UPDATE devices SET branch = 'Maginhawa' WHERE code IN ('K7M2QX', 'KB4R00');
+UPDATE devices SET branch = 'BGC' WHERE code IN ('K7M2R4', 'X9DEAD');

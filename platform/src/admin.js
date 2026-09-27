@@ -139,13 +139,31 @@ async function createDevices(c, { sku, design, qty, business, branch }) {
 }
 const qtyOf = v => Math.min(100, Math.max(1, Number.parseInt(v, 10) || 1));
 
+const PLAN_FIELDS = { plan: ['solo', 'business', 'empire'], billing: ['monthly', 'yearly'], package: ['solo', 'business', 'empire'], table_ordering: ['quote', 'active'], plan_status: ['active', 'cancelled'] };
+admin.post('/b/:id/plan', async c => {
+  const b = await getBusiness(c.env.DB, c.req.param('id'));
+  if (!b) return c.notFound();
+  const f = await c.req.parseBody();
+  const next = Object.fromEntries(Object.entries(PLAN_FIELDS).map(([k, ok]) => [k, ok.includes(f[k]) ? f[k] : k === 'plan_status' ? 'active' : null]));
+  if (!next.plan) next.billing = null;
+  const changed = Object.fromEntries(Object.entries(next).filter(([k, v]) => (b[k] ?? null) !== v));
+  if (!Object.keys(changed).length) return back(c, `/admin/b/${b.id}#plan`, 'msg', 'Nothing changed.');
+  await c.env.DB.batch([
+    c.env.DB.prepare(`UPDATE businesses SET ${Object.keys(changed).map(k => k + ' = ?').join(', ')} WHERE id = ?`).bind(...Object.values(changed), b.id),
+    audit(c, 'business', b.id, { plan: changed })
+  ]);
+  return back(c, `/admin/b/${b.id}#plan`, 'msg', `Plan saved ✓${next.plan && next.plan_status === 'active' ? ' Their dashboard now shows the app tools.' : ''}`);
+});
+
 admin.post('/b/:id/devices', async c => {
   const b = await getBusiness(c.env.DB, c.req.param('id'));
   if (!b) return c.notFound();
   const f = await c.req.parseBody();
   const choice = parseProductChoice(f.sku);
   if (!choice) return back(c, `/admin/b/${b.id}`, 'err', 'Pick a product and design.');
-  const codes = await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) });
+  const branch = text(f.branch, 40);
+  if (branch) await c.env.DB.prepare('INSERT OR IGNORE INTO branches (business_id, name) VALUES (?, ?)').bind(b.id, branch).run();
+  const codes = await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch });
   return codes.length === 1
     ? back(c, `/admin/d/${codes[0]}`, 'msg', 'Stand added. Follow the steps below to get it live.')
     : back(c, `/admin/b/${b.id}#stands`, 'msg', `${codes.length} stands added for ${b.name}. Open each one to get it live.`);
@@ -225,6 +243,7 @@ admin.post('/d/:code', async c => {
   const businessId = f.business_id ? Number(f.business_id) : null;
   if (businessId && !(await getBusiness(db, businessId))) return back(c, path, 'err', 'Unknown business.');
   const next = { label: text(f.label, 40), branch: text(f.branch, 40), note: text(f.note, 500), business_id: businessId };
+  if (next.branch && businessId) await db.prepare('INSERT OR IGNORE INTO branches (business_id, name) VALUES (?, ?)').bind(businessId, next.branch).run();
   const changed = Object.fromEntries(Object.entries(next).filter(([k, v]) => (d[k] ?? null) !== v));
   if (!Object.keys(changed).length) return back(c, path, 'msg', 'No changes.');
   await db.batch([
@@ -377,7 +396,9 @@ admin.post('/new', async c => {
     c.env.DB.prepare('INSERT INTO business_links (business_id, key, url) VALUES (?, ?, ?)').bind(b.id, 'google', google),
     audit(c, 'business', b.id, { links: { google: { from: null, to: google } } })
   ]);
-  const codes = choice ? await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch: text(f.branch, 40) }) : [];
+  const branch = text(f.branch, 40);
+  if (branch) await c.env.DB.prepare('INSERT OR IGNORE INTO branches (business_id, name) VALUES (?, ?)').bind(b.id, branch).run();
+  const codes = choice ? await createDevices(c, { ...choice, qty: qtyOf(f.qty), business: b, branch }) : [];
   const parts = [google && 'Google link saved', codes.length && `${codes.length} ${codes.length > 1 ? 'stands' : 'stand'} added`].filter(Boolean).join(', ');
   return back(c, `/admin/b/${b.id}`, 'msg', `${b.name} added${parts ? ` (${parts})` : ''}. Follow the next step below.`);
 });
