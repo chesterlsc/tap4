@@ -7,7 +7,7 @@
   {%- if menu.links.size > 0 -%}
     {%- for link in menu.links -%}<a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{%- endfor -%}
   {%- else -%}
-    <a href="{{ routes.root_url }}#build">Review stands</a><a href="{{ routes.root_url }}#app">QR menu</a><a href="{{ routes.root_url }}#pipeline">tapfour app</a><a href="{{ routes.root_url }}#plans">Pricing</a><a href="{{ routes.root_url }}#services">Services</a>
+    <a href="{{ routes.root_url }}#build">Review stands</a><a href="{{ routes.root_url }}#app">QR menu</a><a href="{{ routes.root_url }}#app">tapfour app</a><a href="{{ routes.root_url }}#plans">Pricing</a><a href="{{ routes.root_url }}#services">Services</a>
   {%- endif -%}
 {%- endcapture -%}
 <header class="site-header">

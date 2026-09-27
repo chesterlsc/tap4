@@ -50,13 +50,13 @@
   ];
   const PLANS = [{ id: 'solo', name: 'Solo', price: 299 }, { id: 'business', name: 'Business', price: 799 }, { id: 'agency', name: 'Agency', price: 1999 }];
   const planItem = (p, yearly) => ({ handle: 'tapfour-app', variant: `${p.name} / ${yearly ? 'Yearly' : 'Monthly'}`, name: `${p.name} plan`, price: yearly ? p.price * 0.8 * 12 : p.price });
-  const planPrice = p => priceOf(planItem(p, S.yearly)) / (S.yearly ? 12 : 1);
+  const planPrice = p => Math.round(priceOf(planItem(p, S.yearly)) / (S.yearly ? 12 : 1)); // per month, for display
   const SVCS = $$('[data-svc]').map(el => ({ id: el.dataset.svc, name: el.dataset.name, price: +el.dataset.price, monthly: 'monthly' in el.dataset, vid: +el.dataset.variant, sp: +el.dataset.sp || null, available: !el.disabled }));
   const ALL_PLATS = { google: true, facebook: true, instagram: true, tiktok: true };
 
   const S = {
     name: '', finish: 'black', qty: 1, mode: 'direct', dest: 'google', plats: { ...ALL_PLATS }, slots: ['google', 'facebook', 'instagram', 'tiktok'],
-    app: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
+    app: false, feats: { reviews: true, menu: false, order: false, crm: false, wifi: false }, hw: { menu: true }, plan: 'solo', locIdx: 0, yearly: false, wifiH: 1, svcs: {}, links: {}, slotLinks: ['', '', '', ''], error: '', ordering: false
   };
   const set = o => { Object.assign(S, { error: '' }, o); render(); };
   // Monthly price of the app as configured in the popup (plan + paid features).
@@ -268,19 +268,50 @@
   }
 
   /* ---------- plans + services (other homepage sections share the same state) ---------- */
+  // 03 · Dashboard & plans: the location slider picks the plan and which sample dashboard shows.
+  const STOPS = [1, 2, 3, 4, 5, 8, 12, 20, 30, 50];
+  const planAt = i => i === 0 ? 'solo' : i <= 4 ? 'business' : 'agency';
+  const FIRST_STOP = { solo: 0, business: 1, agency: 5 };
   function renderPlans() {
     $$('[data-act="yearly"]').forEach(b => { const on = (b.dataset.arg === '1') === S.yearly; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-    $$('.plan[data-plan]').forEach(el => {
-      const on = el.dataset.plan === S.plan;
-      el.classList.toggle('on', on);
-      const plan = PLANS.find(p => p.id === el.dataset.plan);
+    const sec = $('[data-plans]');
+    if (!sec) return;
+    if (planAt(S.locIdx) !== S.plan) S.locIdx = FIRST_STOP[S.plan] || 0;
+    const id = S.plan, n = STOPS[S.locIdx], nLabel = n === 50 ? '50+' : String(n);
+    const range = $('[data-dp-range]', sec);
+    if (range !== document.activeElement) range.value = S.locIdx;
+    $('[data-dp-n]', sec).textContent = nLabel;
+    $('[data-dp-word]', sec).textContent = n === 1 ? 'location' : id === 'agency' ? 'client businesses' : 'branches';
+    $$('[data-z]', sec).forEach(z => z.classList.toggle('on', +z.dataset.z === ['solo', 'business', 'agency'].indexOf(id)));
+    $$('.dp-plan', sec).forEach(el => {
+      el.hidden = el.dataset.plan !== id;
+      if (el.hidden) return;
+      const plan = PLANS.find(p => p.id === id);
       const monthly = plan ? planPrice(plan) : +(S.yearly ? el.dataset.y : el.dataset.m);
       $('[data-plan-price]', el).textContent = peso(monthly);
-      const billing = $('[data-plan-billing]', el);
-      if (billing) billing.textContent = S.yearly ? peso(plan ? priceOf(planItem(plan, true)) : monthly * 12) + ' billed yearly' : 'Billed monthly';
-      $('.plan__cta', el).textContent = on ? 'Add to my setup ↑' : 'Choose ' + $('h3', el).textContent;
-      $('.plan__cta', el).setAttribute('aria-pressed', on);
+      $('[data-plan-billing]', el).textContent = S.yearly ? 'Billed yearly · ' + peso(plan ? priceOf(planItem(plan, true)) : monthly * 12) : 'Billed monthly';
+      $('[data-dp-per]', el).textContent = id === 'solo' ? 'One shop, one page' : peso(Math.round(monthly / n)) + (id === 'business' ? ' per branch' : ' per client') + ' / mo';
+      $('.dp-plan__cta', el).textContent = S.app ? '✓ In your setup ↑' : 'Choose ' + $('h3', el).textContent + ' →';
     });
+    $$('[data-dp-for]', sec).forEach(v => { v.hidden = v.dataset.dpFor !== id; });
+    const rows = $$('[data-br]', sec), shown = rows.slice(0, Math.min(n, 5)), max = Math.max(...shown.map(r => +r.dataset.t));
+    $('[data-dp-view]', sec).textContent = { solo: 'My stands', business: 'Branches', agency: 'Pipeline' }[id];
+    $('[data-dp-scope]', sec).textContent = id === 'solo' ? 'SAMPLE DATA · YOUR SHOP' : id === 'business' ? `SAMPLE DATA · ${shown.length} BRANCHES` : 'SAMPLE DATA · WHITE-LABEL';
+    rows.forEach((r, i) => {
+      const t = +r.dataset.t, bar = $('.dp-meter i', r);
+      r.hidden = i >= shown.length;
+      bar.style.width = Math.round(t / 1540 * 100) + '%';
+      bar.classList.toggle('hi', t === max);
+      $('.dp-meter em', r).textContent = t.toLocaleString('en-US');
+    });
+    const sum = k => shown.reduce((a, r) => a + +r.dataset[k], 0);
+    $('[data-tot-s]', sec).textContent = sum('s');
+    $('[data-tot-t]', sec).textContent = sum('t').toLocaleString('en-US');
+    $('[data-tot-r]', sec).textContent = sum('r');
+    const cols = $$('.dp-col', sec);
+    cols.forEach(c => { $('[data-count]', c).textContent = $$('.dp-deal', c).length; });
+    $('[data-dp-clients]', sec).textContent = nLabel;
+    $('[data-dp-active]', sec).textContent = $$('.dp-deal', cols[cols.length - 1]).length;
   }
   function renderServices() {
     $$('.svc[data-svc]').forEach(el => {
@@ -722,7 +753,7 @@
   /* ---------- gentle reveal on scroll ---------- */
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
-    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-dash, .dash, .plan, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
+    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-dash, .dp__grid, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
   }
 
   document.addEventListener('click', e => { const a = e.target.closest('[data-open-checkout]'); if (a && builder) { e.preventDefault(); order(); } });
@@ -735,28 +766,19 @@
   const mnav = $('.mobile-nav');
   if (mnav) document.addEventListener('click', e => { if (mnav.open && (!mnav.contains(e.target) || e.target.closest('a'))) mnav.open = false; });
 
-  /* ---------- dashboard demo ---------- */
-  const dash = $('[data-dash]');
-  if (dash) {
-    const counts = () => $$('.pipe__col', dash).forEach(c => { $('[data-count]', c).textContent = $$('.deal', c).length; });
-    counts();
-    dash.addEventListener('click', e => {
-      const tab = e.target.closest('[data-dash-tab]');
-      if (tab) {
-        const id = tab.dataset.dashTab, cap = $('[data-dash-caption]', dash);
-        $$('[data-dash-tab]', dash).forEach(b => b.classList.toggle('on', b === tab));
-        $$('[data-dash-panel]', dash).forEach(p => { p.hidden = p.dataset.dashPanel !== id; });
-        cap.textContent = id === 'analytics' ? cap.dataset.a : cap.dataset.p;
-      }
-      const mv = e.target.closest('[data-pipe-move]');
-      if (mv) {
-        const next = mv.closest('.pipe__col').nextElementSibling;
-        if (next) next.append(mv.closest('.deal'));
-        if (!next || !next.nextElementSibling) mv.remove();
-        counts();
-      }
+  /* ---------- 03 · slider + sample pipeline ---------- */
+  const plansSec = $('[data-plans]');
+  if (plansSec) {
+    $('[data-dp-range]', plansSec).addEventListener('input', e => set({ locIdx: +e.target.value, plan: planAt(+e.target.value) }));
+    $$('.dp-col:last-child [data-dp-move]', plansSec).forEach(b => b.remove());
+    plansSec.addEventListener('click', e => {
+      const mv = e.target.closest('[data-dp-move]');
+      if (!mv) return;
+      const next = mv.closest('.dp-col').nextElementSibling;
+      next.append(mv.closest('.dp-deal'));
+      if (!next.nextElementSibling) mv.remove();
+      renderPlans();
     });
-    $$('.pipe__col:last-child [data-pipe-move]', dash).forEach(b => b.remove());
   }
 
   /* ---------- product page: compatible billing, prices and availability ---------- */

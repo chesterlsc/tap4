@@ -2,21 +2,37 @@
   Plan prices come from the product's "<Plan> / Monthly" and "<Plan> / Yearly" variants.
   Yearly is shown per month (price ÷ 12). Block "fallback price" shows until the product exists.
 {%- endcomment -%}
-{%- assign app = section.settings.product -%}
-<section id="plans" class="sec" data-plans>
+{%- liquid
+  assign s = section.settings
+  assign app = s.product
+  assign stands = 'TAP4.1 L-Stand|Counter|2 min ago;TAP4.1 L-Stand|Table 4|9 min ago;4-Tap Bar|Door|1 h ago' | split: ';'
+  assign links = 'Google review|g.page/r/your-shop/review;Menu|tap4.ph/m/your-shop;Facebook|facebook.com/yourshop;Instagram|instagram.com/yourshop;TikTok|tiktok.com/@yourshop' | split: ';'
+  assign branches = 'Main branch|3|1284|486;Katipunan|2|962|351;BGC|4|1540|602;Ortigas|2|740|268;Cebu IT Park|1|610|199' | split: ';'
+  assign stages = 'Lead|#5d5c59;Demo|#8a8883;Proposal|#b5b3ad;Won|#e9f8b8;Active|#c8f23c' | split: ';'
+  assign deals = 'Salon Ligaya|Walk-in demo|₱3,290|0;Barbero Uno|Referred|₱1,790|0;Lomi House QC|Demo Fri 3pm|₱4,580|1;Café Anino|Sent quote|₱2,690|2;Kusina Rosa|2 stands + menu|₱5,290|3;Hapag Grill|412 taps / mo|₱799/mo|4;Luna Nails|188 taps / mo|₱299/mo|4' | split: ';'
+-%}
+<section id="plans" class="sec dp" data-plans>
   <div class="sec__head">
     <div class="sec__titles">
-      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
-      <h2 class="h2">{{ section.settings.title | escape }}</h2>
-      <p class="sec__lead">{{ section.settings.text | escape }}</p>
+      <div class="eyebrow">{{ s.eyebrow | escape }}</div>
+      <h2 class="h2">{{ s.title_1 | escape }}<br>{{ s.title_2 | escape }}</h2>
     </div>
     <div class="seg">
       <button type="button" class="on" data-act="yearly" data-arg="0">Monthly</button>
       <button type="button" data-act="yearly" data-arg="1">Yearly −20%</button>
     </div>
   </div>
-  <div class="plans">
-    {%- for block in section.blocks -%}
+
+  <div class="dp__grid">
+    <div class="dp__side">
+      <div class="dp-loc">
+        <span class="mono-11 m3">LOCATIONS</span>
+        <div class="dp-loc__n"><b data-dp-n>1</b><span data-dp-word>location</span></div>
+        <input type="range" min="0" max="9" step="1" value="0" data-dp-range aria-label="Number of locations">
+        <div class="dp-zones" aria-hidden="true"><i data-z="0"></i><i data-z="1"></i><i data-z="2"></i></div>
+        <div class="dp-zones__l"><span data-z="0">SOLO · 1</span><span data-z="1">BUSINESS · 2–5</span><span data-z="2">AGENCY · 8+</span></div>
+      </div>
+      {%- for block in section.blocks -%}
       {%- liquid
         assign name = block.settings.name
         assign m_title = name | append: ' / Monthly'
@@ -54,25 +70,83 @@
           assign py = block.settings.price | times: 0.8
         endif
       -%}
-      <div class="plan{% if forloop.first %} on{% endif %}" data-plan="{{ name | handleize }}" data-m="{{ pm }}" data-y="{{ py }}" {{ block.shopify_attributes }}>
-        <div class="row-between"><h3>{{ name | escape }}</h3><span class="plan__tag">{{ block.settings.tag | escape }}</span></div>
-        <div class="plan__price"><b data-plan-price>{{ pm | times: 100 | money_without_trailing_zeros }}</b><span>/mo</span></div>
-        <p class="mono-12 m3" data-plan-billing>Billed monthly</p>
-        <p>{{ block.settings.text | escape }}</p>
-        <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
-        <button type="button" class="plan__cta" data-act="planCta" data-arg="{{ name | handleize }}">Choose {{ name | escape }}</button>
+        <div class="dp-plan" data-plan="{{ name | handleize }}" data-m="{{ pm }}" data-y="{{ py }}"{% unless forloop.first %} hidden{% endunless %} {{ block.shopify_attributes }}>
+          <div class="dp-plan__h"><h3>{{ name | escape }}</h3><span>{{ block.settings.tag | escape }}</span></div>
+          <div class="dp-plan__price"><b data-plan-price>{{ pm | times: 100 | money_without_trailing_zeros }}</b><span>/mo</span></div>
+          <div class="dp-plan__meta"><span data-plan-billing>Billed monthly</span><span data-dp-per></span></div>
+          <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
+          <button type="button" class="dp-plan__cta" data-act="planCta" data-arg="{{ name | handleize }}">Choose {{ name | escape }} →</button>
+        </div>
+      {%- endfor -%}
+    </div>
+
+    <div class="dp-dash" aria-label="Sample tapfour dashboard">
+      <div class="dp-dash__nav">
+        <div class="dp-dash__logo">{% render 'tf-mark', px: 16 %}<b>tapfour</b></div>
+        <div data-dp-for="solo"><span>Overview</span><span>My links</span><span>My page</span><span class="on">My stands</span><span>Help</span></div>
+        <div data-dp-for="business" hidden><span>Overview</span><span class="on">Branches</span><span>My links</span><span>My stands</span><span>Reports</span><span>Help</span></div>
+        <div data-dp-for="agency" hidden><span class="on">Pipeline</span><span>Clients</span><span>Billing</span><span>White-label</span><span>Help</span></div>
       </div>
-    {%- endfor -%}
+      <div class="dp-dash__main">
+        <div class="dp-dash__h"><b data-dp-view>My stands</b><span class="mono-11 m3" data-dp-scope>SAMPLE DATA · YOUR SHOP</span></div>
+
+        <div class="dp-view" data-dp-for="solo">
+          <div class="dp-tbl dp-tbl--stands">
+            <div class="dp-tbl__h"><span>STAND</span><span>WHERE</span><span>LAST TAP</span><span>STATUS</span></div>
+            {%- for x in stands -%}{%- assign r = x | split: '|' -%}
+              <div class="dp-tbl__r"><b>{{ r[0] }}</b><span>{{ r[1] }}</span><span class="mono">{{ r[2] }}</span><span class="dp-ok"><i></i>Online</span></div>
+            {%- endfor -%}
+          </div>
+          <div class="dp-2">
+            <div class="dp-box"><small>MY LINKS</small>
+              {%- for x in links -%}{%- assign r = x | split: '|' -%}<div class="dp-link"><b>{{ r[0] }}</b><span>{{ r[1] }}</span><em>Edit</em></div>{%- endfor -%}
+            </div>
+            <div class="dp-box"><small>TAPS VS QR SCANS · 30D</small>
+              <div class="dp-ts"><b>1,284</b><span>taps</span><b>612</b><span>scans</span></div>
+              <div class="dp-ts__bar"><i style="flex:68"></i><i style="flex:32"></i></div>
+              <p>Counted separately, so you know which part of the stand guests use.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dp-view" data-dp-for="business" hidden>
+          <div class="chips-row"><span class="dp-chip dp-chip--hi">Monthly report · September PDF ↓</span><span class="dp-chip">Review alerts · on</span></div>
+          <div class="dp-tbl dp-tbl--br">
+            <div class="dp-tbl__h"><span>BRANCH</span><span>STANDS</span><span>TAPS · 30D</span><span>OPENED REVIEW</span></div>
+            {%- for x in branches -%}{%- assign r = x | split: '|' -%}
+              <div class="dp-tbl__r" data-br data-s="{{ r[1] }}" data-t="{{ r[2] }}" data-r="{{ r[3] }}"><b>{{ r[0] }}</b><span class="mono">{{ r[1] }}</span><span class="dp-meter"><span><i></i></span><em class="mono">{{ r[2] }}</em></span><span class="mono">{{ r[3] }}</span></div>
+            {%- endfor -%}
+            <div class="dp-tbl__r dp-tbl__tot"><b>All branches</b><span class="mono" data-tot-s></span><span class="mono dp-tbl__tt" data-tot-t></span><span class="mono" data-tot-r></span></div>
+          </div>
+        </div>
+
+        <div class="dp-view dp-view--ag" data-dp-for="agency" hidden>
+          <div class="dp-stats"><div><small>CLIENTS</small><b data-dp-clients>8</b></div><div><small>ACTIVE ON A PLAN</small><b data-dp-active>2</b></div><div><small>INVOICES DUE</small><b>2</b></div></div>
+          <div class="dp-pipe">
+            {%- for st in stages -%}{%- assign g = st | split: '|' -%}{%- assign col = forloop.index0 | append: '' -%}
+              <div class="dp-col" data-col="{{ forloop.index0 }}">
+                <div class="dp-col__h"><span><i style="background:{{ g[1] }}"></i>{{ g[0] }}</span><em class="mono" data-count></em></div>
+                {%- for d in deals -%}{%- assign r = d | split: '|' -%}{%- if r[3] == col -%}
+                  <div class="dp-deal"><b>{{ r[0] }}</b><span>{{ r[1] }}</span><em class="mono">{{ r[2] }}</em><button type="button" data-dp-move>Move →</button></div>
+                {%- endif -%}{%- endfor -%}
+              </div>
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <div class="dp__foot mono-12"><span>SAMPLE DATA · DASHBOARD.TAP4.PH</span><span>CANCEL ANYTIME — TAPS NEVER CHECK YOUR PLAN</span></div>
 </section>
 
 {% schema %}
 {
-  "name": "Plans",
+  "name": "Dashboard & plans",
   "settings": [
-    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "04 — OPTIONAL DASHBOARD" },
-    { "type": "text", "id": "title", "label": "Title", "default": "Your stand works without it." },
-    { "type": "textarea", "id": "text", "label": "Text", "default": "Hardware is a one-time buy. The dashboard is here if you want menus, stats and link edits — cancel anytime, the stand keeps working." },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "03 — DASHBOARD & PLANS" },
+    { "type": "text", "id": "title_1", "label": "Title line 1", "default": "How many shops" },
+    { "type": "text", "id": "title_2", "label": "Title line 2", "default": "do you run?" },
     { "type": "product", "id": "product", "label": "App product", "info": "Variants named \"<Plan> / Monthly\" and \"<Plan> / Yearly\"." }
   ],
   "blocks": [

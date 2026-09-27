@@ -268,6 +268,36 @@ test('app section adds features to the setup builder', async t => {
 
 test('every homepage section keeps its styles', async () => {
   const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
-  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dash', '.plan', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-dash', '.dp-plan', '.dp-dash', '.dp-deal', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
     assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
+});
+
+test('03 location slider picks the plan and its sample dashboard', async t => {
+  const { pages } = await site;
+  const dom = new JSDOM(pages.get('/'), { runScripts: 'dangerously', url: 'http://localhost/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  w.scrollTo = () => {};
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  const visible = sel => [...w.document.querySelectorAll(sel)].filter(el => !el.hidden);
+  const slide = i => { const r = $('[data-dp-range]'); r.value = i; r.dispatchEvent(new w.Event('input', { bubbles: true })); };
+
+  assert.equal(visible('.dp-plan')[0].dataset.plan, 'solo');
+  assert.equal($('[data-dp-view]').textContent, 'My stands');
+  slide(2); // 3 locations
+  assert.equal(visible('.dp-plan')[0].dataset.plan, 'business');
+  assert.equal($('[data-dp-n]').textContent, '3');
+  assert.equal(visible('[data-br]').length, 3);
+  assert.equal($('[data-tot-t]').textContent, '3,786'); // 1,284 + 962 + 1,540
+  assert.match($('.dp-plan:not([hidden]) [data-dp-per]').textContent, /₱266 per branch/); // 799 / 3
+  slide(9);
+  assert.equal($('[data-dp-n]').textContent, '50+');
+  assert.equal($('[data-dp-view]').textContent, 'Pipeline');
+  $('[data-col="3"] [data-dp-move]').click(); // Won -> Active
+  assert.equal($('[data-dp-active]').textContent, '3');
+  $('[data-act="yearly"][data-arg="1"]').click();
+  assert.equal($('.dp-plan:not([hidden]) [data-plan-price]').textContent, '₱1,599'); // 1,999 × 0.8
+  $('.dp-plan:not([hidden]) [data-act="planCta"]').click();
+  assert.match($('#tf-summary').textContent, /tapfour app · Agency · first year/);
 });

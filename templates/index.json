@@ -80,10 +80,6 @@
       "type": "tf-app",
       "settings": {}
     },
-    "dashboard": {
-      "type": "tf-dashboard",
-      "settings": {}
-    },
     "plans": {
       "type": "tf-plans",
       "blocks": {
@@ -187,7 +183,6 @@
     "taps",
     "builder",
     "app",
-    "dashboard",
     "plans",
     "services",
     "reseller"
