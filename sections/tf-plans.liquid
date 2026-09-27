@@ -22,6 +22,10 @@
 
   <div class="dp__grid">
     <div class="dp__side">
+      <div class="dp-mpick dp-m">
+        <div class="dp-mtabs" role="group" aria-label="Plan"><button type="button" data-dp-plan="solo">Solo</button><button type="button" data-dp-plan="business">Business</button><button type="button" data-dp-plan="empire">Empire</button></div>
+        <div class="dp-mstep"><span><small>LOCATIONS</small><b data-dp-mn>1 location</b></span><span data-dp-mstep><button type="button" data-dp-step="-1" aria-label="Fewer locations">−</button><button type="button" class="add" data-dp-step="1" aria-label="More locations">+</button></span></div>
+      </div>
       <div class="dp-loc">
         <span class="mono-11 m3">LOCATIONS</span>
         <div class="dp-loc__n"><b data-dp-n>1</b><span data-dp-word>location</span></div>
@@ -76,7 +80,8 @@
           </div>
           <div class="dp-plan__app">
             <div class="dp-plan__apph"><small>APP · MONTHLY</small><span><b data-plan-price>+ {{ pm | times: 100 | money_without_trailing_zeros }}</b>/mo</span></div>
-            <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
+            <ul>{% assign items = block.settings.features | newline_to_br | split: '<br />' %}{% assign count = 0 %}{% for i in items %}{% assign i = i | strip %}{% if i != '' %}{% assign count = count | plus: 1 %}<li>{{ i | escape }}</li>{% endif %}{% endfor %}</ul>
+            {%- if count > 3 -%}<button type="button" class="dp-plan__more dp-m" data-dp-more data-count="{{ count }}">See all {{ count }} included</button>{%- endif -%}
           </div>
           <div class="dp-add">
             <div class="dp-add__h"><span><small>ADD-ON</small><b>Order from the table</b></span><button type="button" data-act="tableOrder" aria-pressed="false">+ Add</button></div>
@@ -87,6 +92,7 @@
           <button type="button" class="dp-plan__cta" data-act="planCta" data-arg="{{ name | handleize }}">Choose {{ name | escape }} →</button>
         </div>
       {%- endfor -%}
+      <div class="seg dp-m dp-mseg"><button type="button" class="on" data-act="yearly" data-arg="0">Monthly</button><button type="button" data-act="yearly" data-arg="1">Yearly −20%</button></div>
     </div>
 
     <div class="dp-dash" aria-label="Sample tapfour dashboard">
@@ -101,10 +107,35 @@
     </div>
   </div>
 
+  <div class="dp-mdash dp-m">
+    <div class="dp-mh"><b data-dp-mtitle>What Solo shows you</b><small>SAMPLE DATA</small></div>
+    <div class="dp-mcard">
+      <div class="dp-mcard__h"><span>{% render 'tf-mark', px: 16 %}<b>tapfour</b></span><small data-dp-mscope>YOUR SHOP</small></div>
+      <div class="dp-mchips" data-dp-mchips></div>
+      <div class="dp-mstats" data-dp-mstats></div>
+      <div class="dp-mrows" data-dp-mrows></div>
+    </div>
+    <p class="dp-mnote" data-dp-mnote></p>
+  </div>
+
+  <div class="dp-mfloor dp-m">
+    <div class="dp-mh"><span><small class="lime">WITH TABLE ORDERING</small><b>Orders · live floor</b></span><small>SAMPLE DATA</small></div>
+    <div class="dp-mstats" data-dp-fstats></div>
+    <div class="dp-ftiles" data-dp-ftiles></div>
+    <p class="dp-mnote">Tap a table to see its order. Lime tiles are new orders waiting for you.</p>
+    <div class="dp-flock" data-dp-flock><small>ADD-ON</small><b>Add table ordering to get the live floor.</b><button type="button" data-act="tableOrder">+ Add table ordering</button><small>FROM ₱499/MO</small></div>
+  </div>
+  <div class="dp-sheet" data-dp-sheet hidden><div class="dp-sheet__scrim" data-dp-sheet-close></div><div class="dp-sheet__p" role="dialog" aria-modal="true" aria-label="Table order" data-dp-sheet-body></div></div>
+
   <div class="dp-to" id="table-ordering">
     <div class="dp-to__head">
-      <div class="dp-to__titles"><div class="eyebrow">ADD-ON · TABLE ORDERING</div><h3>Guests order from the table.<br>Your server gets it on their phone.</h3></div>
+      <div class="dp-to__titles"><div class="eyebrow">ADD-ON · TABLE ORDERING</div><h3><span class="dp-d">Guests order from the table.<br>Your server gets it on their phone.</span><span class="dp-m">Guests order from the table. It pops up on your counter tablet.</span></h3></div>
       <div class="dp-to__from"><small>STARTS AT</small><span><b>₱499</b>/mo</span></div>
+    </div>
+    <div class="dp-msteps dp-m">
+      <div><span>1</span><span><b>Guest scans the table QR</b><small>The menu opens on their phone. No app, no account.</small></span></div>
+      <div><span>2</span><span><b>It pops up on your counter tablet</b><small>Items and table number arrive with a popup. Tap Accept.</small></span></div>
+      <div><span>3</span><span><b>Kitchen makes it, staff serves it</b><small>Mark it served. The table tile updates on the floor.</small></span></div>
     </div>
     <div class="dp-to__demo">
       <div class="dp-to__col"><small>GUEST’S PHONE</small><div class="dp-ph"><div class="dp-ph__s dp-ph__s--light" data-to-guest></div></div></div>
@@ -125,6 +156,7 @@
     </div>
   </div>
 
+  <div class="dp-mbar dp-m"><span><small data-dp-barl>SOLO</small><b data-dp-bart></b></span><button type="button" data-act="planCta" data-arg="solo" data-dp-barcta>Choose →</button></div>
   <div class="dp__foot mono-12"><span>SAMPLE DATA · DASHBOARD.TAP4.PH</span><span>CANCEL ANYTIME — TAPS NEVER CHECK YOUR PLAN</span></div>
 </section>
 

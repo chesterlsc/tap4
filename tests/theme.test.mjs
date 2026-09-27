@@ -319,6 +319,22 @@ test('03 packages: slider, table-ordering demo and ordering a package', async t 
   $('[data-to-quote]').click();
   assert.match(decodeURIComponent(opened), /subject=Table ordering quote/);
 
+  // Phones: plan buttons + stepper, chip-row dashboard, floor tile opens the bottom sheet.
+  $('[data-dp-plan="empire"]').click();
+  assert.equal($('[data-dp-mn]').textContent, '8 branches');
+  $('[data-dp-step="1"]').click();
+  assert.equal($('[data-dp-mn]').textContent, '12 branches');
+  assert.match($('[data-dp-mchips]').textContent, /Billing.*Inventory.*Staff/s);
+  $('[data-dp-mtab="2"]').click();
+  assert.match($('[data-dp-mrows]').textContent, /Ana R\./);
+  assert.equal($('[data-dp-bart]').textContent, '₱40,000 + ₱1,999/mo');
+  $('[data-dp-plan="business"]').click();
+  $('[data-dp-ftile="4"]').click();
+  assert.ok(!$('[data-dp-sheet]').hidden);
+  assert.match($('[data-dp-sheet-body]').textContent, /Table 5.*BILL PLEASE/s);
+  $('[data-dp-sheet-close]').click();
+  assert.ok($('[data-dp-sheet]').hidden);
+
   // Choosing the package puts it in the setup and the order.
   $('.dp-plan:not([hidden]) [data-act="planCta"]').click();
   assert.ok(!$('#tf-pkg').hidden && $('#tf-step-stand').hidden, 'builder shows the package instead of the stand steps');

@@ -293,7 +293,7 @@
   const QGROUPS = [['TABLES', ['1–10', '11–25', '26–50', '50+']], ['WHAT YOU SERVE', ['Café', 'Restaurant', 'Samgyupsal / unli', 'Bar']], ['HOW BUSY', ['Quiet', 'Steady', 'Packed']]];
   const TST = { '-1': ['FREE', 'free'], 0: ['NEW ORDER', 'new'], 1: ['IN KITCHEN', 'kit'], 2: ['SERVED', 'srv'], 3: ['BILL PLEASE', 'bill'] };
   const DP = {
-    eTab: 1, oView: false, oSel: 3, toast: '', qty: [0, 0, 0, 0, 0], quote: [1, 2, 2],
+    eTab: 1, oView: false, oSel: 3, mTab: 0, more: false, sheet: false, toast: '', qty: [0, 0, 0, 0, 0], quote: [1, 2, 2],
     tables: [
       { g: 4, t: '52m', items: [[0, 3], [2, 1], [4, 1]], st: 2 }, { g: 2, t: '18m', items: [[0, 2]], st: 1 }, { st: -1, items: [] },
       { g: 3, t: '38m', items: [[1, 1], [3, 1]], st: 0 }, { g: 6, t: '1h 10m', items: [[0, 6], [1, 2], [4, 2]], st: 3 }, { st: -1, items: [] },
@@ -365,6 +365,63 @@
   }
   const quoteLine = () => { const [t, k, b] = QGROUPS.map(([, opts], g) => opts[DP.quote[g]]); return `${t} tables · ${k} · ${b}.`; };
 
+  // Phones (section 03 mobile): plan buttons + stepper, a chip-row dashboard, the floor grid with a bottom sheet.
+  const MBR = [['Main branch', 1284], ['Katipunan', 962], ['BGC', 1540], ['Ortigas', 740], ['Cebu IT Park', 610], ['Alabang', 820], ['Makati', 1105], ['Pasig', 690]];
+  const MBILL = [['Bean supplier', 'Main branch', 'Due 28 Sep', 'DUE'], ['Electricity', 'Katipunan', 'Due 30 Sep', 'DUE'], ['Rent', 'BGC', 'Paid 01 Oct', 'PAID'], ['Water', 'Ortigas', 'Paid 02 Oct', 'PAID'], ['Pastry supplier', 'Cebu IT Park', 'Paid 03 Oct', 'PAID']];
+  const MINV = [['Oat milk', 'Main branch', '3 L left', 'LOW'], ['Coffee beans', 'BGC', '2 kg left', 'LOW'], ['Cups · 12 oz', 'Katipunan', '80 pcs left', 'LOW'], ['Ube syrup', 'Ortigas', '4 btl left', 'OK'], ['Ensaymada dough', 'Cebu IT Park', '6 trays left', 'OK']];
+  const MSTAFF = [['Ana R.', 'Main branch', '10am–7pm', 'ON SHIFT'], ['Jomar D.', 'BGC', '11am–8pm', 'ON SHIFT'], ['Liza P.', 'Katipunan', '4pm–12am', 'LATER'], ['Paolo S.', 'Ortigas', '10am–7pm', 'ON SHIFT'], ['Mika T.', 'Cebu IT Park', 'Day off', 'OFF']];
+  const MTABS = { solo: ['My stands', 'Billing', 'Inventory'], business: ['Branches', 'Billing', 'Inventory'], empire: ['Billing', 'Inventory', 'Staff'] };
+  const MNOTE = { solo: 'Solo includes the billing and inventory trackers. Pick Empire above to see the staff tracker.', business: 'Business adds a branch view, review alerts and a monthly PDF report.', empire: 'Empire tracks bills, stock and staff across up to 20 branches.' };
+  function renderPlansMobile(sec, id, n) {
+    const plan = PLANS.find(p => p.id === id), stops = STOPS.map((v, i) => [v, i]).filter(([, i]) => planAt(i) === id);
+    $$('[data-dp-plan]', sec).forEach(b => { const o = b.dataset.dpPlan === id; b.classList.toggle('on', o); b.setAttribute('aria-pressed', o); });
+    $('[data-dp-mn]', sec).textContent = n + (n === 1 ? ' location' : ' branches');
+    $('[data-dp-mstep]', sec).classList.toggle('off', stops.length < 2);
+    $$('.dp-plan', sec).forEach(el => {
+      el.classList.toggle('more', DP.more);
+      const more = $('[data-dp-more]', el);
+      if (more) more.textContent = DP.more ? 'Show less' : `See all ${more.dataset.count} included`;
+    });
+    // chip-row dashboard
+    const tab = MTABS[id][Math.min(DP.mTab, 2)], row = (a, sub, st, bar) => `<div class="dp-mrow"><span><b>${a}</b><small>${sub}</small></span>${bar ? `<span class="dp-mbarv"><i style="width:${bar}%"></i></span>` : ''}<em class="dp-pill dp-pill--${['DUE', 'LOW', 'ON SHIFT', 'ONLINE', 'TOP'].includes(st) ? 'new' : 'srv'}">${st}</em></div>`;
+    const br = MBR.slice(0, Math.min(n, 8)), few = id === 'solo';
+    const rows = {
+      'My stands': [['Counter', '2 min ago'], ['Table 1', '6 min ago'], ['Table 2', '9 min ago'], ['Table 3', '24 min ago'], ['Table 4', '1 h ago']].map(([w, t]) => row('Review + Menu · ' + w, 'Last tap ' + t, 'ONLINE')),
+      Branches: br.map(([b, t], i) => row(b, t.toLocaleString('en-US') + ' taps · 30 days', i === 2 ? 'TOP' : 'OK', Math.round(t / 1540 * 100))),
+      Billing: MBILL.slice(0, few ? 3 : 5).map(([a, b, c, st]) => row(a, few ? c : b + ' · ' + c, st)),
+      Inventory: MINV.slice(0, few ? 3 : 5).map(([a, b, c, st]) => row(a, few ? c : b + ' · ' + c, st)),
+      Staff: MSTAFF.map(([a, b, c, st]) => row(a, b + ' · ' + c, st))
+    }[tab];
+    const stats = { 'My stands': [['TAPS · 30D', '1,284'], ['QR SCANS', '612'], ['WI-FI GUESTS', '318']], Branches: [['BRANCHES', String(n)], ['TAPS · 30D', br.reduce((a, b) => a + b[1], 0).toLocaleString('en-US')], ['REPORT', 'PDF']], Billing: [['DUE THIS WEEK', '2'], ['TOTAL DUE', '₱48.2k'], ['PAID', '3']], Inventory: [['LOW STOCK', '3'], ['ITEMS', '42'], ['BRANCHES', String(n)]], Staff: [['ON SHIFT', String(n * 4 + 2)], ['LATER', '6'], ['OFF', '4']] }[tab];
+    const mstat = list => list.map(([l, v], i) => `<span${i === 0 ? ' class="hi"' : ''}><small>${l}</small><b>${v}</b></span>`).join('');
+    $('[data-dp-mtitle]', sec).textContent = `What ${plan.name} shows you`;
+    $('[data-dp-mscope]', sec).textContent = id === 'solo' ? 'YOUR SHOP' : n + ' BRANCHES';
+    $('[data-dp-mchips]', sec).innerHTML = MTABS[id].map((l, i) => `<button type="button" class="${l === tab ? 'on' : ''}" data-dp-mtab="${i}" aria-pressed="${l === tab}">${l}</button>`).join('');
+    $('[data-dp-mstats]', sec).innerHTML = mstat(stats);
+    $('[data-dp-mrows]', sec).innerHTML = rows.join('');
+    $('[data-dp-mnote]', sec).textContent = MNOTE[id];
+    // floor + bottom sheet
+    $('[data-dp-fstats]', sec).innerHTML = mstat([['NEW ORDERS', DP.tables.filter(t => t.st === 0).length], ['IN KITCHEN', DP.tables.filter(t => t.st === 1).length], ['SEATED', DP.tables.filter(t => t.st !== -1).length + '/12']]);
+    $('[data-dp-ftiles]', sec).innerHTML = DP.tables.map((t, i) => { const [l, c] = TST[t.st]; return `<button type="button" class="dp-tile dp-tile--${c}${DP.sheet && DP.oSel === i ? ' sel' : ''}" data-dp-ftile="${i}"><span><b>T${i + 1}</b><em>${t.st === -1 ? '' : t.t}</em></span><small>${l}</small></button>`; }).join('');
+    $('[data-dp-flock]', sec).hidden = S.tableOrder;
+    const sheet = $('[data-dp-sheet]', sec), open = S.tableOrder && DP.sheet;
+    sheet.hidden = !open;
+    if (open) {
+      const sel = DP.tables[DP.oSel], [slabel, scls] = TST[sel.st], acts = { 0: 'Accept · send to kitchen', 1: 'Mark served', 3: 'Bill sent · clear table' };
+      $('[data-dp-sheet-body]', sec).innerHTML = `<i class="dp-sheet__grab"></i><div class="dp-det__h"><span><b>Table ${DP.oSel + 1}</b><small>${sel.st === -1 ? 'Free' : sel.g + ' guests · seated ' + sel.t}</small></span><em class="dp-pill dp-pill--${scls}">${slabel}</em></div>
+        ${sel.st === -1 ? '<p class="dp-det__free">No one seated yet. When guests scan this table’s QR and send an order, it pops up here.</p>' : `
+        <div class="dp-det__items">${sel.items.map(([i, q]) => `<div><span>${DMENU[i][0]}</span><em>×${q}</em><b>${DMENU[i][2] ? peso(DMENU[i][2] * q) : 'Unli'}</b></div>`).join('')}<div class="dp-det__tot"><b>Total so far</b><b>${peso(sel.items.reduce((a, [i, q]) => a + DMENU[i][2] * q, 0))}</b></div></div>
+        <div class="dp-det__steps"><div>${['Sent', 'Kitchen', 'Served', 'Bill'].map((l, i) => `<span class="${sel.st === 3 || (sel.st >= i && i < 3) ? 'on' : ''}"><i></i>${l}</span>`).join('')}</div></div>
+        ${acts[sel.st] ? `<button type="button" class="dp-det__act" data-dp-tact>${acts[sel.st]}</button>` : ''}${sel.st === 2 ? '<button type="button" class="dp-det__clear" data-dp-tclear>Clear table</button>' : ''}`}`;
+    }
+    // pinned bar
+    $('[data-dp-barl]', sec).textContent = plan.name.toUpperCase() + (S.tableOrder ? ' + TABLE ORDERING' : '') + (S.yearly ? ' · YEARLY' : '');
+    $('[data-dp-bart]', sec).textContent = `${peso(priceOf(pkgItem(id)))} + ${peso(planPrice(plan))}/mo`;
+    const cta = $('[data-dp-barcta]', sec);
+    cta.dataset.arg = id;
+    cta.textContent = S.pkg === id ? '✓ Chosen' : 'Choose →';
+  }
+
   function renderPlans() {
     $$('[data-act="yearly"]').forEach(b => { const on = (b.dataset.arg === '1') === S.yearly; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     const sec = $('[data-plans]');
@@ -400,6 +457,7 @@
     $('[data-dp-scope]', sec).textContent = ov ? 'SAMPLE DATA · LIVE FLOOR' : id === 'solo' ? 'SAMPLE DATA · YOUR SHOP' : `SAMPLE DATA · ${n} BRANCHES`;
     $('[data-dp-body]', sec).innerHTML = viewDash(id, n);
     renderTableOrdering(sec);
+    renderPlansMobile(sec, id, n);
   }
   function renderServices() {
     $$('.svc[data-svc]').forEach(el => {
@@ -950,12 +1008,24 @@
       DP.tickets = [{ id: Date.now(), table: 'Table 4', items, order, st: 0 }, ...DP.tickets].slice(0, 4);
       toast(msg);
     };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && DP.sheet) { DP.sheet = false; renderPlans(); } });
     $('[data-dp-range]', plansSec).addEventListener('input', e => set({ locIdx: +e.target.value, plan: planAt(+e.target.value) }));
     plansSec.addEventListener('click', e => {
+      const m = e.target.closest('[data-dp-plan],[data-dp-step],[data-dp-more],[data-dp-mtab],[data-dp-ftile],[data-dp-sheet-close]');
+      if (m) {
+        const md = m.dataset;
+        if (md.dpPlan) { DP.mTab = 0; return set({ plan: md.dpPlan, locIdx: FIRST_STOP[md.dpPlan] }); }
+        if (md.dpStep) { const next = S.locIdx + +md.dpStep; return planAt(next) === S.plan && next >= 0 && next < STOPS.length ? set({ locIdx: next }) : undefined; }
+        if ('dpMore' in md) DP.more = !DP.more;
+        else if (md.dpMtab) DP.mTab = +md.dpMtab;
+        else if (md.dpFtile) { DP.oSel = +md.dpFtile; DP.sheet = true; }
+        else DP.sheet = false;
+        return renderPlans();
+      }
       const t = e.target.closest('[data-dp-nav-item],[data-dp-table],[data-dp-tact],[data-dp-tclear],[data-dp-etab],[data-to-qty],[data-to-quick],[data-to-send],[data-to-tk],[data-to-q],[data-to-quote]');
       if (!t) return;
       const ds = t.dataset, sel = DP.tables[DP.oSel];
-      if (ds.dpNavItem) DP.oView = ds.dpNavItem === 'Orders';
+      if (ds.dpNavItem) { DP.oView = ds.dpNavItem === 'Orders'; DP.mTab = 0; }
       else if (ds.dpTable) DP.oSel = +ds.dpTable;
       else if ('dpTact' in ds) Object.assign(sel, sel.st === 3 ? { st: -1, items: [] } : { st: sel.st + 1 });
       else if ('dpTclear' in ds) Object.assign(sel, { st: -1, items: [] });
