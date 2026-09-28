@@ -303,12 +303,6 @@ select.field__in { appearance: none; background-image: linear-gradient(45deg, tr
 .hm-seg--2 button { border-radius: 99px; }
 .hm-seg--3 button.on { background: var(--lime); color: var(--bg); }
 .hm-seg--2 button.on { background: var(--fg); color: var(--bg); }
-.hm-app { display: flex; align-items: center; gap: 16px; padding: 14px 14px 14px 22px; border-radius: 22px; background: #111113; box-shadow: inset 0 0 0 1px var(--l2); flex-wrap: wrap; }
-.hm-app b { font-size: 16px; }
-.hm-app > span:not(.tf-mark):not(.hm-app__chips) { font-size: 15px; color: var(--m3); }
-.hm-app__chips { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
-.hm-app__chips em { padding: 7px 11px; border-radius: 99px; background: #1c1c1f; font-size: 13px; font-weight: 600; font-style: normal; }
-.hm-app > a { font-size: 14px; font-weight: 700; white-space: nowrap; }
 @media (max-width: 1100px) { .hm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .hm__copy { grid-column: 1 / -1; } }
 @media (max-width: 640px) {
   .hm-d { display: none !important; }
@@ -343,6 +337,30 @@ select.field__in { appearance: none; background-image: linear-gradient(45deg, tr
   .hm__cta.hm-m { flex-direction: column; align-items: stretch; gap: 10px; }
   .hm-cta { height: 52px; font-size: 16px; }
   .hm-cta2 { height: 50px; font-size: 15px; }
+}
+
+.hm-solo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 22px; padding: 16px 16px 16px 24px; border-radius: 24px; background: var(--lime); color: var(--bg); }
+.hm-solo__t { display: flex; flex-direction: column; gap: 4px; }
+.hm-solo__k { display: flex; align-items: center; gap: 8px; font: 700 11px var(--mono); letter-spacing: .08em; --leaf: var(--bg); }
+.hm-solo__t b { font-size: 20px; letter-spacing: -.03em; white-space: nowrap; }
+.hm-solo__chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.hm-solo__chips em { padding: 7px 11px; border-radius: 99px; background: rgba(10,10,11,.1); font-size: 13px; font-weight: 600; font-style: normal; }
+.hm-solo__p { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.hm-solo__p b { font-size: 26px; letter-spacing: -.05em; line-height: 1; white-space: nowrap; }
+.hm-solo__p small { font: 600 12px var(--mono); white-space: nowrap; }
+.hm-solo__cta { display: flex; align-items: center; justify-content: center; height: 52px; padding: 0 24px; border-radius: 99px; background: var(--bg); color: var(--fg); font-size: 16px; font-weight: 700; white-space: nowrap; transition: color .2s; }
+.hm-solo__cta:hover { color: var(--lime); }
+@media (max-width: 1100px) { .hm-solo { grid-template-columns: minmax(0, 1fr) auto; } .hm-solo__chips { grid-column: 1 / -1; grid-row: 2; } .hm-solo__p { grid-row: 1; grid-column: 2; } .hm-solo__cta { grid-column: 1 / -1; } }
+@media (max-width: 640px) {
+  .hm-solo { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 16px; border-radius: 22px; margin-top: -8px; }
+  .hm-solo__t { display: contents; }
+  .hm-solo__k { grid-column: 1; grid-row: 1; font-size: 10px; }
+  .hm-solo__t b { grid-column: 1 / -1; grid-row: 2; font-size: 19px; }
+  .hm-solo__p { grid-column: 2; grid-row: 1; flex-direction: row; align-items: baseline; gap: 4px; }
+  .hm-solo__p b, .hm-solo__p small { font: 700 15px 'Instrument Sans', sans-serif; letter-spacing: 0; }
+  .hm-solo__chips { grid-column: 1 / -1; grid-row: 3; gap: 5px; }
+  .hm-solo__chips em { padding: 5px 9px; font-size: 12px; }
+  .hm-solo__cta { grid-column: 1 / -1; grid-row: 4; height: 46px; font-size: 15px; }
 }
 
 /* ================= 01 · build your setup · 2b program it now ================= */

@@ -45,14 +45,14 @@
         </div>
       </div>
 
-      <div class="hm__cta hm-m"><button type="button" class="btn btn--lime hm-cta" data-act="heroOrder" data-hero-cta>Get this stand →</button><a class="hm-cta2" href="#app">{{ s.cta2 | escape }}</a></div>
+      <div class="hm__cta hm-m"><button type="button" class="btn btn--lime hm-cta" data-act="heroOrder" data-hero-cta>Get this stand →</button></div>
     </div>
 
-    <div class="hm-app hm-d">
-      {% render 'tf-mark', px: 22 %}
-      <b>The tapfour app</b><span>makes the busy parts easy:</span>
-      <span class="hm-app__chips"><em>Live menu</em><em>Table orders</em><em>Inventory &amp; billing tracking</em><em>Dashboard</em><em>Edit links anytime</em></span>
-      <a href="#app">See the app ↓</a>
+    <div class="hm-solo">
+      <span class="hm-solo__t"><span class="hm-solo__k">{% render 'tf-mark', px: 18 %}SOLO PACKAGE</span><b>5 stands + the tapfour app</b></span>
+      <span class="hm-solo__chips"><em>Live menu</em><em>Dashboard</em><em>Inventory &amp; billing tracking</em><em>Tap-to-join Wi-Fi</em><em>Edit links anytime</em></span>
+      <span class="hm-solo__p"><b data-solo-up>₱3,000</b><small data-solo-mo>+ ₱299/mo</small></span>
+      <button type="button" class="hm-solo__cta" data-act="planCta" data-arg="solo">Get Solo →</button>
     </div>
   </div>
 </section>
@@ -66,7 +66,7 @@
     { "type": "text", "id": "title_1", "label": "Title line 1", "default": "Climb the map." },
     { "type": "text", "id": "title_2", "label": "Title line 2 (lime)", "default": "Fill the tables." },
     { "type": "textarea", "id": "subtitle", "label": "Subtitle", "default": "A one-star rise in rating can lift restaurant revenue by 5–⁠9% (Harvard Business School). The stand puts your Google review one tap away for every happy guest." },
-    { "type": "text", "id": "cta2", "label": "Second button", "default": "Solo + the app" },
+    { "type": "text", "id": "cta2", "label": "Second button", "default": "See the tapfour app ↓" },
     { "type": "text", "id": "search", "label": "Map search text", "default": "coffee near me" }
   ],
   "presets": [{ "name": "Tapfour hero" }]

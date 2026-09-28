@@ -457,6 +457,8 @@
     $('[data-hero-now]', hero).textContent = peso(c.now);
     $('[data-hero-was]', hero).textContent = c.was > c.now ? peso(c.was) : '';
     $$('[data-hero-cta]', hero).forEach(b => { b.textContent = `Get this stand · ${peso(c.now)} →`; });
+    $('[data-solo-up]', hero).textContent = peso(priceOf(pkgItem('solo')));
+    $('[data-solo-mo]', hero).textContent = `+ ${peso(planPrice(PLANS[0]))}/mo`;
     $$('[data-act="heroFace"]', hero).forEach(b => { const on = b.dataset.arg === face; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     $$('[data-act="finish"]', hero).forEach(b => { const on = b.dataset.arg === S.finish; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     $$('[data-act="heroBa"]', hero).forEach(b => { const on = (b.dataset.arg === '1') === S.heroAfter; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });

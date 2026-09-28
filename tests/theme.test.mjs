@@ -171,6 +171,12 @@ test('hero map climb + builder: face, finish, links and the guest preview', asyn
   $('[data-act="pv"][data-arg="1"]').click();
   assert.match($('#tf-preview').textContent, /SCANNED · YOUR MENU/);
 
+  // The Solo strip under the hero puts the Solo package in the builder; "Pick one stand instead" undoes it.
+  assert.match($('.hm-solo').textContent, /₱3,000.*\+ ₱299\/mo/s);
+  $('.hm-solo__cta').click();
+  assert.match($('#tf-stand').textContent, /Solo package · 5 Review \+ Menu stands/);
+  $('[data-act="pkgClear"]').click();
+
   // "Send it later" skips the menu step; the order says so.
   $('[data-act="menuHow"][data-arg="3"]').click();
   $('[data-act="order"]').click();
@@ -180,6 +186,7 @@ test('hero map climb + builder: face, finish, links and the guest preview', asyn
   assert.equal(sent.items[0].id, white);
   assert.equal(sent.items[0].properties.Finish, 'Glossy White');
   assert.equal(sent.items[0].properties.Menu, 'Customer will send it after checkout');
+
 });
 
 test('02 app section: table ordering add-on and the counter demo', async t => {
@@ -217,7 +224,7 @@ test('02 app section: table ordering add-on and the counter demo', async t => {
 
 test('every homepage section keeps its styles', async () => {
   const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
-  for (const sel of ['.hm-map', '.hm-card', '.bl-card', '.bl-ph', '.ax-row', '.ax-tablet', '.ax-gphone', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+  for (const sel of ['.hm-map', '.hm-card', '.hm-solo', '.bl-card', '.bl-ph', '.ax-row', '.ax-tablet', '.ax-gphone', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
     assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
 });
 
