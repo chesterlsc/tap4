@@ -180,6 +180,7 @@ test('hero map climb + builder: face, finish, links and the guest preview', asyn
   // "Send it later" skips the menu step; the order says so.
   $('[data-act="menuHow"][data-arg="3"]').click();
   $('[data-act="order"]').click();
+  assert.match($('.co-item img').getAttribute('src'), /tapfour-l-white-menu/, 'checkout shows the chosen stand');
   $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
   const white = catalog['tap4-l-stand'].variants.find(v => v.title === 'Glossy White').id;

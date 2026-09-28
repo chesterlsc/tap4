@@ -322,7 +322,8 @@ select.field__in { appearance: none; background-image: linear-gradient(45deg, tr
   .hm-rank > span b { font-size: 14px; }
   .hm-rank small { font-size: 11.5px; }
   .hm-rank small i, .hm-rank em { display: none; }
-  .hm-map__f { padding: 0; }
+  .hm-map__f { padding: 0; flex-wrap: wrap; justify-content: center; row-gap: 6px; }
+  .hm-map__f small { order: 2; }
   .hm-ba { flex: 1; display: grid; grid-template-columns: 1fr 1fr; }
   .hm-ba button { height: 38px; }
   .hm__p.hm-m { display: block !important; font-size: 15px; line-height: 1.45; }

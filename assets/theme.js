@@ -607,7 +607,7 @@
     const r = prepare();
     if (r.error) { closeCheckout(); return set({ error: r.error }); }
     const { d } = r, st = steps(), i = CO.info;
-    const ph = shotFor(d.prod.id, d);
+    const ph = shotFor(d);
     const line = (name, price, sub = '') => `<div class="co-line"><span><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><em>${price}</em></div>`;
     const extras = [
       d.hwMenuFee ? line(HW_MENU.name, peso(d.hwMenuFee)) : '',
