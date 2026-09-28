@@ -1,58 +1,61 @@
-<section id="build" class="sec" data-builder>
-  <div class="sec__head">
-    <div class="sec__titles">
-      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
-      <h2 class="h2">{{ section.settings.title | escape }}</h2>
-    </div>
-    <div class="bld-trust mono-12"><span>✓ FREE SHIPPING</span><span>✓ PAY ONCE</span><span>✓ NO APP FOR GUESTS</span></div>
+{%- comment -%}
+  01 · Build your setup ("2b · program it now"). The stand is picked in the hero; here it gets its finish,
+  quantity and links, with a live preview of what a guest sees. Rendered and validated by theme.js.
+{%- endcomment -%}
+<section id="build" class="sec bl" data-builder>
+  <div class="sec__titles">
+    <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
+    <h2 class="h2">{{ section.settings.title_1 | escape }}<br>{{ section.settings.title_2 | escape }}</h2>
   </div>
 
-  <div class="bld">
-    <div class="bld-pv" id="tf-preview"></div>
+  <div class="bl__grid">
+    <div class="bl__main">
+      <div class="bl-card bl-stand" id="tf-stand"></div>
 
-    <div class="stack-14">
-      <div class="step step--pkg" id="tf-pkg" hidden></div>
-
-      <div class="step" id="tf-step-stand">
-        <div class="step__h"><span class="step__n">1</span><b>Choose a stand</b><em>GLOSSY ACRYLIC · NFC</em></div>
-        <div class="bld-2" id="tf-stands"></div>
-      </div>
-
-      <div class="step" id="tf-step-face">
-        <div class="step__h"><span class="step__n">2</span><b id="tf-face-title">Pick the face</b><em id="tf-face-tag"></em></div>
-        <div id="tf-faces"></div>
-      </div>
-
-      <div class="step">
-        <div class="step__h"><span class="step__n" id="tf-n-fin">3</span><b id="tf-fin-title">Finish &amp; quantity</b></div>
-        <div class="row-between wrap">
-          <div class="bld-fin" id="tf-finish" role="group" aria-label="Finish"></div>
-          <div class="qty" id="tf-qty-wrap">
-            <button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button>
-            <output id="tf-qty">1</output>
-            <button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button>
-          </div>
+      <div class="bl-card bl-fin">
+        <b class="bl-d">Finish &amp; how many</b>
+        <div class="bl-seg bl-seg--fin" id="tf-finish" role="group" aria-label="Finish"></div>
+        <div class="qty" id="tf-qty-wrap">
+          <button type="button" data-act="qty" data-arg="-1" aria-label="Decrease quantity">−</button>
+          <output id="tf-qty">1</output>
+          <button type="button" class="on" data-act="qty" data-arg="1" aria-label="Increase quantity">+</button>
         </div>
       </div>
 
-      <div class="step">
-        <div class="step__h"><span class="step__n" id="tf-n-links">4</span><b>Your links</b><em>WE PROGRAM THESE</em></div>
-        <label class="lf"><span class="lf__h"><span>Business name</span><em>For your order · not printed</em></span><input id="tf-name" maxlength="40" autocomplete="organization" placeholder="e.g. Kape Norte"></label>
-        <div class="stack-14" id="tf-links"></div>
+      <label class="bl-card bl-field">
+        <span class="bl-card__h"><b>Google Maps link</b><small class="bl-d">WE FIND YOUR REVIEW LINK FROM IT</small></span>
+        <input id="tf-url-google" data-url="google" type="url" inputmode="url" autocomplete="url" placeholder="https://maps.app.goo.gl/…">
+        <span class="bl-msg" id="tf-link-msg">Open your shop in Google Maps → Share → Copy link. Paste it here.</span>
+      </label>
+
+      <div class="bl-card" id="tf-menu-how" hidden>
+        <div class="bl-card__h"><b>Your menu</b><small>WE TYPE IT UP · PRINTED QR</small></div>
+        <div class="bl-opts" role="group" aria-label="How you'll send your menu"></div>
       </div>
 
-      <div class="step" id="tf-extra"></div>
+      <div class="bl-card bl-soc" id="tf-socials" hidden>
+        <b>Your socials</b>
+        <label><small>FACEBOOK</small><input id="tf-url-facebook" data-url="facebook" type="url" inputmode="url" placeholder="facebook.com/…"></label>
+        <label><small>INSTAGRAM</small><input id="tf-url-instagram" data-url="instagram" type="url" inputmode="url" placeholder="instagram.com/yourshop"></label>
+        <label><small>TIKTOK</small><input id="tf-url-tiktok" data-url="tiktok" type="url" inputmode="url" placeholder="tiktok.com/@yourshop"></label>
+      </div>
 
-      <div class="sum" id="tf-summary"></div>
+      <div class="bl-ready" id="tf-summary"></div>
+      <p class="bld-note">Not ready? Skip it and send your links after checkout.</p>
+
+      <a class="bl-app" href="#app">
+        {% render 'tf-mark', px: 26 %}
+        <span><small class="bl-d">WANT TO CHANGE LINKS LATER?</small><b><span class="bl-d">The tapfour app lets you edit links, run your menu and see every tap.</span><span class="bl-m">Change links later with the app</span></b><small class="bl-m">Menu, stats, every tap.</small></span>
+        <em>See<span class="bl-d">&nbsp;the app</span>&nbsp;↓</em>
+      </a>
     </div>
+
+    <div class="bl-pv" id="tf-preview"></div>
   </div>
+
   <div class="order-bar" id="tf-bar" aria-hidden="true">
-    <div class="order-bar__sum"><span>YOUR SETUP</span><b id="tf-bar-total"></b></div>
-    <button type="button" class="btn btn--lime" data-to-summary tabindex="-1">Checkout →</button>
-  </div>
-  <div class="co co--pop" id="tf-app" hidden>
-    <div class="co__scrim" data-app-close></div>
-    <div class="co__panel" role="dialog" aria-modal="true" aria-labelledby="app-title"></div>
+    <div class="order-bar__sum"><span id="tf-bar-lbl">YOUR SETUP</span><b id="tf-bar-total"></b></div>
+    <button type="button" class="btn btn--dark" data-to-summary tabindex="-1">Checkout →</button>
   </div>
   <div class="co" id="tf-checkout" hidden>
     <div class="co__scrim" data-co-close></div>
@@ -65,7 +68,8 @@
   "name": "Setup builder",
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "01 — BUILD YOUR SETUP" },
-    { "type": "text", "id": "title", "label": "Title", "default": "Four choices. We program it and ship." }
+    { "type": "text", "id": "title_1", "label": "Title line 1", "default": "Paste one link." },
+    { "type": "text", "id": "title_2", "label": "Title line 2", "default": "See what guests get." }
   ],
   "presets": [{ "name": "Setup builder" }]
 }

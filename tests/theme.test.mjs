@@ -26,15 +26,12 @@ test('builder sends the configured setup to /cart/add.js', async t => {
 
   const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
   assert.match($('#tf-summary').textContent, /₱1,398/); // Review + Menu is the default face
-  $('[data-act="order"]').click();
-  assert.match($('#tf-summary').textContent, /business name/, 'asks who the order is for');
-  input($('#tf-name'), 'Kape Norte');
   input($('#tf-url-google'), 'https://example.com/kape');
-  assert.match($('#tf-links').textContent, /Not a Google Maps link/);
+  assert.match($('#tf-link-msg').textContent, /doesn’t look like a Google Maps link/);
   $('[data-act="order"]').click();
   assert.match($('#tf-summary').textContent, /Google Maps link/, 'blocks a link that is not from Google Maps');
   input($('#tf-url-google'), 'https://maps.app.goo.gl/KapeNorte123');
-  assert.match($('#tf-links').textContent, /Looks right/);
+  assert.match($('#tf-link-msg').textContent, /Found it/);
   $('[data-act="order"]').click();
   assert.ok(!$('#tf-checkout').hidden, 'checkout panel opens');
   $('.co-cta').click(); // review -> menu (printed QR menu needs one)
@@ -51,7 +48,6 @@ test('builder sends the configured setup to /cart/add.js', async t => {
   assert.deepEqual(sent.body.items.map(i => i.id), [id('tap4-l-stand'), id('printed-qr-menu')]); // Glossy Black is the first variant
   assert.equal(sent.body.items[0].properties.Finish, 'Glossy Black');
   assert.equal(sent.body.items[0].properties.Design, 'Review + QR menu');
-  assert.equal(sent.body.items[0].properties['Business name'], 'Kape Norte');
   assert.equal(sent.body.items[0].properties['Google Maps link'], 'https://maps.app.goo.gl/KapeNorte123');
   assert.equal(sent.body.items[0].properties['Google review link'], 'tapfour sets it up from the Maps link');
   assert.equal(sent.body.items[0].properties['Menu link'], 'https://drive.google.com/menu');
@@ -71,9 +67,6 @@ test('static site (tap4.ph) sends the order by email', async t => {
   w.scrollTo = () => {};
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
   const $ = s => w.document.querySelector(s);
-  const name = $('#tf-name');
-  name.value = 'Kape Norte';
-  name.dispatchEvent(new w.Event('input', { bubbles: true }));
   const url = $('#tf-url-google');
   url.value = 'https://maps.app.goo.gl/KapeNorte123';
   url.dispatchEvent(new w.Event('input', { bubbles: true }));
@@ -86,9 +79,9 @@ test('static site (tap4.ph) sends the order by email', async t => {
   items.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('.co-cta').click(); // menu -> details
   $('.co-cta').click(); // details are required
-  assert.match($('.co-foot').textContent, /Enter your name/);
+  assert.match($('.co-foot').textContent, /Enter your business name/);
   const fill = (id, v) => { const el = $('#co-' + id); el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
-  fill('name', 'Juan Dela Cruz'); fill('phone', '0917 123 4567'); fill('address', '12 Session Rd, Baguio');
+  fill('business', 'Kape Norte'); fill('name', 'Juan Dela Cruz'); fill('phone', '0917 123 4567'); fill('address', '12 Session Rd, Baguio');
   $('.co-cta').click(); // details -> confirm
   $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
@@ -121,7 +114,7 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
   const tick = () => new Promise(r => setTimeout(r, 0));
 
-  input($('#tf-name'), 'Ana’s Café'); // Google link left blank: sent after checkout
+  // Google link left blank: sent after checkout
   $('[data-act="order"]').click();
   $('.co-cta').click(); // review -> menu
   const files = $('#co-menuFiles');
@@ -131,7 +124,7 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   assert.equal(uploadedTo, 'https://go.example/upload/menu');
   assert.match($('.co-files').textContent, /Uploaded/);
   $('.co-cta').click(); // menu -> details
-  input($('#co-name'), 'Ana Reyes'); input($('#co-phone'), '0917 000 0001'); input($('#co-address'), 'Maginhawa St, QC');
+  input($('#co-business'), 'Ana’s Café'); input($('#co-name'), 'Ana Reyes'); input($('#co-phone'), '0917 000 0001'); input($('#co-address'), 'Maginhawa St, QC');
   $('.co-cta').click(); // details -> confirm
   $('[data-co-submit]').click();
   const body = decodeURIComponent(opened.split('&body=')[1]);
@@ -139,98 +132,54 @@ test('checkout uploads a menu file and puts its link in the order email', async 
   assert.match(body, /Google Maps link: To be provided after checkout/);
 });
 
-test('TAP4.1: finish switches the variant and photos, designs set the add-ons', async t => {
+test('hero map climb + builder: face, finish, links and the guest preview', async t => {
   const { pages, catalog } = await site;
   const dom = new JSDOM(pages.get('/'), { runScripts: 'dangerously', url: 'http://localhost/', virtualConsole: new VirtualConsole() });
   const w = dom.window;
   t.after(() => w.close());
   let sent;
   w.fetch = async (url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({}) }; };
-  w.structuredClone ??= structuredClone;
   w.scrollTo = () => {};
   w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
   const $ = s => w.document.querySelector(s);
-  const photo = () => $('.pv-photo img').getAttribute('src');
+  const heroImg = () => $('[data-hero-img]').getAttribute('src'), thumb = () => $('#tf-stand img').getAttribute('src');
 
-  // Hero opens on Review + Menu (best for cafés); picking a face in the hero drives the builder.
-  assert.match(photo(), /tapfour-l-black-menu/);
-  assert.equal($('[data-offer-name]').textContent, 'Review + Menu');
+  // Hero opens on the Review + QR menu stand; the map shows your shop at #1 "with tapfour".
+  assert.match(heroImg(), /tapfour-l-black-menu/);
+  assert.equal($('[data-hero-name]').textContent, 'Review + QR menu stand');
+  assert.match($('[data-hero-cta]').textContent, /Get this stand · ₱1,398/);
+  assert.match($('.hm-rank').textContent, /#1Your shop/);
+  $('[data-act="heroBa"][data-arg="0"]').click();
+  assert.match($('.hm-rank').textContent, /Café Uno/);
+  assert.match(w.document.querySelectorAll('.hm-rank')[2].textContent, /#3Your shop.*18 reviews/s);
+
+  // Picking a face or finish in the hero drives the builder.
   $('[data-act="heroFace"][data-arg="review"]').click();
-  assert.match(photo(), /tapfour-l-black-review/);
-  assert.equal($('[data-offer-now]').textContent, '₱899');
-  assert.equal($('[data-offer-cta]').textContent, 'Order Review →');
-  $('[data-act="finish"][data-arg="white"]').click();
-  assert.match($('.h4-face.on img').getAttribute('src'), /tapfour-l-white-review/);
-  assert.match(photo(), /tapfour-l-white-review/);
+  assert.equal($('[data-hero-now]').textContent, '₱899');
+  assert.match(thumb(), /tapfour-l-black-review/);
+  assert.match($('#tf-preview').textContent, /WRITE A REVIEW/);
+  $('.hm-seg [data-act="finish"][data-arg="white"]').click();
+  assert.match(heroImg(), /tapfour-l-white-review/);
+  assert.match(thumb(), /tapfour-l-white-review/);
   $('[data-act="design"][data-arg="links"]').click();
-  assert.match(photo(), /tapfour-l-white-links/);
+  assert.ok(!$('#tf-socials').hidden, '4-in-1 asks for the socials');
   assert.match($('#tf-summary').textContent, /₱1,249/); // 899 + 350 links page
+  assert.match($('#tf-preview').textContent, /Like us on Facebook/);
   $('[data-act="design"][data-arg="menu"]').click();
-  assert.match(photo(), /tapfour-l-white-menu/);
+  assert.ok($('#tf-socials').hidden && !$('#tf-menu-how').hidden);
   assert.match($('#tf-summary').textContent, /₱1,398/); // 899 + 499 menu
+  $('[data-act="pv"][data-arg="1"]').click();
+  assert.match($('#tf-preview').textContent, /SCANNED · YOUR MENU/);
 
-  const name = $('#tf-name');
-  name.value = 'Kape Norte';
-  name.dispatchEvent(new w.Event('input', { bubbles: true }));
+  // "Send it later" skips the menu step; the order says so.
+  $('[data-act="menuHow"][data-arg="3"]').click();
   $('[data-act="order"]').click();
-  $('.co-cta').click();
-  const menu = $('#co-menuLink');
-  menu.value = 'https://drive.google.com/menu';
-  menu.dispatchEvent(new w.Event('input', { bubbles: true }));
   $('[data-co-submit]').click();
   await new Promise(r => setTimeout(r, 0));
   const white = catalog['tap4-l-stand'].variants.find(v => v.title === 'Glossy White').id;
   assert.equal(sent.items[0].id, white);
   assert.equal(sent.items[0].properties.Finish, 'Glossy White');
-});
-
-test('4-Tap Bar and the tapfour app popup', async t => {
-  const preview = await createPreview({ orderEmail: 'orders@example.com' });
-  const { html } = await preview.renderPage('/');
-  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
-  const w = dom.window;
-  t.after(() => w.close());
-  let opened;
-  w.TF.open = url => { opened = url; };
-  w.scrollTo = () => {};
-  w.requestAnimationFrame = f => f();
-  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
-  const $ = s => w.document.querySelector(s);
-  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
-
-  $('[data-act="stand"][data-arg="quad"]').click();
-  assert.match($('.pv-photo img').getAttribute('src'), /bar-4tap/);
-  assert.equal(w.document.querySelectorAll('.zone').length, 4);
-  $('.zone[data-arg="3"]').click(); // TikTok -> Website
-  assert.match($('.pv-url').textContent, /Google · Facebook · Instagram · Website/);
-  assert.match($('#tf-summary').textContent, /₱1,490/);
-
-  $('.appx__main').click(); // tapping the app in Optional extras opens its features
-  assert.ok(!$('#tf-app').hidden, 'app popup opens');
-  assert.doesNotMatch($('#tf-summary').textContent, /tapfour app/, 'not added until confirmed');
-  assert.match($('#tf-app').textContent, /Order from the table/);
-  assert.match($('#tf-app').textContent, /Tap-to-join Wi-Fi/);
-  assert.match($('#tf-app').textContent, /Included in every plan/);
-  $('#tf-app [data-act="tableOrder"]').click(); // the one add-on: quote-priced, nothing charged now
-  assert.match($('#tf-app [data-act="appAdd"]').textContent, /₱299\/mo \+ quote/);
-  $('#tf-app [data-act="appAdd"]').click();
-  assert.match($('#tf-summary').textContent, /tapfour app · Solo/);
-  assert.match($('#tf-summary').textContent, /Table ordering · we send your quote/);
-  assert.match($('#tf-summary').textContent, /Then ₱299\/mo/);
-
-  input($('#tf-name'), 'Kape Norte');
-  $('[data-act="order"]').click();
-  assert.ok(!$('#tf-checkout').hidden, 'checkout opens with blank zone links');
-  $('.co-cta').click(); // review -> details (no printed menu on the bar)
-  const fill = (id, v) => input($('#co-' + id), v);
-  fill('name', 'Juan'); fill('phone', '0917 123 4567'); fill('address', 'Baguio');
-  $('.co-cta').click();
-  $('[data-co-submit]').click();
-  const body = decodeURIComponent(opened.split('&body=')[1]);
-  assert.match(body, /Setup: 4-Tap Bar \+ tapfour app/);
-  assert.match(body, /Tap zones: Google, Facebook, Instagram, Website/);
-  assert.match(body, /Table ordering: Yes — send a quote/);
-  assert.match(body, /Monthly: ₱299/);
+  assert.equal(sent.items[0].properties.Menu, 'Customer will send it after checkout');
 });
 
 test('02 app section: table ordering add-on and the counter demo', async t => {
@@ -268,7 +217,7 @@ test('02 app section: table ordering add-on and the counter demo', async t => {
 
 test('every homepage section keeps its styles', async () => {
   const css = await fs.readFile(path.join(ROOT, 'assets/theme.css'), 'utf8');
-  for (const sel of ['.h4-face', '.bo', '.ax-row', '.ax-tablet', '.ax-gphone', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.pkgc', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
+  for (const sel of ['.hm-map', '.hm-card', '.bl-card', '.bl-ph', '.ax-row', '.ax-tablet', '.ax-gphone', '.dp-plan', '.dp-dash', '.dp-tile', '.dp-to', '.svc', '.reseller', '.site-footer', '.cart', '.co__panel'])
     assert.match(css, new RegExp('^\\s*' + sel.replace('.', '\\.') + '[\\s{,.:]', 'm'), sel + ' has no styles');
 });
 
@@ -337,24 +286,24 @@ test('03 packages: slider, table-ordering demo and ordering a package', async t 
 
   // Choosing the package puts it in the setup and the order.
   $('.dp-plan:not([hidden]) [data-act="planCta"]').click();
-  assert.ok(!$('#tf-pkg').hidden && $('#tf-step-stand').hidden, 'builder shows the package instead of the stand steps');
-  assert.match($('#tf-summary').textContent, /Business package · 20 × Review \+ Menu/);
+  assert.match($('#tf-stand').textContent, /Business package · 20 Review \+ Menu stands/);
+  assert.ok($('#tf-qty-wrap').hidden, 'a package has a fixed number of stands');
   assert.match($('#tf-summary').textContent, /₱12,000/);
-  assert.match($('#tf-summary').textContent, /Then ₱799\/mo/);
-  input($('#tf-name'), 'Kape Norte');
+  assert.match($('#tf-summary').textContent, /\+ ₱799\/mo app · table ordering quote/);
   $('[data-act="order"]').click();
   $('.co-cta').click(); // review -> menu (Review + Menu stands)
   input($('#co-menuText'), 'Latte — ₱150');
   $('.co-cta').click();
-  input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
+  input($('#co-business'), 'Kape Norte'); input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
   $('.co-cta').click();
   $('[data-co-submit]').click();
   const body = decodeURIComponent(opened.split('&body=')[1]);
+  assert.match(body, /Business name: Kape Norte/);
   assert.match(body, /Setup: Business package/);
   assert.match(body, /Stands: 20 × TAP4\.1 L-Stand/);
   assert.match(body, /Table ordering: Yes — send a quote/);
   assert.match(body, /One-time: ₱12,000/);
   assert.match(body, /Monthly: ₱799/);
   $('[data-act="pkgClear"]').click();
-  assert.ok($('#tf-pkg').hidden, 'back to a custom setup');
+  assert.match($('#tf-stand').textContent, /YOUR STAND · PICKED ABOVE/, 'back to one stand');
 });
