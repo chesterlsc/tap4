@@ -1,0 +1,278 @@
+{%- comment -%}
+  How it works · the 61 s Tapfour Connect film, placed directly under the hero.
+  Muted autoplay loop (no audio track) with captions from the .vtt shown in a strip under the film; "Play with sound"
+  switches to the narrated cut. Chapter chips seek the film; their ↓ links jump to the matching section.
+  Files: leave a URL setting blank to use the file of the same name in assets/ (see output/howitworks/README.md).
+  Loads nothing until the player nears the viewport. prefers-reduced-motion: poster only until the viewer presses play.
+{%- endcomment -%}
+{%- liquid
+  assign s = section.settings
+  assign d_mp4 = s.desktop_mp4 | default: 'tapfour-hiw-16x9.mp4'
+  assign d_webm = s.desktop_webm | default: 'tapfour-hiw-16x9.webm'
+  assign m_mp4 = s.mobile_mp4 | default: 'tapfour-hiw-4x5.mp4'
+  assign m_webm = s.mobile_webm | default: 'tapfour-hiw-4x5.webm'
+  assign d_snd = s.desktop_sound | default: 'tapfour-hiw-16x9-vo.mp4'
+  assign m_snd = s.mobile_sound | default: 'tapfour-hiw-4x5-vo.mp4'
+  assign d_poster = s.desktop_poster | default: 'tapfour-hiw-poster-16x9.jpg'
+  assign m_poster = s.mobile_poster | default: 'tapfour-hiw-poster-4x5.jpg'
+  assign vtt = s.captions | default: 'tapfour-hiw-en.vtt'
+  unless s.desktop_mp4 contains '/'
+    assign d_mp4 = d_mp4 | asset_url
+  endunless
+  unless s.desktop_webm contains '/'
+    assign d_webm = d_webm | asset_url
+  endunless
+  unless s.mobile_mp4 contains '/'
+    assign m_mp4 = m_mp4 | asset_url
+  endunless
+  unless s.mobile_webm contains '/'
+    assign m_webm = m_webm | asset_url
+  endunless
+  unless s.desktop_sound contains '/'
+    assign d_snd = d_snd | asset_url
+  endunless
+  unless s.mobile_sound contains '/'
+    assign m_snd = m_snd | asset_url
+  endunless
+  unless s.desktop_poster contains '/'
+    assign d_poster = d_poster | asset_url
+  endunless
+  unless s.mobile_poster contains '/'
+    assign m_poster = m_poster | asset_url
+  endunless
+  unless s.captions contains '/'
+    assign vtt = vtt | asset_url
+  endunless
+-%}
+<section id="how" class="sec hiw" data-hiw aria-labelledby="hiw-t">
+  <div class="sec__titles">
+    <div class="eyebrow">{{ s.eyebrow | escape }}</div>
+    <h2 class="h2" id="hiw-t">{{ s.title | escape }}</h2>
+  </div>
+
+  <div class="hiw__player">
+    <div class="hiw__stage">
+      <video class="hiw__v" muted playsinline loop preload="none" poster="{{ d_poster }}" aria-label="{{ s.video_label | escape }}"
+        data-d-mp4="{{ d_mp4 }}" data-d-webm="{{ d_webm }}" data-d-snd="{{ d_snd }}"
+        data-m-mp4="{{ m_mp4 }}" data-m-webm="{{ m_webm }}" data-m-snd="{{ m_snd }}" data-m-poster="{{ m_poster }}">
+        <track kind="captions" srclang="en" label="English" src="{{ vtt }}" default>
+      </video>
+    </div>
+    <div class="hiw__bar">
+      <p class="hiw__cap" data-hiw-cap aria-hidden="true">{{ s.idle_caption | escape }}</p>
+      <div class="hiw__ctl">
+        <button type="button" class="hiw__btn hiw__btn--icon" data-hiw-pp aria-label="Pause film" hidden><i class="hiw__i-pause" aria-hidden="true"></i></button>
+        <button type="button" class="hiw__btn hiw__btn--lime" data-hiw-snd><i class="hiw__i-play" aria-hidden="true"></i><span>Play with sound</span></button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="hiw__chips" aria-label="Film chapters">
+    {%- for block in section.blocks -%}
+      {%- assign b = block.settings -%}
+      <div class="hiw-chip" data-hiw-chip data-t="{{ b.start }}" data-end="{{ b.end }}" {{ block.shopify_attributes }}>
+        <button type="button" aria-label="Play {{ b.num | escape }} {{ b.label | escape }} in the film"><b>{{ b.num | escape }}</b>{{ b.label | escape }}<i aria-hidden="true"></i></button>
+        <a href="{{ b.anchor }}" aria-label="Go to {{ b.num | escape }} {{ b.label | escape }} on this page">↓</a>
+      </div>
+    {%- endfor -%}
+  </nav>
+
+  {%- if s.transcript != blank -%}
+    <details class="hiw__tx"><summary>Transcript</summary><div>{{ s.transcript | newline_to_br }}</div></details>
+  {%- endif -%}
+</section>
+
+<style>
+  .hiw { padding-top: 88px; gap: 28px; }
+  .hiw__player { border-radius: 28px; background: var(--card); box-shadow: inset 0 0 0 1px var(--l2); overflow: hidden; }
+  .hiw__stage { aspect-ratio: 16 / 9; background: #000; }
+  .hiw__v { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .hiw__bar { display: flex; align-items: center; gap: 20px; padding: 18px 18px 18px 28px; min-height: 92px; }
+  .hiw__cap { flex: 1; font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; color: var(--fg); white-space: pre-line; min-height: 2.6em; display: flex; align-items: center; }
+  .hiw__cap.idle { color: var(--m3); }
+  .hiw__ctl { display: flex; gap: 8px; flex-shrink: 0; }
+  .hiw__btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 48px; padding: 0 20px; border-radius: 99px; font-size: 15px; font-weight: 700; white-space: nowrap; background: var(--l1); color: var(--fg); transition: filter .15s, background .15s; }
+  .hiw__btn--lime { background: var(--lime); color: var(--bg); }
+  .hiw__btn--lime:hover { filter: brightness(1.06); }
+  .hiw__btn--icon { width: 48px; padding: 0; }
+  .hiw__btn--icon:hover { background: var(--l4); }
+  .hiw__i-play { width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+  .hiw__i-pause { width: 10px; height: 12px; border-left: 3px solid currentColor; border-right: 3px solid currentColor; }
+  .hiw__btn[data-state="play"] .hiw__i-pause { width: 0; height: 0; border: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+  .hiw__i-snd { width: 14px; height: 12px; background: currentColor; clip-path: polygon(0 30%, 35% 30%, 75% 0, 75% 100%, 35% 70%, 0 70%); }
+  .hiw__btn[data-muted] .hiw__i-snd { opacity: .45; }
+  .hiw__chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
+  .hiw-chip { display: flex; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 1px var(--l2); overflow: hidden; transition: box-shadow .2s; }
+  .hiw-chip button { position: relative; display: flex; align-items: center; gap: 8px; padding: 12px 8px 12px 18px; font-size: 14px; font-weight: 700; color: var(--m1); }
+  .hiw-chip b { font: 500 12px var(--mono); letter-spacing: .06em; color: var(--lime); }
+  .hiw-chip i { position: absolute; left: 18px; right: 8px; bottom: 6px; height: 2px; border-radius: 2px; background: var(--lime); transform-origin: left; transform: scaleX(var(--p, 0)); opacity: 0; }
+  .hiw-chip a { display: flex; align-items: center; padding: 0 16px 0 10px; color: var(--m3); font-weight: 700; }
+  .hiw-chip a:hover, .hiw-chip button:hover { color: var(--lime); }
+  .hiw-chip.on { box-shadow: inset 0 0 0 1.5px var(--lime); }
+  .hiw-chip.on button { color: var(--fg); }
+  .hiw-chip.on i { opacity: 1; }
+  .hiw__tx summary { cursor: pointer; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--m3); text-transform: uppercase; }
+  .hiw__tx div { margin-top: 12px; max-width: 760px; font-size: 15px; line-height: 1.6; color: var(--m2); }
+  @media (max-width: 700px) {
+    .hiw { padding-top: 56px; gap: 20px; }
+    /* Phones: the film runs edge to edge (full-bleed, whatever the section padding), caption strip and buttons under it. */
+    .hiw__player { margin-inline: calc(50% - 50vw); border-radius: 0; box-shadow: none; }
+    .hiw__stage { aspect-ratio: 4 / 5; }
+    .hiw__bar { flex-direction: column; align-items: stretch; gap: 12px; padding: 16px 20px 18px; min-height: 0; }
+    .hiw__cap { font-size: 16px; min-height: 2.6em; }
+    .hiw__ctl { justify-content: space-between; }
+    .hiw__btn--lime { flex: 1; }
+    .hiw__chips { flex-wrap: nowrap; overflow-x: auto; margin: -4px calc(50% - 50vw) 0; padding: 4px calc(50vw - 50%); scrollbar-width: none; }
+    .hiw__chips::-webkit-scrollbar { display: none; }
+    .hiw-chip { flex-shrink: 0; }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.querySelector('[data-hiw]');
+    if (!root || root.dataset.ready) return;
+    root.dataset.ready = '1';
+    const v = root.querySelector('video'), d = v.dataset, track = v.querySelector('track');
+    const cap = root.querySelector('[data-hiw-cap]'), snd = root.querySelector('[data-hiw-snd]'), pp = root.querySelector('[data-hiw-pp]');
+    const chips = [...root.querySelectorAll('[data-hiw-chip]')];
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const small = matchMedia('(max-width: 700px)');
+    const idle = cap.textContent;
+    let mode = '', f = '', sound = false, userPaused = false, visible = false;
+    if (small.matches) v.poster = d.mPoster;
+    cap.classList.add('idle');
+
+    // 'loop' = muted cut (WebM/AV1 first, MP4 fallback); 'vo' = narrated MP4.
+    const use = next => {
+      if (mode === next) return;
+      mode = next;
+      // The format is chosen when the film first loads (not at script start) and then kept, so a sound switch never changes it.
+      if (!f) { f = small.matches ? 'm' : 'd'; v.poster = f === 'm' ? d.mPoster : v.poster; }
+      v.querySelectorAll('source').forEach(el => el.remove());
+      const mp4 = 'video/mp4; codecs="avc1.640028';
+      const list = next === 'vo' ? [[d[f + 'Snd'], mp4 + ', mp4a.40.2"']] : [[d[f + 'Webm'], 'video/webm; codecs="av01.0.08M.10"'], [d[f + 'Mp4'], mp4 + '"']];
+      list.forEach(([src, type]) => track.before(Object.assign(document.createElement('source'), { src, type })));
+      v.load();
+    };
+    const play = () => v.play().catch(() => {});
+
+    // Captions: the <track> stays for native players and assistive tech; cues are drawn in the strip under the film.
+    const tt = track.track;
+    const showCue = () => {
+      const text = [...(tt.activeCues || [])].map(c => c.text).join('\n');
+      cap.textContent = text || (v.currentTime ? '' : idle);
+      cap.classList.toggle('idle', !text);
+    };
+    tt.mode = 'hidden';
+    tt.addEventListener('cuechange', showCue);
+    v.addEventListener('loadedmetadata', () => { tt.mode = 'hidden'; });
+
+    const label = () => {
+      const on = sound && !v.muted;
+      snd.innerHTML = sound
+        ? `<i class="hiw__i-snd" aria-hidden="true"></i><span>${on ? 'Sound on' : 'Sound off'}</span>`
+        : `<i class="hiw__i-play" aria-hidden="true"></i><span>${reduce ? 'Play film' : 'Play with sound'}</span>`;
+      snd.toggleAttribute('data-muted', sound && v.muted);
+      sound ? snd.setAttribute('aria-pressed', String(on)) : snd.removeAttribute('aria-pressed');
+      pp.hidden = !mode;
+      pp.dataset.state = v.paused ? 'play' : 'pause';
+      pp.setAttribute('aria-label', v.paused ? 'Play film' : 'Pause film');
+    };
+    label();
+
+    // Chapter chips: highlight the chapter on screen and fill its progress line.
+    const tick = () => {
+      const t = v.currentTime;
+      chips.forEach(c => {
+        const a = +c.dataset.t, b = +c.dataset.end, on = t >= a && t < b;
+        c.classList.toggle('on', on);
+        c.style.setProperty('--p', on ? ((t - a) / (b - a)).toFixed(3) : 0);
+      });
+      if (!v.paused) requestAnimationFrame(tick);
+    };
+    v.addEventListener('play', () => { label(); requestAnimationFrame(tick); });
+    v.addEventListener('pause', label);
+    v.addEventListener('seeked', tick);
+    v.addEventListener('ended', () => {
+      // Narrated cut finished: fall back to the silent loop on the same file.
+      sound = false; v.muted = true; v.loop = true; play(); label();
+    });
+
+    snd.addEventListener('click', () => {
+      if (!sound) {
+        sound = true; userPaused = false;
+        use('vo'); v.muted = false; v.loop = false; play();
+      } else {
+        v.muted = !v.muted;
+      }
+      label();
+    });
+    pp.addEventListener('click', () => {
+      if (v.paused) { userPaused = false; play(); } else { userPaused = true; v.pause(); }
+    });
+    chips.forEach(c => c.querySelector('button').addEventListener('click', () => {
+      use(mode || 'loop');
+      userPaused = false;
+      const go = () => { v.currentTime = +c.dataset.t; play(); };
+      v.readyState >= 1 ? go() : v.addEventListener('loadedmetadata', go, { once: true });
+    }));
+
+    // Lazy: fetch nothing until the player nears the viewport; play only while it's on screen.
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !mode && !reduce) use('loop');
+    }, { rootMargin: '150px 0px' }).observe(v);
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      if (!visible) v.pause();
+      else if (mode && !userPaused && (!reduce || sound)) play();
+    }, { threshold: .35 }).observe(v);
+    v.addEventListener('canplay', () => { if (visible && !userPaused && (!reduce || sound) && v.paused) play(); });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "How it works film",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "HOW IT WORKS" },
+    { "type": "text", "id": "title", "label": "Title", "default": "See it in 60 seconds." },
+    { "type": "text", "id": "video_label", "label": "Video description (screen readers)", "default": "How Tapfour Connect works: pick a stand, a guest taps for your Google review or scans your live menu, orders pop up at the counter, and the tapfour app shows every tap." },
+    { "type": "text", "id": "idle_caption", "label": "Caption before the film starts", "default": "Tap, scan, order: the whole setup in a minute." },
+    { "type": "header", "content": "Files (blank = file of the same name in assets/)" },
+    { "type": "text", "id": "desktop_mp4", "label": "Desktop loop · MP4 (16:9, no audio)" },
+    { "type": "text", "id": "desktop_webm", "label": "Desktop loop · WebM (16:9, no audio)" },
+    { "type": "text", "id": "desktop_sound", "label": "Desktop · with narration (MP4)" },
+    { "type": "text", "id": "mobile_mp4", "label": "Mobile loop · MP4 (4:5, no audio)" },
+    { "type": "text", "id": "mobile_webm", "label": "Mobile loop · WebM (4:5, no audio)" },
+    { "type": "text", "id": "mobile_sound", "label": "Mobile · with narration (MP4)" },
+    { "type": "text", "id": "desktop_poster", "label": "Desktop poster (JPG)" },
+    { "type": "text", "id": "mobile_poster", "label": "Mobile poster (JPG)" },
+    { "type": "text", "id": "captions", "label": "Captions (WebVTT)" },
+    { "type": "textarea", "id": "transcript", "label": "Transcript", "default": "Meet Tapfour Connect. One stand, one app.\nPick your stand: three designs, two finishes.\nPaste your Google Maps link, and see what guests get.\nA guest taps, and your Google review opens.\nNo app to download.\nScan for your live menu. Sold out? The next scan shows it.\nAdd table ordering, and orders pop up at the counter, then go to the kitchen.\nSee every tap, and your busiest hours.\nChange a link once, and every stand follows.\nFive stands and the app: ₱3,000 once, ₱299 a month.\nNo time? We build it for you.\nTapfour Connect. Build yours, just below." }
+  ],
+  "blocks": [
+    {
+      "type": "chapter",
+      "name": "Chapter",
+      "limit": 6,
+      "settings": [
+        { "type": "text", "id": "num", "label": "Number", "default": "01" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Build" },
+        { "type": "text", "id": "anchor", "label": "Section link", "default": "#build" },
+        { "type": "number", "id": "start", "label": "Starts at (seconds)", "default": 5 },
+        { "type": "number", "id": "end", "label": "Ends at (seconds)", "default": 17 }
+      ]
+    }
+  ],
+  "presets": [{
+    "name": "How it works film",
+    "blocks": [
+      { "type": "chapter", "settings": { "num": "01", "label": "Build", "anchor": "#build", "start": 5, "end": 17 } },
+      { "type": "chapter", "settings": { "num": "02", "label": "App", "anchor": "#app", "start": 17, "end": 37 } },
+      { "type": "chapter", "settings": { "num": "03", "label": "Dashboard & plans", "anchor": "#plans", "start": 37, "end": 51 } },
+      { "type": "chapter", "settings": { "num": "04", "label": "Services", "anchor": "#services", "start": 51, "end": 57 } }
+    ]
+  }]
+}
+{% endschema %}
