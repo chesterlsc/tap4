@@ -4,6 +4,58 @@
       "type": "tf-hero",
       "settings": {}
     },
+    "how": {
+      "type": "tf-film",
+      "blocks": {
+        "c1": {
+          "type": "chapter",
+          "settings": {
+            "num": "01",
+            "label": "Build",
+            "anchor": "#build",
+            "start": 5,
+            "end": 17
+          }
+        },
+        "c2": {
+          "type": "chapter",
+          "settings": {
+            "num": "02",
+            "label": "App",
+            "anchor": "#app",
+            "start": 17,
+            "end": 37
+          }
+        },
+        "c3": {
+          "type": "chapter",
+          "settings": {
+            "num": "03",
+            "label": "Dashboard & plans",
+            "anchor": "#plans",
+            "start": 37,
+            "end": 51
+          }
+        },
+        "c4": {
+          "type": "chapter",
+          "settings": {
+            "num": "04",
+            "label": "Services",
+            "anchor": "#services",
+            "start": 51,
+            "end": 57
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4"
+      ],
+      "settings": {}
+    },
     "taps": {
       "type": "tf-live-taps",
       "blocks": {
@@ -183,6 +235,7 @@
   },
   "order": [
     "hero",
+    "how",
     "taps",
     "builder",
     "app",
