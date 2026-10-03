@@ -6,8 +6,8 @@ The homepage builder adds the chosen hardware, add-ons, app plan and services to
 
 ## Set up the store
 
-1. **Import products.** In Shopify admin, go to Products → Import and choose `products.csv`. This creates the 13 products the theme expects, with the right handles and variants. Then add product photos. The originals are in `assets/*.jpg`.
-2. **Subscriptions.** `tapfour-app`, `tapfour-app-add-ons` and `managed-dashboard` are monthly or yearly. Install a subscription app such as Shopify Subscriptions and give each variant **exactly one** recurring selling plan. Until you do, the builder blocks those items instead of charging them once.
+1. **Import products.** In Shopify admin, go to Products → Import and choose `products.csv`. This creates the 11 products the theme expects, with the right handles and variants. Then add product photos. The originals are in `assets/*.jpg`.
+2. **Subscriptions.** `tapfour-app` and `tapfour-app-add-ons` are monthly or yearly. Install a subscription app such as Shopify Subscriptions and give each variant **exactly one** recurring selling plan. Until you do, the builder blocks those items instead of charging them once.
 3. **Connect the theme.** Go to Online Store → Themes → Add theme → Connect from GitHub, then pick this repo and branch `main`. Pushes to `main` then sync automatically.
 4. **Sale settings.** In Theme settings → Sale, set a real end date and stock count. If you leave them empty, the countdown and stock messages stay hidden.
 

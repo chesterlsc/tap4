@@ -315,3 +315,83 @@ test('03 packages: slider, table-ordering demo and ordering a package', async t 
   $('[data-act="pkgClear"]').click();
   assert.match($('#tf-stand').textContent, /YOUR STAND · PICKED ABOVE/, 'back to one stand');
 });
+
+test('04 services: animated cards, order bar, quotes left out of every total', async t => {
+  const preview = await createPreview({ orderEmail: 'orders@example.com' });
+  const { html } = await preview.renderPage('/');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://tap4.ph/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let opened, scrolled;
+  w.TF.open = url => { opened = url; };
+  w.scrollTo = o => { scrolled = o; };
+  w.matchMedia = () => ({ matches: false }); // jsdom has no matchMedia
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s), $$ = s => [...w.document.querySelectorAll(s)];
+  const card = id => $(`.svc[data-svc="${id}"]`);
+  const input = (el, v) => { el.value = v; el.dispatchEvent(new w.Event('input', { bubbles: true })); };
+
+  // Six cards with their scenes; the owner's prices; three are quote-only.
+  assert.deepEqual($$('.svc .svc__price').map(el => el.textContent), ['₱1,500 one-time', '₱2,500 one-time', '₱1,800 one-time', 'Quote on request', 'Quote on request', 'Quote on request']);
+  assert.equal($$('.svc__media > .svs').filter(el => el.children.length).length, 6, 'every card draws its scene');
+  assert.equal($('[data-svx-n]').textContent, '0 ADDED');
+  assert.equal($('[data-svx-sum]').textContent, 'Tap a card to add it to your order.');
+  assert.ok($('[data-act="svcGo"]').disabled);
+
+  // Toggle: ring + "Added ✓", the bar and the builder total follow.
+  card('page-build').click();
+  assert.ok(card('page-build').classList.contains('on'));
+  assert.equal(card('page-build').getAttribute('aria-pressed'), 'true');
+  assert.equal($('.svc.on .svc__add').textContent, 'Added ✓');
+  assert.equal($('[data-svx-sum]').textContent, 'Page build — ₱1,500 one-time');
+  assert.match($('#tf-summary .bl-ready__p').textContent, /₱2,898/); // ₱1,398 stand + ₱1,500
+  card('website-build').click(); card('local-ads').click(); card('online-booking-setup').click(); card('online-booking-setup').click();
+  assert.equal($('[data-svx-n]').textContent, '3 ADDED');
+  assert.equal($('[data-svx-sum]').textContent, 'Page build · Website build · Local ads — ₱1,500 one-time + quote: website, ads');
+  assert.match($('#tf-summary .bl-ready__p').textContent, /₱2,898/, 'quotes add nothing');
+  card('page-build').click();
+  assert.equal($('[data-svx-sum]').textContent, 'Website build · Local ads — quote: website, ads');
+  card('page-build').click();
+  assert.ok(!$('[data-act="svcGo"]').disabled);
+  $('[data-act="svcGo"]').click();
+  assert.ok(scrolled, '"Add to my setup" scrolls to the builder');
+
+  // Checkout + email: quotes appear as requests with no price.
+  input($('#tf-url-google'), 'https://maps.app.goo.gl/KapeNorte123');
+  $('[data-act="order"]').click();
+  assert.match($('.co-lines').textContent, /Page buildDone-for-you service₱1,500/);
+  assert.match($('.co-lines').textContent, /Website buildDone-for-you service · we send a pricequote/);
+  assert.match($('.co-totals').textContent, /One-time₱2,898/);
+  $('.co-cta').click(); // review -> menu
+  input($('#co-menuText'), 'Latte — ₱150');
+  $('.co-cta').click();
+  input($('#co-business'), 'Kape Norte'); input($('#co-name'), 'Juan'); input($('#co-phone'), '0917 123 4567'); input($('#co-address'), 'Baguio');
+  $('.co-cta').click();
+  $('[data-co-submit]').click();
+  const body = decodeURIComponent(opened.split('&body=')[1]);
+  assert.match(body, /Page build · Website build \(quote\) · Local ads \(quote\)/);
+  assert.match(body, /Quote requests: Website build, Local ads — send a quote/);
+  assert.match(body, /One-time: ₱2,898/);
+  assert.doesNotMatch(body, /Monthly:/);
+});
+
+test('04 services: priced services go to the cart, quotes ride on the stand line', async t => {
+  const { pages, catalog } = await site;
+  const dom = new JSDOM(pages.get('/'), { runScripts: 'dangerously', url: 'http://localhost/', virtualConsole: new VirtualConsole() });
+  const w = dom.window;
+  t.after(() => w.close());
+  let sent;
+  w.fetch = async (url, options) => { sent = JSON.parse(options.body); return { ok: true, json: async () => ({}) }; };
+  w.scrollTo = () => {};
+  w.eval(await fs.readFile(path.join(ROOT, 'assets/theme.js'), 'utf8'));
+  const $ = s => w.document.querySelector(s);
+  $('.svc[data-svc="google-profile-setup"]').click();
+  $('.svc[data-svc="online-booking-setup"]').click();
+  $('[data-act="menuHow"][data-arg="3"]').click(); // menu later: one-step checkout
+  $('[data-act="order"]').click();
+  $('[data-co-submit]').click();
+  await new Promise(r => setTimeout(r, 0));
+  const id = handle => catalog[handle].variants[0].id;
+  assert.deepEqual(sent.items.map(i => i.id), [id('tap4-l-stand'), id('printed-qr-menu'), id('google-profile-setup')]);
+  assert.equal(sent.items[0].properties['Quote requests'], 'Online booking setup — send a quote');
+});

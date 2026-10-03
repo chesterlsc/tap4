@@ -54,7 +54,8 @@
   const pkgItem = id => { const p = PLANS.find(x => x.id === id); return { id: 'pkg', handle: 'tapfour-package', variant: p.name, name: `${p.name} package · ${PKGS[id].stands} Review + Menu stands`, price: PKGS[id].price }; };
   const planItem = (p, yearly) => ({ handle: 'tapfour-app', variant: `${p.name} / ${yearly ? 'Yearly' : 'Monthly'}`, name: `${p.name} plan`, price: yearly ? p.price * 0.8 * 12 : p.price });
   const planPrice = p => Math.round(priceOf(planItem(p, S.yearly)) / (S.yearly ? 12 : 1)); // per month, for display
-  const SVCS = $$('[data-svc]').map(el => ({ id: el.dataset.svc, name: el.dataset.name, price: +el.dataset.price, monthly: 'monthly' in el.dataset, vid: +el.dataset.variant, sp: +el.dataset.sp || null, available: !el.disabled }));
+  // Done-for-you services (04): quote services carry no price and are sent as quote requests.
+  const SVCS = $$('[data-svc]').map(el => ({ id: el.dataset.svc, name: el.dataset.name, short: el.dataset.short || el.dataset.name.toLowerCase(), price: +el.dataset.price || 0, monthly: 'monthly' in el.dataset, quote: 'quote' in el.dataset, vid: +el.dataset.variant || 0, sp: +el.dataset.sp || null, available: !el.disabled }));
 
   const S = {
     finish: 'black', qty: 1, dest: 'google', hw: { menu: true }, pkg: null, tableOrder: false, plan: 'solo', locIdx: 0, yearly: false,
@@ -72,16 +73,16 @@
     const linkFee = !pkg && design === 'links' ? priceOf(LINKS) : 0;
     const hwMenuFee = !pkg && design === 'menu' ? priceOf(HW_MENU) : 0;
     const menuOn = !!pkg || !!hwMenuFee;
-    const oneTime = priceOf(prod) * units + linkFee + hwMenuFee + activeSvcs.filter(v => !v.monthly).reduce((a, v) => a + v.price, 0);
+    const oneTime = priceOf(prod) * units + linkFee + hwMenuFee + activeSvcs.filter(v => !v.monthly && !v.quote).reduce((a, v) => a + v.price, 0);
     const yearly = isApp && S.yearly ? priceOf(planItem(plan, true)) : 0;
-    const monthly = (isApp && !S.yearly ? priceOf(planItem(plan, false)) : 0) + activeSvcs.filter(v => v.monthly).reduce((a, v) => a + v.price, 0);
+    const monthly = (isApp && !S.yearly ? priceOf(planItem(plan, false)) : 0) + activeSvcs.filter(v => v.monthly && !v.quote).reduce((a, v) => a + v.price, 0);
     const dueNow = oneTime + yearly + monthly;
     const saved = (wasOf(prod) ? (wasOf(prod) - priceOf(prod)) * units : 0) + (hwMenuFee && wasOf(HW_MENU) ? wasOf(HW_MENU) - hwMenuFee : 0) + (linkFee && wasOf(LINKS) ? wasOf(LINKS) - linkFee : 0);
     const destUrl = design === 'links' ? '4-in-1 page · ' + activePl.map(p => p[1]).join(', ') : design === 'menu' ? 'Google review (tap) · Menu (scan)' : 'Your Google review box';
     const summary = [
       units + ' × ' + prod.name + (pkg ? ' · ' + FINISHES.find(x => x.id === S.finish).name : ''),
       DESIGNS.find(x => x.id === design).name + ' design' + (design === 'links' ? ' (' + activePl.map(p => p[1]).join(', ') + ')' : ''),
-      isApp ? 'tapfour app · ' + plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, isApp && S.tableOrder ? 'Table ordering (quote)' : null, ...activeSvcs.map(v => v.name)
+      isApp ? 'tapfour app · ' + plan.name + ' plan' + (S.yearly ? ' (yearly)' : '') : null, isApp && S.tableOrder ? 'Table ordering (quote)' : null, ...activeSvcs.map(v => v.quote ? v.name + ' (quote)' : v.name)
     ].filter(Boolean).join(' · ');
     const catalogItems = [prod, ...(hwMenuFee ? [HW_MENU] : []), ...(linkFee ? [LINKS] : []), ...(isApp ? [planItem(plan, S.yearly)] : [])];
     const demoPrices = catalogItems.some(it => !variant(it.handle, it.variant));
@@ -332,12 +333,274 @@
     renderTableOrdering(sec);
     renderPlansMobile(sec, id, n);
   }
+  /* ---------- 04 · done-for-you services: card toggles, order bar, animated scenes ---------- */
+  // "Page build · Website build — ₱1,500 one-time + quote: website". Quote services never count toward a total.
+  function svcLine(on) {
+    if (!on.length) return 'Tap a card to add it to your order.';
+    const sum = list => peso(list.reduce((a, v) => a + v.price, 0));
+    const one = on.filter(v => !v.monthly && !v.quote), mo = on.filter(v => v.monthly && !v.quote), q = on.filter(v => v.quote);
+    return on.map(v => v.name).join(' · ') + ' — ' + [one.length && sum(one) + ' one-time', mo.length && sum(mo) + '/mo', q.length && 'quote: ' + q.map(v => v.short).join(', ')].filter(Boolean).join(' + ');
+  }
   function renderServices() {
     $$('.svc[data-svc]').forEach(el => {
       const on = !!S.svcs[el.dataset.svc];
       el.classList.toggle('on', on);
       el.setAttribute('aria-pressed', on);
-      $('.svc__mark', el).textContent = on ? '✓' : '+';
+      $('.svc__add', el).textContent = on ? 'Added ✓' : 'Add +';
+    });
+    const bar = $('[data-svx-bar]');
+    if (!bar) return;
+    const on = SVCS.filter(v => S.svcs[v.id]);
+    $('[data-svx-n]', bar).textContent = on.length + ' ADDED';
+    $('[data-svx-sum]', bar).textContent = svcLine(on);
+    $('[data-act="svcGo"]', bar).disabled = !on.length;
+  }
+  // Scenes ported from the design handoff, each on a 600×400 artboard. Sample businesses and numbers are illustrative.
+  // Base styles are the settled frame (what reduced motion shows); running animations override them.
+  function svcScenes() {
+    const LIME = '#c8f23c';
+    const css = o => Object.entries(o).map(([k, v]) => (k[0] === '-' ? k : k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())) + ':' + (typeof v === 'number' && !/^(flex|fontWeight|lineHeight|opacity)$/.test(k) ? v + 'px' : v)).join(';');
+    const d = (s, ...kids) => `<i style="${css(s)}">${kids.join('')}</i>`;
+    const sp = (s, t) => `<span style="${css(s)}">${t}</span>`;
+    const abs = s => ({ position: 'absolute', ...s });
+    const an = list => list.map(([n, t, del = 0, ease = 'cubic-bezier(.2,.7,.2,1)']) => `${n} ${t}s ${ease} ${del}s infinite both`).join(', ');
+    const mono = (size, x) => ({ fontFamily: 'var(--mono)', fontWeight: 500, fontSize: size, letterSpacing: '.06em', ...x });
+    // Brand icons in colour, reusing the sprite's paths (#i-facebook etc.).
+    const ICONS = {
+      google: '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+      facebook: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.2" fill="#fff"/><use href="#i-facebook" fill="#0866FF"/></svg>',
+      instagram: '<svg viewBox="0 0 24 24"><defs><radialGradient id="svs-ig" cx="6.5" cy="25.5" r="30" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFDD55"/><stop offset=".12" stop-color="#FFBE3D"/><stop offset=".38" stop-color="#FF543E"/><stop offset=".62" stop-color="#E4337C"/><stop offset=".85" stop-color="#8A3AC8"/><stop offset="1" stop-color="#5B51D8"/></radialGradient></defs><use href="#i-instagram" fill="url(#svs-ig)"/></svg>',
+      tiktok: '<svg viewBox="0 0 24 24"><g transform="translate(1.1 0) scale(.9)"><use href="#i-tiktok" fill="#25F4EE" transform="translate(-.9 -.7)"/><use href="#i-tiktok" fill="#FE2C55" transform="translate(.9 .7)"/><use href="#i-tiktok" fill="#fff"/></g></svg>',
+      mark: '<svg viewBox="0 0 48 48" fill="#C8F23C"><path transform="translate(0 13)" d="M0 0H4.4A17.6 26.4 0 0 1 22 26.4V33H17.6A17.6 26.4 0 0 1 0 6.6Z"/><path transform="translate(26 2)" d="M22 0H17.6A17.6 26.4 0 0 0 0 26.4V33H4.4A17.6 26.4 0 0 0 22 6.6Z"/></svg>'
+    };
+    const icon = (f, s = 16) => ICONS[f].replace('<svg', `<svg width="${s}" height="${s}" style="display:block;flex:none"`);
+    const phoneShell = { borderRadius: 36, boxShadow: 'inset 0 0 0 6px #1f1f22, 0 0 0 1px #2a2a2d, 0 40px 80px -30px rgba(0,0,0,.9)', boxSizing: 'border-box', overflow: 'hidden' };
+    const chip = (label, pos, del, T, lime) => d(abs({ ...pos, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 99, background: lime ? LIME : '#121214', color: lime ? '#0a0a0b' : '#f2f0eb', boxShadow: lime ? '0 10px 30px -8px rgba(200,242,60,.5)' : 'inset 0 0 0 1px #2a2a2d', whiteSpace: 'nowrap', ...mono(11, { fontWeight: 700 }), animation: an([['tfPop', T, del]]) }), sp({ color: lime ? '#0a0a0b' : LIME }, lime ? '●' : '✓'), label);
+    const ripple = (i, size, pos, T = 3.6) => d(abs({ ...pos, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2, borderRadius: '50%', border: '1.5px solid rgba(200,242,60,.45)', opacity: 0, animation: an([['tfRipple', T, i * T / 3, 'ease-out']]) }));
+    const stripes = c => ({ background: `repeating-linear-gradient(135deg, ${c} 0 9px, color-mix(in oklch, ${c} 82%, #000) 9px 18px)` });
+
+    // 1 · Page build
+    const T1 = 7;
+    const links = [['google', 'Google review'], ['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok']];
+    const page = d(abs({ inset: 0 }),
+      ripple(0, 300, { left: '50%', top: '50%' }), ripple(1, 300, { left: '50%', top: '50%' }), ripple(2, 300, { left: '50%', top: '50%' }),
+      d(abs({ left: '50%', top: '50%', width: 214, height: 350, marginLeft: -107, marginTop: -175, animation: an([['tfFloat', 6, 0, 'ease-in-out']]) }),
+        d({ ...phoneShell, width: '100%', height: '100%', background: '#050506', padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 7 },
+          d({ alignSelf: 'center', width: 56, height: 5, borderRadius: 9, background: '#1f1f22', marginBottom: 2 }),
+          d({ height: 66, borderRadius: 14, flex: 'none', background: 'repeating-linear-gradient(135deg,#1c1c1f 0 8px,#141416 8px 16px)', animation: an([['tfPop', T1, 0]]) }),
+          d({ width: 48, height: 48, borderRadius: '50%', marginTop: -32, marginLeft: 12, background: '#0a0a0b', boxShadow: `inset 0 0 0 2px ${LIME}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: LIME, fontWeight: 700, fontSize: 15, flex: 'none', animation: an([['tfPop', T1, 0.3]]) }, 'YS'),
+          d({ fontSize: 18, fontWeight: 700, letterSpacing: '-.03em', paddingLeft: 4, animation: an([['tfType', T1, 0, 'steps(9,end)']]) }, 'Your shop'),
+          d({ ...mono(9, { color: '#8a8883' }), paddingLeft: 4, marginBottom: 4, animation: an([['tfPop', T1, 0.6]]) }, 'CAFÉ · CONNECT WITH US'),
+          ...links.map(([f, l], i) => d({ display: 'flex', alignItems: 'center', gap: 9, height: 36, flex: 'none', padding: '0 12px', borderRadius: 99, background: '#1f1f22', color: '#f2f0eb', fontSize: 12.5, fontWeight: 700, animation: an([['tfSlideL', T1, 0.9 + i * 0.18]].concat(i === 0 ? [['tfTapHi', T1, 0]] : [])) }, icon(f, 16), l))
+        )
+      ),
+      chip('LOGO', { left: '7%', top: '20%' }, 0.9, T1),
+      chip('COVER PHOTO', { right: '6%', top: '30%' }, 1.5, T1),
+      chip('4 LINKS', { left: '9%', bottom: '28%' }, 2.1, T1),
+      chip('PAGE LIVE', { right: '8%', bottom: '18%' }, 3.0, T1, true)
+    );
+
+    // 2 · Menu setup
+    const T2 = 8;
+    const paperRows = [['Sagada latte', '165'], ['Benguet pour-over', '180'], ['Ube cold brew', '190'], ['Spanish latte', '170'], ['Ensaymada', '95']];
+    const corner = (pos, b) => d(abs({ ...pos, width: 20, height: 20, ...b }));
+    const cb = `3px solid ${LIME}`;
+    const digital = [['Sagada Latte', 'Double shot, oat', '₱165'], ['Benguet Pour-over', 'Single origin', '₱180'], ['Ube Cold Brew', 'Seasonal', '₱190'], ['Spanish Latte', 'Condensed milk', '₱170']];
+    const menu = d(abs({ inset: 0 }),
+      d(abs({ left: '7%', top: '50%', width: 196, height: 262, marginTop: -131, transform: 'rotate(-5deg)' }),
+        d({ position: 'relative', width: '100%', height: '100%', background: '#f2f0eb', color: '#0a0a0b', borderRadius: 6, padding: '20px 16px', boxSizing: 'border-box', boxShadow: '0 30px 60px -20px rgba(0,0,0,.85)', overflow: 'hidden' },
+          d({ textAlign: 'center', fontSize: 16, fontWeight: 700, letterSpacing: '.24em' }, 'MENU'),
+          d(mono(8, { color: '#6f6c66', textAlign: 'center', marginBottom: 10 }), 'HANDWRITTEN · 2024'),
+          ...paperRows.map(([n, p]) => d({ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed #c9c6bf', ...mono(10, { textTransform: 'uppercase', color: '#2a2a2d' }) }, sp({}, n), sp({ fontWeight: 700 }, p))),
+          d(abs({ left: -6, right: -6, top: 0, height: 3, opacity: 0, background: LIME, boxShadow: '0 0 22px 6px rgba(200,242,60,.55)', animation: an([['tfScan', T2, 0, 'linear']]) }))
+        ),
+        corner({ left: -12, top: -12 }, { borderTop: cb, borderLeft: cb }), corner({ right: -12, top: -12 }, { borderTop: cb, borderRight: cb }),
+        corner({ left: -12, bottom: -12 }, { borderBottom: cb, borderLeft: cb }), corner({ right: -12, bottom: -12 }, { borderBottom: cb, borderRight: cb })
+      ),
+      d(abs({ left: '50%', top: '50%', width: 64, marginLeft: -40, marginTop: -26, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }),
+        sp(mono(9, { color: LIME, whiteSpace: 'nowrap' }), 'WE TYPE IT'),
+        d({ width: 64, height: 4, background: `radial-gradient(circle, ${LIME} 1.6px, transparent 2.2px) 0 0/12px 4px repeat-x`, animation: 'tfDots .5s linear infinite' }),
+        sp(mono(9, { color: '#6f6c66', whiteSpace: 'nowrap' }), '+ PHOTOS')
+      ),
+      d(abs({ right: '7%', top: '50%', width: 200, height: 350, marginTop: -175 }),
+        d({ ...phoneShell, width: '100%', height: '100%', background: '#f2f0eb', padding: 6, color: '#0a0a0b' },
+          d({ height: 74, borderRadius: '30px 30px 0 0', background: 'repeating-linear-gradient(135deg,#2a2826 0 7px,#22201e 7px 14px)', display: 'flex', alignItems: 'flex-end', padding: '10px 14px', boxSizing: 'border-box', ...mono(9, { color: '#d6d4ce' }) }, 'MENU · YOUR SHOP'),
+          d({ display: 'flex', gap: 5, padding: '10px 10px 4px' }, ...['Coffee', 'Pastry', 'Meals'].map((c, i) => d({ padding: '5px 9px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: i ? '#e4e1da' : '#0a0a0b', color: i ? '#0a0a0b' : LIME }, c))),
+          ...digital.map(([n, s, p], i) => d({ position: 'relative', margin: '0 10px', borderBottom: '1px solid #e0ddd6', animation: an([['tfSlideL', T2, 3.0 + i * 0.22]]) },
+            d({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', ...(i === 2 ? { opacity: 0.35, animation: an([['tfDim', T2, 0]]) } : {}) },
+              d({ display: 'flex', flexDirection: 'column', gap: 2 }, sp({ fontSize: 12.5, fontWeight: 700 }, n), sp({ fontSize: 9.5, color: '#6f6c66' }, s)),
+              sp(mono(11, { fontWeight: 700, letterSpacing: 0 }), p)),
+            i === 2 ? d(abs({ right: 0, top: '50%', padding: '4px 7px', borderRadius: 5, background: '#ff4f81', color: '#fff', ...mono(9, { fontWeight: 700 }), transform: 'translateY(-50%) rotate(-8deg)', animation: an([['tfSold', T2, 0]]) }), 'SOLD OUT') : ''
+          ))
+        )
+      ),
+      chip('LIVE QR MENU', { right: '5%', top: 16 }, 3.4, T2, true)
+    );
+
+    // 3 · Google profile
+    const T3 = 7;
+    const google = d(abs({ inset: 0 }),
+      d(abs({ inset: 0, backgroundImage: 'linear-gradient(#18191b 1px,transparent 1px),linear-gradient(90deg,#18191b 1px,transparent 1px)', backgroundSize: '32px 32px' })),
+      d(abs({ left: '-20%', top: '30%', width: '140%', height: 16, background: '#1c1d20', transform: 'rotate(-12deg)' })),
+      d(abs({ left: '-20%', top: '64%', width: '140%', height: 10, background: '#1a1b1e', transform: 'rotate(20deg)' })),
+      d(abs({ left: '56%', top: '-20%', width: 12, height: '140%', background: '#1a1b1e', transform: 'rotate(8deg)' })),
+      d(abs({ left: '9%', top: '8%', width: 110, height: 70, borderRadius: 16, background: '#13180d' })),
+      d(abs({ left: '66%', top: '48%', width: 80, height: 60, borderRadius: 14, background: '#141518' })),
+      ripple(0, 140, { left: '36%', top: '40%' }, 2.4), ripple(1, 140, { left: '36%', top: '40%' }, 2.4),
+      d(abs({ left: '36%', top: '40%', width: 40, height: 40, marginLeft: -20, marginTop: -48, animation: an([['tfPin', T3, 0]]) }),
+        d({ width: 40, height: 40, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: LIME, boxShadow: '0 12px 30px -6px rgba(200,242,60,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }, d({ width: 14, height: 14, borderRadius: '50%', background: '#0a0a0b' }))
+      ),
+      d(abs({ right: 18, top: 18, display: 'flex', flexDirection: 'column', gap: 6 }),
+        ...['Category', 'Hours', 'Photos', 'Review link'].map((t, i) => d({ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', borderRadius: 99, background: 'rgba(18,18,20,.94)', boxShadow: 'inset 0 0 0 1px #2a2a2d', fontSize: 12, fontWeight: 700, animation: an([['tfPop', T3, 1.0 + i * 0.32]]) }, sp({ color: LIME }, '✓'), t))
+      ),
+      d(abs({ left: '50%', bottom: 22, width: 320, marginLeft: -200, background: '#fbfaf7', color: '#0a0a0b', borderRadius: 18, padding: 16, boxSizing: 'border-box', boxShadow: '0 30px 60px -20px rgba(0,0,0,.9)', display: 'flex', flexDirection: 'column', gap: 10, animation: an([['tfPop', T3, 0.5]]) }),
+        d({ display: 'flex', gap: 12, alignItems: 'center' },
+          d({ width: 44, height: 44, borderRadius: 12, background: '#0a0a0b', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }, icon('mark', 22)),
+          d({ display: 'flex', flexDirection: 'column', gap: 2 }, sp({ fontSize: 18, fontWeight: 700, letterSpacing: '-.02em' }, 'Your shop'), d({ fontSize: 12, color: '#6f6c66' }, 'Café · ', sp({ color: '#3d7a00', fontWeight: 700 }, 'Open now')))
+        ),
+        d({ display: 'flex', gap: 3, fontSize: 20, lineHeight: 1 }, ...[0, 1, 2, 3, 4].map(i => sp({ display: 'inline-block', color: '#e8a400', animation: an([['tfStar', T3, 0.2 + i * 0.14]]) }, '★'))),
+        d({ display: 'flex', gap: 8 },
+          d({ display: 'flex', alignItems: 'center', gap: 8, height: 34, padding: '0 14px 0 6px', borderRadius: 99, background: '#0a0a0b', color: '#f2f0eb', fontSize: 12.5, fontWeight: 700 }, d({ width: 24, height: 24, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }, icon('google', 14)), 'Write a review'),
+          d({ display: 'flex', alignItems: 'center', height: 34, padding: '0 14px', borderRadius: 99, boxShadow: 'inset 0 0 0 1px #d6d4ce', fontSize: 12.5, fontWeight: 700 }, 'Directions')
+        )
+      )
+    );
+
+    // 4 · Website build: coffee shop, dentist and gym take turns (8 s each)
+    const T4 = 8;
+    const biz = [
+      { kind: 'COFFEE SHOP', domain: 'kapenorte.ph', name: 'Kape Norte', ini: 'KN', acc: '#c98a4b', dark: '#2a1d14', hero: 'Brewed in Baguio.', cta: 'Order ahead →', nav: ['Menu', 'Visit', 'Order'], btn: '+',
+        items: [['LATTE', 'Sagada Latte', '₱165'], ['COLD BREW', 'Ube Cold Brew', '₱190'], ['PASTRY', 'Ensaymada', '₱95']] },
+      { kind: 'DENTAL CLINIC', domain: 'smiledental.ph', name: 'Smile Dental', ini: 'SD', acc: '#4fb3d9', dark: '#0f2430', hero: 'Gentle care, Saturdays too.', cta: 'Book a visit →', nav: ['Services', 'Dentists', 'Book'], btn: 'Book',
+        items: [['CLEANING', 'Cleaning', '₱1,200'], ['WHITENING', 'Whitening', '₱6,500'], ['CONSULT', 'Braces consult', '₱500']] },
+      { kind: 'GYM', domain: 'ironhouse.ph', name: 'Iron House Gym', ini: 'IH', acc: '#ff6a3d', dark: '#1d1210', hero: 'First week free.', cta: 'Join now →', nav: ['Classes', 'Plans', 'Join'], btn: 'Join',
+        items: [['DAY PASS', 'Day pass', '₱150'], ['MONTHLY', 'Monthly', '₱1,800'], ['COACH', 'PT session', '₱600']] }
+    ];
+    const layer = (B, i) => d(abs({ inset: 0, ...(i ? { visibility: 'hidden' } : {}), animation: `tfThird 24s linear ${i ? -(24 - 8 * i) : 0}s infinite both` }),
+      d(abs({ left: 22, top: 30, width: 404, height: 340, borderRadius: 16, background: '#f7f5f0', color: '#0a0a0b', overflow: 'hidden', boxShadow: '0 0 0 1px #2a2a2d, 0 40px 80px -30px rgba(0,0,0,.9)', display: 'flex', flexDirection: 'column' }),
+        d({ display: 'flex', alignItems: 'center', gap: 10, height: 34, padding: '0 12px', background: '#1a1a1d', flex: 'none' },
+          d({ display: 'flex', gap: 5 }, ...['#ff5f57', '#febc2e', '#28c840'].map(c => d({ width: 9, height: 9, borderRadius: '50%', background: c }))),
+          d({ flex: 1, display: 'flex', alignItems: 'center', gap: 6, height: 20, padding: '0 10px', borderRadius: 6, background: '#0a0a0b', ...mono(10, { color: '#d6d4ce', letterSpacing: '.02em' }) }, sp({ color: LIME }, '●'), d({ animation: an([['tfType', T4, 0, 'steps(14,end)']]) }, B.domain))
+        ),
+        d({ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', flex: 'none', animation: an([['tfPop', T4, 0.4]]) },
+          d({ display: 'flex', alignItems: 'center', gap: 7 }, d({ width: 22, height: 22, borderRadius: 6, background: B.dark, color: B.acc, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }, B.ini), sp({ fontSize: 13, fontWeight: 700, letterSpacing: '-.02em' }, B.name)),
+          d({ display: 'flex', gap: 12, fontSize: 10.5, fontWeight: 600, color: '#3a3a3e' }, sp({}, B.nav[0]), sp({}, B.nav[1]), d({ position: 'relative', fontWeight: 700, color: '#0a0a0b' }, B.nav[2], d(abs({ right: -11, top: -6, width: 13, height: 13, borderRadius: '50%', background: B.acc, color: '#0a0a0b', fontSize: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: an([['tfPop', T4, 4.4]]) }), '1')))
+        ),
+        d({ margin: '0 12px', height: 96, borderRadius: 12, flex: 'none', background: B.dark, display: 'grid', gridTemplateColumns: '1.35fr 1fr', overflow: 'hidden', animation: an([['tfPop', T4, 0.8]]) },
+          d({ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' },
+            sp(mono(8.5, { color: B.acc }), B.kind),
+            sp({ color: '#f7f5f0', fontSize: 17, fontWeight: 700, letterSpacing: '-.035em', lineHeight: 1 }, B.hero),
+            d({ alignSelf: 'flex-start', padding: '5px 10px', borderRadius: 99, background: B.acc, color: '#0a0a0b', fontSize: 9.5, fontWeight: 700 }, B.cta)),
+          d(stripes(B.acc))
+        ),
+        d({ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: '10px 12px 12px' },
+          ...B.items.map(([lab, n, pr], k) => d({ display: 'flex', flexDirection: 'column', gap: 5, padding: 6, borderRadius: 10, background: '#fff', boxShadow: '0 0 0 1px #e4e1da', animation: an([['tfPop', T4, 1.4 + k * 0.25]]) },
+            d({ height: 58, borderRadius: 6, ...stripes(`color-mix(in oklch, ${B.acc} ${70 - k * 15}%, #f7f5f0)`), display: 'flex', alignItems: 'flex-end', padding: 5, boxSizing: 'border-box' }, sp(mono(7.5, { fontWeight: 700, color: '#0a0a0b', background: 'rgba(255,255,255,.85)', padding: '2px 4px', borderRadius: 3 }), lab)),
+            sp({ fontSize: 10.5, fontWeight: 700, letterSpacing: '-.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }, n),
+            d({ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, sp(mono(9.5, { fontWeight: 700, letterSpacing: 0 }), pr),
+              d({ minWidth: 18, height: 18, padding: B.btn.length > 1 ? '0 6px' : 0, boxSizing: 'border-box', borderRadius: 99, fontSize: B.btn.length > 1 ? 8.5 : 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(k === 1 ? { background: '#1f1f22', color: '#f2f0eb', animation: an([['tfTapHi', T4, 0]]) } : { background: '#e4e1da' }) }, B.btn))
+          ))
+        )
+      ),
+      d(abs({ right: 30, bottom: 24, width: 96, height: 176, animation: an([['tfPop', T4, 2.4]]) }),
+        d({ ...phoneShell, borderRadius: 20, boxShadow: 'inset 0 0 0 4px #1f1f22, 0 0 0 1px #2a2a2d, 0 30px 60px -20px rgba(0,0,0,.9)', width: '100%', height: '100%', background: '#f7f5f0', padding: 7, display: 'flex', flexDirection: 'column', gap: 5 },
+          d({ height: 44, borderRadius: '13px 13px 6px 6px', background: B.dark, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 6, boxSizing: 'border-box', gap: 2 }, sp(mono(5.5, { color: B.acc }), B.kind), sp({ color: '#f7f5f0', fontSize: 7.5, fontWeight: 700, lineHeight: 1.05 }, B.name)),
+          ...B.items.map(([, n], k) => d({ display: 'flex', gap: 5, alignItems: 'center' }, d({ width: 20, height: 20, borderRadius: 4, flex: 'none', ...stripes(`color-mix(in oklch, ${B.acc} ${70 - k * 15}%, #f7f5f0)`) }), sp({ fontSize: 7.5, fontWeight: 700, color: '#0a0a0b', lineHeight: 1.1 }, n))),
+          d({ marginTop: 'auto', height: 18, borderRadius: 99, background: B.acc, color: '#0a0a0b', fontSize: 7.5, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }, B.cta.replace(' →', ''))
+        )
+      )
+    );
+    const site = d(abs({ inset: 0 }),
+      ...biz.map(layer),
+      chip('YOUR DOMAIN', { right: 12, top: 30 }, 0.6, T4),
+      chip('MOBILE-READY', { right: 12, top: 72 }, 2.6, T4),
+      chip('BOOK BUTTON', { right: 12, top: 114 }, 3.2, T4),
+      chip('SITE LIVE', { right: 12, top: 156 }, 4.0, T4, true)
+    );
+
+    // 5 · Online booking
+    const T5 = 8;
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const times = ['9:00', '10:00', '11:00', '1:00', '2:00', '3:00'];
+    const taken = new Set(['0-0', '0-3', '1-1', '1-4', '2-0', '2-2', '2-5', '3-3', '4-0', '4-1', '4-4', '5-0', '5-1', '5-2']);
+    const book = d(abs({ inset: 0 }),
+      d(abs({ left: 22, top: 28, width: 330, height: 344, borderRadius: 18, background: '#121214', boxShadow: 'inset 0 0 0 1px #232326', padding: 16, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 10 }),
+        d({ display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+          d({ display: 'flex', flexDirection: 'column', gap: 2 }, sp(mono(9, { color: '#8a8883' }), 'THIS WEEK'), sp({ fontSize: 16, fontWeight: 700, letterSpacing: '-.02em' }, 'Smile Dental')),
+          d({ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 99, background: '#15170e', boxShadow: 'inset 0 0 0 1px #3d4420', ...mono(9, { color: LIME }) }, d({ width: 6, height: 6, borderRadius: '50%', background: LIME, animation: 'tfBlink 1.4s ease-in-out infinite' }), 'OPEN 24/7')
+        ),
+        d({ display: 'grid', gridTemplateColumns: '34px repeat(6,minmax(0,1fr))', gap: 4, flex: 1, gridAutoRows: 'minmax(0,1fr)' },
+          d({}), ...days.map(x => d({ ...mono(8.5, { color: x === 'THU' ? LIME : '#6f6c66' }), textAlign: 'center', alignSelf: 'end', paddingBottom: 2 }, x)),
+          ...times.flatMap((t, r) => [d({ ...mono(8.5, { color: '#6f6c66', letterSpacing: 0 }), alignSelf: 'center' }, t),
+            ...days.map((_, c) => {
+              const k = c + '-' + r;
+              if (k === '3-1') return d({ position: 'relative', borderRadius: 6, boxShadow: 'inset 0 0 0 1px #3a3a3e', overflow: 'hidden' },
+                d(abs({ inset: 0, background: LIME, color: '#0a0a0b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8.5, fontWeight: 700, animation: an([['tfBook', T5, 0]]) }), 'Booked'));
+              return d({ borderRadius: 6, background: taken.has(k) ? '#232326' : 'transparent', boxShadow: taken.has(k) ? 'none' : 'inset 0 0 0 1px #232326' });
+            })])
+        ),
+        d({ display: 'flex', gap: 14, ...mono(8.5, { color: '#6f6c66' }) }, ...[['TAKEN', { background: '#232326' }], ['OPEN', { boxShadow: 'inset 0 0 0 1px #3a3a3e' }], ['NEW', { background: LIME }]].map(([l, s]) => d({ display: 'flex', alignItems: 'center', gap: 5 }, d({ width: 8, height: 8, borderRadius: 2, ...s }), l)))
+      ),
+      d(abs({ right: 26, top: 28, width: 196, height: 344 }),
+        d({ ...phoneShell, width: '100%', height: '100%', background: '#f7f5f0', color: '#0a0a0b', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 9 },
+          d({ alignSelf: 'center', width: 50, height: 5, borderRadius: 9, background: '#d6d4ce' }),
+          d({ display: 'flex', flexDirection: 'column', gap: 1 }, sp(mono(8, { color: '#2f7fa3' }), 'SMILE DENTAL'), sp({ fontSize: 16, fontWeight: 700, letterSpacing: '-.03em' }, 'Book a visit')),
+          d({ display: 'flex', flexWrap: 'wrap', gap: 4 }, ...['Cleaning', 'Whitening', 'Consult'].map((s, i) => d({ padding: '5px 9px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: i ? '#e4e1da' : '#0a0a0b', color: i ? '#0a0a0b' : '#f7f5f0' }, s))),
+          sp(mono(8, { color: '#6f6c66' }), 'THURSDAY'),
+          d({ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 4 }, ...times.map((t, i) => d({ height: 26, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', ...mono(10, { fontWeight: 700, letterSpacing: 0 }), ...(i === 1 ? { background: '#0a0a0b', color: LIME, animation: an([['tfSlotPick', T5, 0]]) } : i === 3 ? { background: 'transparent', color: '#b5b3ad', textDecoration: 'line-through', boxShadow: 'inset 0 0 0 1px #e4e1da' } : { background: '#e4e1da' }) }, t))),
+          d({ marginTop: 'auto', height: 36, borderRadius: 99, background: '#0a0a0b', color: LIME, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }, 'Confirm booking')
+        ),
+        d(abs({ left: -34, right: -10, top: 70, display: 'flex', flexDirection: 'column', gap: 6 }),
+          ...[['NEW BOOKING', 'Cleaning · Thu 10:00'], ['SMS SENT', 'Reminder 24h before'], ['CONFIRMED', 'Patient replied YES']].map(([k, v], i) => d({ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 11px', borderRadius: 14, background: 'rgba(18,18,20,.96)', color: '#f2f0eb', boxShadow: '0 16px 30px -10px rgba(0,0,0,.8), inset 0 0 0 1px #2a2a2d', animation: an([['tfPop', T5, 3.4 + i * 0.7]]) },
+            d({ width: 22, height: 22, borderRadius: 7, background: i === 2 ? LIME : '#1f1f22', color: i === 2 ? '#0a0a0b' : LIME, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }, i === 2 ? '✓' : String(i + 1)),
+            d({ display: 'flex', flexDirection: 'column', gap: 1 }, sp(mono(8, { color: LIME }), k), sp({ fontSize: 11.5, fontWeight: 700 }, v))))
+        )
+      )
+    );
+
+    // 6 · Local ads (sample data)
+    const T6 = 8;
+    const roll = (vals, del) => d({ height: 30, overflow: 'hidden' }, d({ '--to': `-${(vals.length - 1) * 30}px`, transform: 'translateY(var(--to))', animation: an([['tfRoll', T6, del]]) }, ...vals.map(v => d({ height: 30, lineHeight: '30px', fontSize: 26, fontWeight: 700, letterSpacing: '-.04em' }, v))));
+    const people = [[60, 70], [120, 40], [250, 60], [300, 140], [40, 200], [90, 300], [210, 330], [290, 270], [160, 110], [110, 180], [230, 200], [170, 260], [80, 240], [250, 130]];
+    const inside = ([x, y]) => Math.hypot(x - 170, y - 200) < 110;
+    const ads = d(abs({ inset: 0 }),
+      d(abs({ left: 0, top: 0, width: 340, height: 400, backgroundImage: 'linear-gradient(#17181a 1px,transparent 1px),linear-gradient(90deg,#17181a 1px,transparent 1px)', backgroundSize: '28px 28px' })),
+      d(abs({ left: -40, top: 150, width: 440, height: 12, background: '#1a1b1e', transform: 'rotate(-14deg)' })),
+      d(abs({ left: 120, top: -20, width: 10, height: 460, background: '#1a1b1e', transform: 'rotate(10deg)' })),
+      d(abs({ left: 170, top: 200, width: 220, height: 220, marginLeft: -110, marginTop: -110, borderRadius: '50%', background: 'rgba(200,242,60,.07)', boxShadow: 'inset 0 0 0 1.5px rgba(200,242,60,.5)', animation: an([['tfPop', T6, 0.2]]) })),
+      ripple(0, 220, { left: 170, top: 200 }, 3), ripple(1, 220, { left: 170, top: 200 }, 3),
+      d(abs({ left: 170, top: 304, transform: 'translateX(-50%)', ...mono(9, { color: LIME, whiteSpace: 'nowrap' }), animation: an([['tfPop', T6, 0.6]]) }), '2 KM AROUND YOU'),
+      ...people.map((pt, i) => d(abs({ left: pt[0], top: pt[1], width: 10, height: 10, marginLeft: -5, marginTop: -5, borderRadius: '50%', ...(inside(pt) ? { background: LIME, boxShadow: '0 0 12px 2px rgba(200,242,60,.6)', animation: an([['tfReach', T6, 1.0 + i * 0.12]]) } : { background: '#3a3a3e' }) }))),
+      d(abs({ left: 170, top: 200, width: 30, height: 30, marginLeft: -15, marginTop: -36, animation: an([['tfPin', T6, 0]]) }),
+        d({ width: 30, height: 30, borderRadius: '50% 50% 50% 0', transform: 'rotate(-45deg)', background: LIME, display: 'flex', alignItems: 'center', justifyContent: 'center' }, d({ width: 10, height: 10, borderRadius: '50%', background: '#0a0a0b' }))
+      ),
+      d(abs({ left: 356, top: 26, width: 222, display: 'flex', flexDirection: 'column', gap: 8 }),
+        d({ background: '#fbfaf7', color: '#0a0a0b', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 4, boxShadow: '0 20px 40px -16px rgba(0,0,0,.9)', animation: an([['tfPop', T6, 1.6]]) },
+          d({ display: 'flex', alignItems: 'center', gap: 6 }, icon('google', 12), sp({ fontSize: 9.5, fontWeight: 700 }, 'Sponsored'), sp({ fontSize: 9.5, color: '#6f6c66' }, '· kapenorte.ph')),
+          sp({ fontSize: 13, fontWeight: 700, color: '#1a4fb5', letterSpacing: '-.01em', lineHeight: 1.2 }, 'Kape Norte · Coffee near you'),
+          sp({ fontSize: 10, color: '#3a3a3e', lineHeight: 1.35 }, 'Open now · 0.4 km · Sagada Latte ₱165'),
+          d({ display: 'flex', gap: 5, marginTop: 4 }, d({ padding: '4px 9px', borderRadius: 99, background: '#0a0a0b', color: '#f7f5f0', fontSize: 9.5, fontWeight: 700 }, 'Directions'), d({ padding: '4px 9px', borderRadius: 99, boxShadow: 'inset 0 0 0 1px #d6d4ce', fontSize: 9.5, fontWeight: 700 }, 'Menu'))
+        ),
+        d({ background: '#121214', borderRadius: 14, padding: 10, display: 'flex', gap: 10, alignItems: 'center', boxShadow: 'inset 0 0 0 1px #2a2a2d', animation: an([['tfPop', T6, 2.2]]) },
+          d({ width: 46, height: 46, borderRadius: 8, flex: 'none', ...stripes('#c98a4b') }),
+          d({ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }, d({ display: 'flex', alignItems: 'center', gap: 5 }, icon('facebook', 11), sp(mono(8, { color: '#8a8883' }), 'SPONSORED')), sp({ fontSize: 11.5, fontWeight: 700, lineHeight: 1.2 }, 'First latte on us this week'))
+        ),
+        d({ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 4 },
+          ...[['REACH', ['0', '3,210', '8,940', '12,480'], 0, true], ['CLICKS', ['0', '96', '241', '386'], 0.15], ['DIRECTIONS', ['0', '22', '58', '92'], 0.3], ['PAGE TAPS', ['0', '41', '103', '164'], 0.45]].map(([l, v, del, hi]) => d({ padding: '9px 11px', borderRadius: 12, background: hi ? '#15170e' : '#121214', boxShadow: hi ? 'inset 0 0 0 1px #3d4420' : 'inset 0 0 0 1px #232326', display: 'flex', flexDirection: 'column', gap: 2 }, sp(mono(8, { color: hi ? LIME : '#8a8883' }), l), roll(v, 2.6 + del))))
+      )
+    );
+    return { page, menu, google, site, book, ads };
+  }
+  // Draw the scenes, scale each 600×400 artboard to its card, and pause the ones off screen.
+  const svcMedia = $$('.svc__media[data-scene]');
+  if (svcMedia.length) {
+    const scenes = svcScenes();
+    const io = 'IntersectionObserver' in window && new IntersectionObserver(es => es.forEach(e => e.target.classList.toggle('is-off', !e.isIntersecting)), { rootMargin: '80px' });
+    const ro = 'ResizeObserver' in window && new ResizeObserver(es => es.forEach(e => e.target.style.setProperty('--s', e.contentRect.width / 600)));
+    svcMedia.forEach(el => {
+      el.innerHTML = `<i class="svs">${scenes[el.dataset.scene] || ''}</i>`;
+      if (io) { el.classList.add('is-off'); io.observe(el); }
+      if (ro) ro.observe(el);
     });
   }
 
@@ -526,6 +789,8 @@
     if (d.isApp) Object.assign(props, { 'Wi-Fi per guest': S.wifiH + (S.wifiH > 1 ? ' hours' : ' hour'), 'Table ordering': S.tableOrder ? 'Yes — send a quote (from ₱499/mo)' : 'No' });
     destinations.forEach(dest => { props[dest.label + (dest.plat === 'google' ? ' link' : ' URL')] = dest.value || 'To be provided after checkout'; });
     if (destinations.some(dest => dest.plat === 'google' && dest.value)) props['Google review link'] = 'tapfour sets it up from the Maps link';
+    const quotes = d.activeSvcs.filter(v => v.quote).map(v => v.name);
+    if (quotes.length) props['Quote requests'] = quotes.join(', ') + ' — send a quote';
 
     add(d.prod, d.units, props);
     if (d.hwMenuFee) add(HW_MENU, 1);
@@ -534,6 +799,7 @@
       add(planItem(d.plan, S.yearly), 1, null, true);
     }
     d.activeSvcs.forEach(v => {
+      if (v.quote) return; // sent as 'Quote requests' on the main line, not as a cart item
       if (!v.vid || !v.available) missing.push(v.name);
       else if (v.monthly && !v.sp && !TF.orderEmail) missingPlans.push(v.name);
       else items.push({ id: v.vid, quantity: 1, ...(v.monthly ? { selling_plan: v.sp } : {}) });
@@ -614,7 +880,7 @@
       d.linkFee ? line(LINKS.name, peso(d.linkFee), d.activePl.map(p => p[1]).join(' · ')) : '',
       d.isApp ? line(d.plan.name + ' plan', peso(planPrice(d.plan)) + '/mo', S.yearly ? 'Billed yearly' : 'Billed monthly') : '',
       d.isApp && S.tableOrder ? line('Table ordering', 'quote', 'From ₱499/mo · priced by your tables') : '',
-      ...d.activeSvcs.map(v => line(v.name, peso(v.price) + (v.monthly ? '/mo' : ''), 'Done-for-you service'))
+      ...d.activeSvcs.map(v => v.quote ? line(v.name, 'quote', 'Done-for-you service · we send a price') : line(v.name, peso(v.price) + (v.monthly ? '/mo' : ''), 'Done-for-you service'))
     ].join('');
     const totals = `<div class="co-totals"><div><span>One-time</span><b>${peso(d.oneTime)}</b></div>${d.monthly ? `<div><span>Monthly</span><b>${peso(d.monthly)}</b></div>` : ''}${d.saved > 0 ? `<div class="lime"><span>You save</span><b>${peso(d.saved)}</b></div>` : ''}</div>`;
     const field = (id, label, type = 'text', extra = '') => `<label class="field co-field">${label}<input id="co-${id}" data-co="${id}" type="${type}" value="${esc(i[id])}" ${extra}></label>`;
@@ -767,6 +1033,7 @@
     wifiH: h => set({ wifiH: +h }),
     yearly: v => set({ yearly: v === '1' }),
     svc: id => set({ svcs: { ...S.svcs, [id]: !S.svcs[id] } }),
+    svcGo: () => { if (builder) scrollTo('build'); },
     order: () => order()
   };
   document.addEventListener('click', e => {
@@ -798,7 +1065,7 @@
   /* ---------- gentle reveal on scroll ---------- */
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const rv = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); rv.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
-    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-demo, .dp__grid, .svc, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
+    $$('.sec__head, .sec > .sec__titles, .ax-f, .ax-demo, .dp__grid, .reseller').forEach(el => { el.classList.add('rv'); rv.observe(el); });
   }
 
   document.addEventListener('click', e => { const a = e.target.closest('[data-open-checkout]'); if (a && builder) { e.preventDefault(); order(); } });

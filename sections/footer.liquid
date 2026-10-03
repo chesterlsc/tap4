@@ -1,25 +1,73 @@
+{%- liquid
+  assign s = section.settings
+  assign menu = s.menu
+-%}
 <footer class="site-footer">
-  <div class="site-footer__in">
-    <a class="site-footer__brand" href="{{ routes.root_url }}">{{ section.settings.brand | default: shop.name | escape }}</a>
-    {%- assign menu = section.settings.menu -%}
-    <nav class="site-footer__nav" aria-label="Footer">
+  <div class="sf">
+    <div class="sf__brand">
+      <a class="brand site-footer__brand sf__logo" href="{{ routes.root_url }}" aria-label="{{ s.brand | default: shop.name | escape }} home">{% render 'tf-mark' %}{{ s.brand | default: shop.name | escape }}</a>
+      <p>{{ s.blurb | escape }}</p>
+      <a class="sf__mail" href="mailto:{{ s.email | escape }}">{{ s.email | escape }}</a>
+    </div>
+
+    <nav class="sf__col" aria-label="Product">
+      <b>Product</b>
       {%- if menu.links.size > 0 -%}
         {%- for link in menu.links -%}<a href="{{ link.url }}">{{ link.title | escape }}</a>{%- endfor -%}
       {%- else -%}
-        <a href="/#build">Review stands</a><a href="/#app">QR menu</a><a href="/#plans">Pricing</a><a href="/#services">Services</a>
+        <a href="/#build">NFC review stands</a><a href="/#app">Live QR menu</a><a href="/#app">tapfour app</a><a href="/#plans">Pricing &amp; plans</a><a href="/#services">Done-for-you services</a><a href="/#how">How it works</a>
       {%- endif -%}
     </nav>
-    <span>{{ section.settings.text | escape }}</span>
+
+    <nav class="sf__col" aria-label="Company">
+      <b>Company</b>
+      <a href="/pages/about">About us</a>
+      <a href="/pages/faq">FAQ</a>
+      <a href="mailto:{{ s.email | escape }}">Contact</a>
+    </nav>
+
+    <div class="sf__col sf__order">
+      <b>Order</b>
+      <p>{{ s.order_text | escape }}</p>
+      <a class="btn btn--lime" href="/#build">{{ s.order_label | escape }}</a>
+    </div>
+  </div>
+  <div class="sf__base">
+    <span>© {{ 'now' | date: '%Y' }} {{ s.brand | default: shop.name | escape }} · tap4.ph</span>
+    <span>{{ s.text | escape }}</span>
   </div>
 </footer>
+
+<style>
+  .sf { max-width: 1320px; margin: 0 auto; padding: 56px 32px 40px; display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: 40px; }
+  .sf__brand { display: flex; flex-direction: column; gap: 14px; max-width: 360px; }
+  .sf__logo { font-size: 24px; }
+  .sf__brand p, .sf__order p { font-size: 14.5px; line-height: 1.55; color: var(--m3); }
+  .site-footer a.sf__mail { color: var(--fg); font-weight: 600; font-size: 15px; }
+  .sf__col { display: flex; flex-direction: column; gap: 12px; font-size: 15px; }
+  .sf__col b { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--m4); margin-bottom: 4px; }
+  .sf__order { align-items: flex-start; }
+  .site-footer .sf__order .btn { color: var(--bg); margin-top: 4px; }
+  .sf__base { max-width: 1320px; margin: 0 auto; padding: 20px 32px 32px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid #1c1c1f; font-size: 13px; color: var(--m4); }
+  @media (max-width: 900px) { .sf { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sf__brand { grid-column: 1 / -1; } }
+  @media (max-width: 640px) {
+    .sf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 20px; padding: 40px 20px 28px; }
+    .sf__order { grid-column: 1 / -1; }
+    .sf__base { flex-direction: column; padding: 18px 20px calc(96px + env(safe-area-inset-bottom)); }
+  }
+</style>
 
 {% schema %}
 {
   "name": "Footer",
   "settings": [
     { "type": "text", "id": "brand", "label": "Brand name", "default": "tapfour" },
-    { "type": "link_list", "id": "menu", "label": "Menu", "default": "footer" },
-    { "type": "text", "id": "text", "label": "Text", "default": "Made in the Philippines · hello@tapfour.ph" }
+    { "type": "textarea", "id": "blurb", "label": "About line", "default": "NFC Google review stands, live QR menus and the tapfour app for cafés, restaurants and shops in the Philippines." },
+    { "type": "text", "id": "email", "label": "Email", "default": "hello@tapfour.ph" },
+    { "type": "link_list", "id": "menu", "label": "Product links menu", "default": "footer" },
+    { "type": "text", "id": "order_text", "label": "Order text", "default": "Stands from ₱899. Programmed before they ship, nationwide." },
+    { "type": "text", "id": "order_label", "label": "Order button", "default": "Build your setup →" },
+    { "type": "text", "id": "text", "label": "Bottom line", "default": "Made in the Philippines" }
   ]
 }
 {% endschema %}

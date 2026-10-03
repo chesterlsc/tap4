@@ -1,0 +1,106 @@
+{%- comment -%}
+  Search + share metadata: description, robots, Open Graph / Twitter cards, and JSON-LD
+  (Organization + WebSite everywhere, Products with offers on the homepage, breadcrumbs on pages).
+  Pass title (the final <title> text) and description. FAQ structured data lives in the FAQ section itself.
+{%- endcomment -%}
+{%- liquid
+  assign origin = request.origin
+  assign home = origin | append: '/'
+  if settings.og_image
+    assign og = settings.og_image | image_url: width: 1200
+    assign og = 'https:' | append: og
+  else
+    assign og = 'og-tapfour.jpg' | asset_url
+    if og contains '//'
+      assign og = 'https:' | append: og
+    else
+      assign og = origin | append: og
+    endif
+  endif
+  assign logo = 'apple-touch-icon.png' | asset_url
+  if logo contains '//'
+    assign logo = 'https:' | append: logo
+  else
+    assign logo = origin | append: logo
+  endif
+-%}
+{%- if description != blank %}<meta name="description" content="{{ description | escape }}">{% endif %}
+<meta name="robots" content="{% if template.name == '404' or template.name == 'search' or template.name == 'cart' %}noindex, follow{% else %}index, follow, max-image-preview:large{% endif %}">
+{%- if settings.google_site_verification != blank %}<meta name="google-site-verification" content="{{ settings.google_site_verification | escape }}">{% endif %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ shop.name }}">
+<meta property="og:locale" content="en_PH">
+<meta property="og:title" content="{{ title | escape }}">
+{%- if description != blank %}<meta property="og:description" content="{{ description | escape }}">{% endif %}
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ og }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="tapfour NFC Google review stand with the tapfour logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title | escape }}">
+{%- if description != blank %}<meta name="twitter:description" content="{{ description | escape }}">{% endif %}
+<meta name="twitter:image" content="{{ og }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": {{ home | append: '#org' | json }},
+      "name": {{ shop.name | json }},
+      "url": {{ home | json }},
+      "logo": {{ logo | json }},
+      "email": {{ settings.contact_email | default: 'hello@tapfour.ph' | json }},
+      "description": {{ settings.seo_description | json }},
+      "areaServed": { "@type": "Country", "name": "Philippines" },
+      "contactPoint": { "@type": "ContactPoint", "contactType": "sales", "email": {{ settings.contact_email | default: 'hello@tapfour.ph' | json }}, "areaServed": "PH" }
+    },
+    {
+      "@type": "WebSite",
+      "@id": {{ home | append: '#site' | json }},
+      "name": {{ shop.name | json }},
+      "url": {{ home | json }},
+      "inLanguage": "en-PH",
+      "publisher": { "@id": {{ home | append: '#org' | json }} }
+    }
+    {%- if template.name == 'index' -%}
+      {%- assign stand = all_products['tap4-l-stand'] -%}
+      {%- assign pkg = all_products['tapfour-package'] -%}
+      {%- assign stand_img = 'tapfour-l-black-review.jpg' | asset_url -%}
+      {%- unless stand_img contains '//' -%}{%- assign stand_img = origin | append: stand_img -%}{%- else -%}{%- assign stand_img = 'https:' | append: stand_img -%}{%- endunless -%}
+      {%- assign pkg_img = 'tapfour-l-black-menu.jpg' | asset_url -%}
+      {%- unless pkg_img contains '//' -%}{%- assign pkg_img = origin | append: pkg_img -%}{%- else -%}{%- assign pkg_img = 'https:' | append: pkg_img -%}{%- endunless -%}
+      {%- if stand -%},
+    {
+      "@type": "Product",
+      "name": "TAP4.1 L-Stand · NFC Google review stand",
+      "description": "Glossy acrylic L-shaped table stand with a built-in NFC chip and QR code. One tap opens your Google review page; one scan opens your live menu. Programmed before it ships. Black or white.",
+      "image": {{ stand_img | json }},
+      "sku": "TF-L41",
+      "brand": { "@type": "Brand", "name": {{ shop.name | json }} },
+      "offers": { "@type": "Offer", "price": {{ stand.price | divided_by: 100 | json }}, "priceCurrency": "PHP", "availability": "https://schema.org/InStock", "itemCondition": "https://schema.org/NewCondition", "url": {{ home | append: '#build' | json }}, "seller": { "@id": {{ home | append: '#org' | json }} } }
+    }
+      {%- endif -%}
+      {%- if pkg -%},
+    {
+      "@type": "Product",
+      "name": "tapfour Solo package · 5 Review + Menu stands + the tapfour app",
+      "description": "Five NFC Google review + QR menu stands for one location, programmed before they ship, plus the tapfour app: live QR menu editor, taps and busiest-hours dashboard, billing and inventory trackers. ₱3,000 once + ₱299/mo.",
+      "image": {{ pkg_img | json }},
+      "brand": { "@type": "Brand", "name": {{ shop.name | json }} },
+      "offers": { "@type": "Offer", "price": {{ pkg.price | divided_by: 100 | json }}, "priceCurrency": "PHP", "availability": "https://schema.org/InStock", "itemCondition": "https://schema.org/NewCondition", "url": {{ home | append: '#plans' | json }}, "seller": { "@id": {{ home | append: '#org' | json }} } }
+    }
+      {%- endif -%}
+    {%- elsif template.name == 'page' -%},
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": {{ home | json }} },
+        { "@type": "ListItem", "position": 2, "name": {{ page_title | json }}, "item": {{ canonical_url | json }} }
+      ]
+    }
+    {%- endif %}
+  ]
+}
+</script>

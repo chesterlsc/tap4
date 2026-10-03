@@ -185,55 +185,145 @@
     "services": {
       "type": "tf-services",
       "blocks": {
-        "v1": {
+        "page": {
           "type": "service",
           "settings": {
+            "scene": "page",
             "product": "page-build",
+            "kicker": "01 · YOUR 4-IN-1 PAGE",
+            "title": "Page build",
             "text": "We design your 4-in-1 tap page with your logo, photos and links."
           }
         },
-        "v2": {
+        "menu": {
           "type": "service",
           "settings": {
+            "scene": "menu",
             "product": "menu-setup",
-            "text": "Send a photo of your menu — we type, price and photograph it."
+            "kicker": "02 · PAPER TO QR MENU",
+            "title": "Menu setup",
+            "text": "Send a photo of your menu. We type, price and photograph it."
           }
         },
-        "v3": {
+        "google": {
           "type": "service",
           "settings": {
+            "scene": "google",
             "product": "google-profile-setup",
+            "kicker": "03 · ON THE MAP",
+            "title": "Google profile setup",
             "text": "Create or fix your Google Business Profile so reviews land."
           }
         },
-        "v5": {
+        "site": {
           "type": "service",
           "settings": {
-            "product": "social-starter-pack",
-            "text": "9 launch posts and 3 reels announcing your tap stand."
+            "scene": "site",
+            "quote": true,
+            "short": "website",
+            "kicker": "04 · YOUR OWN WEBSITE",
+            "title": "Website build",
+            "text": "A one-page site on your own domain with your menu or services, map and a book, order or join button."
           }
         },
-        "v6": {
+        "book": {
           "type": "service",
           "settings": {
-            "product": "managed-dashboard",
-            "text": "We watch your stats, reply to reviews and update your menu."
+            "scene": "book",
+            "quote": true,
+            "short": "booking",
+            "kicker": "05 · BOOKINGS ON AUTOPILOT",
+            "title": "Online booking setup",
+            "text": "Patients and members book a slot from your page. Reminders go out by SMS, so fewer no-shows."
+          }
+        },
+        "ads": {
+          "type": "service",
+          "settings": {
+            "scene": "ads",
+            "quote": true,
+            "short": "ads",
+            "kicker": "06 · REACH PEOPLE NEARBY",
+            "title": "Local ads",
+            "text": "We run Google and Facebook ads to people within a few kilometres and send them to your page."
           }
         }
       },
       "block_order": [
-        "v1",
-        "v2",
-        "v3",
-        "v5",
-        "v6"
+        "page",
+        "menu",
+        "google",
+        "site",
+        "book",
+        "ads"
       ],
-      "settings": {}
-    },
-    "reseller": {
-      "type": "tf-reseller",
       "settings": {
-        "product": "reseller-starter-kit"
+        "eyebrow": "04 — DONE-FOR-YOU SERVICES",
+        "title": "No time?",
+        "title_accent": "We build it for you.",
+        "aside": "Only when you need a hand. No bundles, no minimums. Pick one, pay once. Watch what each one does."
+      }
+    },
+    "faq": {
+      "type": "tf-faq",
+      "blocks": {
+        "q_how": {
+          "type": "question",
+          "settings": {
+            "q": "How does an NFC Google review stand work?",
+            "a": "<p>Each TAP4.1 L-Stand has an NFC chip that we program with your Google review link before it ships. A guest holds their phone near the stand and your review page opens: no app to download, no searching for your shop. Phones without NFC can scan the QR code instead.</p>"
+          }
+        },
+        "q_phones": {
+          "type": "question",
+          "settings": {
+            "q": "Which phones work with the stand?",
+            "a": "<p>Most iPhones from the iPhone XS onwards and most Android phones with NFC open the link with a tap. On some Android phones NFC has to be switched on in settings. Any phone camera can scan the QR code.</p>"
+          }
+        },
+        "q_cost": {
+          "type": "question",
+          "settings": {
+            "q": "How much does it cost?",
+            "a": "<p>A single TAP4.1 L-Stand is ₱899, and a Review + QR menu stand is ₱1,398. The Solo package is 5 Review + Menu stands plus the tapfour app for ₱3,000 once + ₱299/mo. Bigger packages cover up to 5 or 20 branches. Shipping is confirmed with your order.</p>"
+          }
+        },
+        "q_app": {
+          "type": "question",
+          "settings": {
+            "q": "Do I need the tapfour app?",
+            "a": "<p>No. A stand works on its own. The app (from ₱299/mo, paired with every package) lets you change links without reprinting, edit your live QR menu, and see taps, QR scans and your busiest hours. Cancel anytime: your stand keeps working.</p>"
+          }
+        },
+        "q_ship": {
+          "type": "question",
+          "settings": {
+            "q": "Do you ship nationwide? How long does it take?",
+            "a": "<p>Yes, we ship anywhere in the Philippines: Luzon, Visayas and Mindanao. Orders usually arrive in 3–5 days once we confirm them.</p>"
+          }
+        },
+        "q_allowed": {
+          "type": "question",
+          "settings": {
+            "q": "Is it okay to ask for Google reviews this way?",
+            "a": "<p>Yes. Google lets businesses ask customers for reviews. What it doesn't allow is paying for reviews, offering rewards for them, or only asking happy customers. The stand simply makes it easy for every guest to leave an honest review.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q_how",
+        "q_phones",
+        "q_cost",
+        "q_app",
+        "q_ship",
+        "q_allowed"
+      ],
+      "settings": {
+        "eyebrow": "FAQ",
+        "title": "Questions, answered.",
+        "intro": "How the NFC review stand works, what it costs and how ordering works.",
+        "link_label": "All questions →",
+        "link_url": "/pages/faq"
       }
     }
   },
@@ -245,6 +335,6 @@
     "app",
     "plans",
     "services",
-    "reseller"
+    "faq"
   ]
 }

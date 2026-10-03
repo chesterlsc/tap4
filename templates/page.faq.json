@@ -1,0 +1,141 @@
+{
+  "sections": {
+    "main": {
+      "type": "tf-faq",
+      "blocks": {
+        "q_what": {
+          "type": "question",
+          "settings": {
+            "q": "What is tapfour?",
+            "a": "<p>tapfour makes NFC and QR table stands for cafés, restaurants and shops in the Philippines. Guests tap their phone on the stand to open your Google review page, or scan the QR code for your live menu. The tapfour app lets you change links, run your menu and see every tap.</p>"
+          }
+        },
+        "q_how": {
+          "type": "question",
+          "settings": {
+            "q": "How does an NFC Google review stand work?",
+            "a": "<p>Each TAP4.1 L-Stand has an NFC chip that we program with your Google review link before it ships. A guest holds their phone near the stand and your review page opens: no app to download, no searching for your shop. Phones without NFC can scan the QR code instead.</p>"
+          }
+        },
+        "q_phones": {
+          "type": "question",
+          "settings": {
+            "q": "Which phones work with the stand?",
+            "a": "<p>Most iPhones from the iPhone XS onwards and most Android phones with NFC open the link with a tap. On some Android phones NFC has to be switched on in settings. Any phone camera can scan the QR code.</p>"
+          }
+        },
+        "q_cost": {
+          "type": "question",
+          "settings": {
+            "q": "How much does it cost?",
+            "a": "<p>A single TAP4.1 L-Stand is ₱899, and a Review + QR menu stand is ₱1,398. The Solo package is 5 Review + Menu stands plus the tapfour app for ₱3,000 once + ₱299/mo. Bigger packages cover up to 5 or 20 branches. Shipping is confirmed with your order.</p>"
+          }
+        },
+        "q_app": {
+          "type": "question",
+          "settings": {
+            "q": "Do I need the tapfour app?",
+            "a": "<p>No. A stand works on its own. The app (from ₱299/mo, paired with every package) lets you change links without reprinting, edit your live QR menu, and see taps, QR scans and your busiest hours. Cancel anytime: your stand keeps working.</p>"
+          }
+        },
+        "q_link": {
+          "type": "question",
+          "settings": {
+            "q": "How do you get my Google review link?",
+            "a": "<p>Paste your Google Maps share link when you order (in Google Maps: open your shop → Share → Copy link). We find your review link from it and program your stands before they ship. Not ready? Send it after checkout.</p>"
+          }
+        },
+        "q_change": {
+          "type": "question",
+          "settings": {
+            "q": "Can I change the link or my menu later?",
+            "a": "<p>Yes. With the tapfour app you change a link once and every stand follows, with nothing to reprint. Menu prices and sold-out items update within seconds for the next guest who scans.</p>"
+          }
+        },
+        "q_ship": {
+          "type": "question",
+          "settings": {
+            "q": "Do you ship nationwide? How long does it take?",
+            "a": "<p>Yes, we ship anywhere in the Philippines: Luzon, Visayas and Mindanao. Orders usually arrive in 3–5 days once we confirm them.</p>"
+          }
+        },
+        "q_order": {
+          "type": "question",
+          "settings": {
+            "q": "How do I order and pay?",
+            "a": "<p>Build your setup on <a href=\"/#build\">tap4.ph</a> and press Checkout. Your order is sent to us by email, and we reply to confirm shipping and payment.</p>"
+          }
+        },
+        "q_allowed": {
+          "type": "question",
+          "settings": {
+            "q": "Is it okay to ask for Google reviews this way?",
+            "a": "<p>Yes. Google lets businesses ask customers for reviews. What it doesn't allow is paying for reviews, offering rewards for them, or only asking happy customers. The stand simply makes it easy for every guest to leave an honest review.</p>"
+          }
+        },
+        "q_rank": {
+          "type": "question",
+          "settings": {
+            "q": "Will more reviews help my ranking on Google Maps?",
+            "a": "<p>Google says the number of reviews and your review score are among the things that affect local search results, along with relevance and distance. tapfour makes it easier for guests to review you; Google decides the ranking.</p>"
+          }
+        },
+        "q_ordering": {
+          "type": "question",
+          "settings": {
+            "q": "Can guests order from the table?",
+            "a": "<p>Yes, with the table ordering add-on, from ₱499/mo, priced by your number of tables and order volume. Guests order on their phone at the table and the order pops up on your counter tablet.</p>"
+          }
+        },
+        "q_services": {
+          "type": "question",
+          "settings": {
+            "q": "Can you set everything up for me?",
+            "a": "<p>Yes, if you want help: page build ₱1,500, menu setup ₱2,500 and Google Business Profile setup ₱1,800, each paid once. Website build, online booking setup and local ads are quoted on request.</p>"
+          }
+        },
+        "q_look": {
+          "type": "question",
+          "settings": {
+            "q": "What do the stands look like?",
+            "a": "<p>The TAP4.1 L-Stand is a glossy acrylic L-shaped stand in black or white with a clean tapfour print, so it suits any counter or table. Pick Google Review, Review + QR menu, or Socials 4-in-1 (Google, Facebook, Instagram and TikTok).</p>"
+          }
+        },
+        "q_who": {
+          "type": "question",
+          "settings": {
+            "q": "Is it only for cafés and restaurants?",
+            "a": "<p>No. The same stands work for salons, clinics, gyms and shops: any business with a Google Maps listing.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q_what",
+        "q_how",
+        "q_phones",
+        "q_cost",
+        "q_app",
+        "q_link",
+        "q_change",
+        "q_ship",
+        "q_order",
+        "q_allowed",
+        "q_rank",
+        "q_ordering",
+        "q_services",
+        "q_look",
+        "q_who"
+      ],
+      "settings": {
+        "eyebrow": "FAQ · TAPFOUR",
+        "title": "NFC review stands & QR menus: your questions.",
+        "h1": true,
+        "schema": true,
+        "intro": "Everything about tapfour's NFC Google review stands, live QR menus, the tapfour app, pricing and nationwide shipping in the Philippines. Still curious? Email hello@tapfour.ph."
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

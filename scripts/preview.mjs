@@ -85,6 +85,21 @@ function previewNotice(emptyProducts) {
   return `<aside style="padding:9px 18px;background:#e4ff79;color:#101010;text-align:center;font:600 12px/1.5 system-ui" role="note">Local theme preview · ${emptyProducts ? 'No catalog products' : 'Sample catalog from products.csv; simulated variant IDs'} · Cart and checkout are disabled. <a style="color:inherit;text-decoration:underline" href="/collections/all">Products</a> · <a style="color:inherit;text-decoration:underline" href="/cart?sample=1">Sample cart</a> · <a style="color:inherit;text-decoration:underline" href="/search?q=stand">Search</a></aside>`;
 }
 
+// Pages rendered from templates/page.<handle>.json. Title + description are what Shopify's page SEO fields hold.
+export const PAGES = {
+  about: { title: 'About tapfour: NFC review stands & QR menus', description: 'tapfour makes NFC Google review stands, live QR menus and a simple owner app for cafés, restaurants and shops across the Philippines. Set up before it ships.' },
+  faq: { title: 'NFC Review Stand & QR Menu FAQ', description: 'How tapfour NFC Google review stands and live QR menus work, which phones tap, prices from ₱899, the tapfour app and nationwide shipping in the Philippines.' }
+};
+
+// Search engines: everything is crawlable; the sitemap lists the pages that exist on the static site.
+export function crawlFiles(site, day = new Date().toISOString().slice(0, 10)) {
+  const urls = ['/', ...Object.keys(PAGES).map(handle => `/pages/${handle}`)];
+  return {
+    'robots.txt': `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`,
+    'sitemap.xml': `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(u => `  <url><loc>${site}${u}</loc><lastmod>${day}</lastmod></url>`).join('\n')}\n</urlset>\n`
+  };
+}
+
 export async function createPreview({ emptyProducts = false, orderEmail = '', menuUploadUrl = '' } = {}) {
   const catalog = await createCatalog();
   const allProducts = emptyProducts ? {} : catalog;
@@ -153,7 +168,7 @@ export async function createPreview({ emptyProducts = false, orderEmail = '', me
   }
   async function renderPage(input = '/') {
     const url = new URL(input, 'http://localhost:3000');
-    let name = '404', context = {}, status = 200, title = 'Page not found';
+    let name = '404', file = '', suffix = null, description = '', context = {}, status = 200, title = 'Page not found';
     const collection = { title: 'All products', description: 'Sample catalog for local preview.', products: productList, products_count: productList.length, url: '/collections/all' };
     const cart = { item_count: 0, items: [], currency: { iso_code: 'PHP' }, total_price: 0, note: '', cart_level_discount_applications: [] };
     if (url.pathname === '/') { name = 'index'; title = 'tapfour'; }
@@ -177,15 +192,18 @@ export async function createPreview({ emptyProducts = false, orderEmail = '', me
       context = { search: { performed: url.searchParams.has('q'), terms, results, results_count: results.length } };
     } else if (url.pathname === '/collections/all') { name = 'collection'; title = 'All products'; context = { collection }; }
     else if (url.pathname === '/collections') { name = 'list-collections'; title = 'Collections'; context = { collections: [collection] }; }
-    else if (url.pathname === '/pages/preview') { name = 'page'; title = 'Preview page'; context = { page: { title, content: '<p>This sample page demonstrates the page template. Add your own pages in Shopify.</p>' } }; }
+    else if (url.pathname.startsWith('/pages/') && PAGES[url.pathname.split('/')[2]]) {
+      suffix = url.pathname.split('/')[2]; name = 'page'; file = `page.${suffix}`;
+      ({ title, description } = PAGES[suffix]); context = { page: { title, handle: suffix, url: url.pathname } };
+    } else if (url.pathname === '/pages/preview') { name = 'page'; title = 'Preview page'; context = { page: { title, content: '<p>This sample page demonstrates the page template. Add your own pages in Shopify.</p>' } }; }
     else status = 404;
     const globals = {
       settings, shop: { name: 'tapfour' }, cart, routes: { root_url: '/', cart_url: '/cart', cart_add_url: '/cart/add', search_url: '/search', all_products_collection_url: '/collections/all' },
       request: { locale: { iso_code: 'en' }, origin: url.origin, design_mode: false, page_type: name },
-      template: { name }, page_title: title, canonical_url: url.href, current_page: 1,
+      template: { name, suffix }, page_title: title, page_description: description, canonical_url: url.origin + url.pathname, current_page: 1,
       all_products: allProducts, paginate: { pages: 1 }, ...context
     };
-    const body = await renderGroup(`templates/${name}.json`, globals);
+    const body = await renderGroup(`templates/${file || name}.json`, globals);
     let layout = await read('layout/theme.liquid');
     for (const match of [...layout.matchAll(/{%-?\s*sections\s+['"]([^'"]+)['"]\s*-?%}/g)]) {
       layout = layout.replace(match[0], await renderGroup(`sections/${match[1]}.json`, globals));
@@ -199,7 +217,7 @@ export async function createPreview({ emptyProducts = false, orderEmail = '', me
 
 export async function renderSite(options = {}) {
   const preview = await createPreview(options);
-  const routes = ['/', '/cart', '/cart?sample=1', '/search', '/search?q=stand', '/collections/all', '/collections', '/pages/preview', '/404', ...Object.keys(preview.catalog).map(handle => `/products/${handle}`)];
+  const routes = ['/', '/cart', '/cart?sample=1', '/search', '/search?q=stand', '/collections/all', '/collections', '/pages/preview', ...Object.keys(PAGES).map(handle => `/pages/${handle}`), '/404', ...Object.keys(preview.catalog).map(handle => `/products/${handle}`)];
   const pages = new Map();
   for (const route of routes) pages.set(route, (await preview.renderPage(route)).html);
   return { pages, catalog: preview.catalog };
@@ -208,7 +226,7 @@ export async function renderSite(options = {}) {
 async function main() {
   const emptyProducts = process.env.EMPTY === '1';
   if (process.argv.includes('--static')) {
-    // Production site for Vercel (tap4.ph): homepage + 404, orders go out by email, no Shopify cart.
+    // Production site for Vercel (tap4.ph): homepage, pages, 404, robots.txt + sitemap.xml; orders go out by email, no Shopify cart.
     const preview = await createPreview({ orderEmail: process.env.ORDER_EMAIL || 'hello@tapfour.ph', menuUploadUrl: process.env.MENU_UPLOAD_URL ?? 'https://go.tap4.ph/upload/menu' });
     const output = path.join(ROOT, 'dist');
     await fs.rm(output, { recursive: true, force: true });
@@ -216,6 +234,9 @@ async function main() {
     const site = process.env.SITE_URL || 'https://tap4.ph';
     await fs.writeFile(path.join(output, 'index.html'), (await preview.renderPage(site + '/')).html);
     await fs.writeFile(path.join(output, '404.html'), (await preview.renderPage(site + '/404')).html);
+    await fs.mkdir(path.join(output, 'pages'), { recursive: true });
+    for (const handle of Object.keys(PAGES)) await fs.writeFile(path.join(output, 'pages', `${handle}.html`), (await preview.renderPage(`${site}/pages/${handle}`)).html);
+    for (const [file, text] of Object.entries(crawlFiles(site))) await fs.writeFile(path.join(output, file), text);
     console.log('Built static site into dist/');
     return;
   }

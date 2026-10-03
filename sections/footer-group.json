@@ -4,7 +4,7 @@
   "sections": {
     "footer": {
       "type": "footer",
-      "settings": { "brand": "tapfour", "menu": "footer", "text": "Made in the Philippines · hello@tapfour.ph" }
+      "settings": { "brand": "tapfour", "menu": "footer", "email": "hello@tapfour.ph", "text": "Made in the Philippines" }
     }
   },
   "order": ["footer"]

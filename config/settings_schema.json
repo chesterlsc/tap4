@@ -18,6 +18,43 @@
     ]
   },
   {
+    "name": "SEO",
+    "settings": [
+      {
+        "type": "text",
+        "id": "seo_home_title",
+        "label": "Homepage title (Google)",
+        "default": "NFC Google Review Stand & QR Menu Philippines | tapfour",
+        "info": "About 50–60 characters. Shown as the blue link in Google results."
+      },
+      {
+        "type": "textarea",
+        "id": "seo_description",
+        "label": "Default description (Google)",
+        "default": "Get more Google reviews with one tap. tapfour NFC stands open your Google review page and live QR menu, no app needed. From ₱899, shipped nationwide.",
+        "info": "About 140–160 characters. Used on the homepage and wherever a page has no description of its own."
+      },
+      {
+        "type": "image_picker",
+        "id": "og_image",
+        "label": "Share image (1200×630)",
+        "info": "Shown when tap4.ph is shared on Facebook, Messenger, Viber or X. Defaults to og-tapfour.jpg."
+      },
+      {
+        "type": "text",
+        "id": "contact_email",
+        "label": "Contact email",
+        "default": "hello@tapfour.ph"
+      },
+      {
+        "type": "text",
+        "id": "google_site_verification",
+        "label": "Google Search Console code",
+        "info": "Paste only the content value of the google-site-verification meta tag from Search Console (HTML tag method)."
+      }
+    ]
+  },
+  {
     "name": "Sale",
     "settings": [
       {

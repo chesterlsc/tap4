@@ -1,29 +1,46 @@
 {%- comment -%}
-  Each block points at a service product. Toggling a card adds it to the builder order.
-  Products with a subscription selling plan (or tag "monthly") show /mo.
+  04 · Done-for-you services. Each block is one card with a looping scene (drawn by theme.js on a 600×400 artboard).
+  Toggling a card adds it to the builder order. Priced cards need a product (Shopify price wins);
+  products tagged "subscription" or "monthly" show /mo. "Quote on request" cards need no product:
+  they are left out of the total and sent as a quote request with the order.
 {%- endcomment -%}
-<section id="services" class="sec">
-  <div class="sec__head">
-    <div class="sec__titles">
-      <div class="eyebrow">{{ section.settings.eyebrow | escape }}</div>
-      <h2 class="h2">{{ section.settings.title | escape }}</h2>
-    </div>
-    <p class="sec__aside">{{ section.settings.aside | escape }}</p>
-  </div>
-  <div class="svc-grid">
-    {%- for block in section.blocks -%}
-      {%- assign p = block.settings.product -%}
-      {%- if p != blank -%}
-        {%- liquid
+{%- liquid
+  assign count = 0
+-%}
+{%- capture cards -%}
+  {%- for block in section.blocks -%}
+    {%- liquid
+      assign p = block.settings.product
+      assign quote = block.settings.quote
+      assign show = true
+      if p == blank and quote == false
+        assign show = false
+      endif
+    -%}
+    {%- if show -%}
+      {%- liquid
+        assign count = count | plus: 1
+        assign title = block.settings.title | default: p.title
+        assign id = p.handle | default: title | handleize
+        assign short = block.settings.short | default: title | downcase
+        assign desc = block.settings.text | default: p.description | strip_html | truncatewords: 22
+        assign kicker = block.settings.kicker
+        if kicker == blank
+          assign kicker = forloop.index | prepend: '0' | slice: -2, 2
+        endif
+        assign monthly = false
+        assign plan_id = ''
+        assign unit_price = 0
+        assign available = true
+        if p != blank
           assign v = p.selected_or_first_available_variant
-          assign monthly = false
+          assign available = v.available
+          assign unit_price = v.price
           if p.tags contains 'subscription' or p.tags contains 'monthly'
             assign monthly = true
           endif
-          assign plan_count = 0
-          assign plan_id = ''
-          assign unit_price = v.price
           if monthly
+            assign plan_count = 0
             for allocation in v.selling_plan_allocations
               if allocation.selling_plan.recurring_deliveries
                 assign plan_count = plan_count | plus: 1
@@ -36,18 +53,51 @@
               assign unit_price = v.price
             endif
           endif
-          assign desc = block.settings.text | default: p.description | strip_html | truncatewords: 22
-        -%}
-        <button type="button" class="svc" data-act="svc" data-arg="{{ p.handle }}"
-          data-svc="{{ p.handle }}" data-name="{{ p.title | escape }}" data-variant="{{ v.id }}" data-price="{{ unit_price | divided_by: 100.0 }}"
-          data-sp="{{ plan_id }}"{% if monthly %} data-monthly{% endif %}{% unless v.available %} disabled{% endunless %} {{ block.shopify_attributes }}>
-          <span class="row-between"><span class="mono m3" style="font-weight:700;font-size:13px">{{ forloop.index | prepend: '0' | slice: -2, 2 }}</span><span class="svc__mark">+</span></span>
-          <span class="svc__name">{{ p.title | escape }}</span>
-          <span class="svc__desc">{{ desc | escape }}</span>
-          <span class="svc__price">{{ unit_price | money_without_trailing_zeros }}{% if monthly %}/mo{% else %} one-time{% endif %}</span>
-        </button>
-      {%- endif -%}
-    {%- endfor -%}
+        endif
+        if quote
+          assign monthly = false
+          assign available = true
+          assign label = block.settings.price_text | default: 'Quote on request'
+        else
+          assign label = unit_price | money_without_trailing_zeros
+          if monthly
+            assign label = label | append: '/mo'
+          else
+            assign label = label | append: ' one-time'
+          endif
+          assign label = block.settings.price_text | default: label
+        endif
+      -%}
+      <button type="button" class="svc" data-act="svc" data-arg="{{ id }}" data-svc="{{ id }}" data-name="{{ title | escape }}" data-short="{{ short | escape }}"
+        {%- if quote %} data-quote data-price="0"{% else %} data-variant="{{ v.id }}" data-price="{{ unit_price | divided_by: 100.0 }}" data-sp="{{ plan_id }}"{% endif -%}
+        {%- if monthly %} data-monthly{% endif %} aria-pressed="false"{% unless available %} disabled{% endunless %} {{ block.shopify_attributes }}>
+        <span class="svc__media svc__media--{{ block.settings.scene }}" data-scene="{{ block.settings.scene }}" aria-hidden="true"></span>
+        <span class="svc__body">
+          <span class="svc__txt">
+            <span class="svc__k">{{ kicker | escape }}</span>
+            <span class="svc__name">{{ title | escape }}</span>
+            <span class="svc__desc">{{ desc | escape }}</span>
+          </span>
+          <span class="svc__row"><span class="svc__price">{{ label | escape }}</span><span class="svc__add">Add +</span></span>
+        </span>
+      </button>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+<section id="services" class="svx">
+  <div class="svx__head">
+    <div class="svx__titles">
+      <div class="svx__eyebrow">{{ section.settings.eyebrow | escape }}</div>
+      <h2 class="svx__h2">{{ section.settings.title | escape }}{% if section.settings.title_accent != blank %}<br><span class="lime">{{ section.settings.title_accent | escape }}</span>{% endif %}</h2>
+    </div>
+    <p class="svx__lede">{{ section.settings.aside | escape }}</p>
+  </div>
+  <div class="svx__hint" aria-hidden="true"><span>{{ count }} SERVICES</span><span>SWIPE →</span></div>
+  <div class="svx__grid">{{ cards }}</div>
+  <div class="svx__bar" data-svx-bar>
+    <span class="svx__n" data-svx-n>0 ADDED</span>
+    <span class="svx__sum" data-svx-sum aria-live="polite">Tap a card to add it to your order.</span>
+    <button type="button" class="svx__cta" data-act="svcGo" disabled>Add to my setup →</button>
   </div>
 </section>
 
@@ -56,16 +106,33 @@
   "name": "Services",
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "04 — DONE-FOR-YOU SERVICES" },
-    { "type": "text", "id": "title", "label": "Title", "default": "No time? We build it for you." },
-    { "type": "textarea", "id": "aside", "label": "Intro", "default": "Only when you need a hand. No bundles, no minimums — pick one, pay once." }
+    { "type": "text", "id": "title", "label": "Title", "default": "No time?" },
+    { "type": "text", "id": "title_accent", "label": "Title, second line (lime)", "default": "We build it for you." },
+    { "type": "textarea", "id": "aside", "label": "Intro", "default": "Only when you need a hand. No bundles, no minimums. Pick one, pay once. Watch what each one does." }
   ],
   "blocks": [
     {
       "type": "service",
       "name": "Service",
       "settings": [
-        { "type": "product", "id": "product", "label": "Product" },
-        { "type": "text", "id": "text", "label": "Short description", "info": "Defaults to the product description." }
+        {
+          "type": "select", "id": "scene", "label": "Animation", "default": "page",
+          "options": [
+            { "value": "page", "label": "Page build" },
+            { "value": "menu", "label": "Menu setup" },
+            { "value": "google", "label": "Google profile" },
+            { "value": "site", "label": "Website build" },
+            { "value": "book", "label": "Online booking" },
+            { "value": "ads", "label": "Local ads" }
+          ]
+        },
+        { "type": "product", "id": "product", "label": "Product", "info": "Sets the price and what goes in the cart. Not needed for quote services." },
+        { "type": "text", "id": "kicker", "label": "Kicker", "info": "Small line above the title, e.g. 01 · YOUR 4-IN-1 PAGE" },
+        { "type": "text", "id": "title", "label": "Title", "info": "Defaults to the product title." },
+        { "type": "textarea", "id": "text", "label": "Description", "info": "Defaults to the product description." },
+        { "type": "checkbox", "id": "quote", "label": "Quote on request", "default": false, "info": "No price; left out of the total and sent as a quote request." },
+        { "type": "text", "id": "price_text", "label": "Price label", "info": "Leave blank to show the product price, or “Quote on request”." },
+        { "type": "text", "id": "short", "label": "Short name", "info": "Used in the order bar for quotes, e.g. website. Defaults to the title." }
       ]
     }
   ],

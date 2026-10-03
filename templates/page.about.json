@@ -1,0 +1,51 @@
+{
+  "sections": {
+    "main": {
+      "type": "tf-about",
+      "blocks": {
+        "p1": {
+          "type": "point",
+          "settings": {
+            "title": "We set it up before it ships",
+            "text": "Send your Google Maps link and we find your review link, program every stand and type up your menu. It works the day it arrives."
+          }
+        },
+        "p2": {
+          "type": "point",
+          "settings": {
+            "title": "No app for your guests",
+            "text": "A tap opens your Google review page. A scan opens your live menu. Guests don't download or sign up for anything."
+          }
+        },
+        "p3": {
+          "type": "point",
+          "settings": {
+            "title": "Change anything, anytime",
+            "text": "With the tapfour app you edit links and menu prices once and every stand follows. Nothing to reprint."
+          }
+        },
+        "p4": {
+          "type": "point",
+          "settings": {
+            "title": "Honest by design",
+            "text": "Every guest can review you, not just the happy ones, the way Google wants it. Cancel the app anytime and your stand keeps working."
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4"
+      ],
+      "settings": {
+        "eyebrow": "ABOUT TAPFOUR",
+        "title": "One tap between a happy guest and your next review.",
+        "intro": "<p>tapfour makes NFC Google review stands, live QR menus and a simple owner app for cafés, restaurants and shops across the Philippines.</p><p>Most happy guests would leave a review. They just never get around to searching for your shop. Our glossy TAP4.1 L-Stand sits on the table or counter: one tap opens your Google review page, one scan opens your menu, and the tapfour app shows you every tap, your busiest hours and what guests open.</p><p>We ship nationwide, from Luzon to Visayas to Mindanao, and we set everything up before it leaves us.</p>"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
