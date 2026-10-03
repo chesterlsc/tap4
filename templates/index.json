@@ -11,8 +11,9 @@
           "type": "chapter",
           "settings": {
             "num": "01",
-            "label": "Build",
-            "anchor": "#build",
+            "label": "Build your setup",
+            "text": "3 designs, 2 finishes. Programmed with your Google link before it ships.",
+            "price": "Stand from ₱899",
             "start": 5,
             "end": 17
           }
@@ -21,8 +22,9 @@
           "type": "chapter",
           "settings": {
             "num": "02",
-            "label": "App",
-            "anchor": "#app",
+            "label": "The tapfour app",
+            "text": "Tap for a Google review, scan for a live menu, table orders to your counter.",
+            "price": "Ordering add-on from ₱499/mo",
             "start": 17,
             "end": 37
           }
@@ -32,7 +34,8 @@
           "settings": {
             "num": "03",
             "label": "Dashboard & plans",
-            "anchor": "#plans",
+            "text": "Every tap, your busiest hours. Change a link once, every stand follows.",
+            "price": "₱3,000 once + ₱299/mo",
             "start": 37,
             "end": 51
           }
@@ -41,8 +44,9 @@
           "type": "chapter",
           "settings": {
             "num": "04",
-            "label": "Services",
-            "anchor": "#services",
+            "label": "Done-for-you",
+            "text": "No time? We set up your Google profile, menu and page.",
+            "price": "From ₱1,500 one-time",
             "start": 51,
             "end": 57
           }

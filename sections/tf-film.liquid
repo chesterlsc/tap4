@@ -1,7 +1,7 @@
 {%- comment -%}
   How it works · the 61 s Tapfour Connect film, placed directly under the hero.
   Muted autoplay loop (no audio track) with captions from the .vtt shown in a strip under the film; "Play with sound"
-  switches to the narrated cut. Chapter chips seek the film; their ↓ links jump to the matching section.
+  switches to the narrated cut. The four chapter cards above the player seek the film (and scroll it into view).
   Files: leave a URL setting blank to use the file of the same name in assets/ (see output/howitworks/README.md).
   Loads nothing until the player nears the viewport. prefers-reduced-motion: poster only until the viewer presses play.
 {%- endcomment -%}
@@ -48,7 +48,25 @@
   <div class="sec__titles">
     <div class="eyebrow">{{ s.eyebrow | escape }}</div>
     <h2 class="h2" id="hiw-t">{{ s.title | escape }}</h2>
+    {%- if s.lead != blank -%}<p class="hiw__lead">{{ s.lead | escape }}</p>{%- endif -%}
   </div>
+
+  <nav class="hiw__chips" aria-label="Film chapters">
+    {%- for block in section.blocks -%}
+      {%- assign b = block.settings -%}
+      {%- assign mm = b.start | divided_by: 60 | floor -%}
+      {%- assign ss = b.start | modulo: 60 | floor -%}
+      <div class="hiw-chip" data-hiw-chip data-t="{{ b.start }}" data-end="{{ b.end }}" {{ block.shopify_attributes }}>
+        <button type="button" aria-label="Play {{ b.num | escape }} {{ b.label | escape }} in the film, from {{ mm }}:{% if ss < 10 %}0{% endif %}{{ ss }}">
+          <span class="hiw-chip__top"><b>{{ b.num | escape }}</b><span class="hiw-chip__at"><i class="hiw__i-play" aria-hidden="true"></i>{{ mm }}:{% if ss < 10 %}0{% endif %}{{ ss }}</span></span>
+          <strong>{{ b.label | escape }}</strong>
+          {%- if b.text != blank -%}<span class="hiw-chip__x">{{ b.text | escape }}</span>{%- endif -%}
+          {%- if b.price != blank -%}<span class="hiw-chip__p">{{ b.price | escape }}</span>{%- endif -%}
+          <i class="hiw-chip__bar" aria-hidden="true"></i>
+        </button>
+      </div>
+    {%- endfor -%}
+  </nav>
 
   <div class="hiw__player">
     <div class="hiw__stage">
@@ -67,15 +85,6 @@
     </div>
   </div>
 
-  <nav class="hiw__chips" aria-label="Film chapters">
-    {%- for block in section.blocks -%}
-      {%- assign b = block.settings -%}
-      <div class="hiw-chip" data-hiw-chip data-t="{{ b.start }}" data-end="{{ b.end }}" {{ block.shopify_attributes }}>
-        <button type="button" aria-label="Play {{ b.num | escape }} {{ b.label | escape }} in the film"><b>{{ b.num | escape }}</b>{{ b.label | escape }}<i aria-hidden="true"></i></button>
-        <a href="{{ b.anchor }}" aria-label="Go to {{ b.num | escape }} {{ b.label | escape }} on this page">↓</a>
-      </div>
-    {%- endfor -%}
-  </nav>
 
   {%- if s.transcript != blank -%}
     <details class="hiw__tx"><summary>Transcript</summary><div>{{ s.transcript | newline_to_br }}</div></details>
@@ -101,16 +110,24 @@
   .hiw__btn[data-state="play"] .hiw__i-pause { width: 0; height: 0; border: 0; border-left: 10px solid currentColor; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
   .hiw__i-snd { width: 14px; height: 12px; background: currentColor; clip-path: polygon(0 30%, 35% 30%, 75% 0, 75% 100%, 35% 70%, 0 70%); }
   .hiw__btn[data-muted] .hiw__i-snd { opacity: .45; }
-  .hiw__chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: -8px; }
-  .hiw-chip { display: flex; border-radius: 99px; background: var(--card); box-shadow: inset 0 0 0 1px var(--l2); overflow: hidden; transition: box-shadow .2s; }
-  .hiw-chip button { position: relative; display: flex; align-items: center; gap: 8px; padding: 12px 8px 12px 18px; font-size: 14px; font-weight: 700; color: var(--m1); }
-  .hiw-chip b { font: 500 12px var(--mono); letter-spacing: .06em; color: var(--lime); }
-  .hiw-chip i { position: absolute; left: 18px; right: 8px; bottom: 6px; height: 2px; border-radius: 2px; background: var(--lime); transform-origin: left; transform: scaleX(var(--p, 0)); opacity: 0; }
-  .hiw-chip a { display: flex; align-items: center; padding: 0 16px 0 10px; color: var(--m3); font-weight: 700; }
-  .hiw-chip a:hover, .hiw-chip button:hover { color: var(--lime); }
+  .hiw__lead { font-size: 20px; line-height: 1.5; color: var(--m2); max-width: 780px; margin-top: 8px; }
+  .hiw__chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  .hiw-chip { display: flex; border-radius: 24px; background: var(--card); box-shadow: inset 0 0 0 1px var(--l2); transition: box-shadow .2s, background .2s; }
+  .hiw-chip:hover { background: #151517; box-shadow: inset 0 0 0 1px var(--l4); }
+  .hiw-chip button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 26px 26px 28px; text-align: left; color: var(--fg); }
+  .hiw-chip__top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .hiw-chip b { font: 500 13px var(--mono); letter-spacing: .06em; color: var(--lime); }
+  .hiw-chip__at { display: inline-flex; align-items: center; gap: 8px; font: 500 13px var(--mono); letter-spacing: .06em; color: var(--m3); }
+  .hiw-chip__at .hiw__i-play { border-left-width: 7px; border-top-width: 4.5px; border-bottom-width: 4.5px; }
+  .hiw-chip strong { font-size: 22px; font-weight: 700; letter-spacing: -.035em; line-height: 1.1; }
+  .hiw-chip__x { flex: 1; font-size: 15.5px; line-height: 1.45; color: var(--m3); }
+  .hiw-chip__p { margin-top: 10px; font: 500 13px var(--mono); letter-spacing: .06em; color: var(--m1); text-transform: uppercase; }
+  .hiw-chip__bar { position: absolute; left: 26px; right: 26px; bottom: 12px; height: 2px; border-radius: 2px; background: var(--lime); transform-origin: left; transform: scaleX(var(--p, 0)); opacity: 0; }
+  .hiw-chip button:hover .hiw-chip__at, .hiw-chip button:focus-visible .hiw-chip__at { color: var(--lime); }
   .hiw-chip.on { box-shadow: inset 0 0 0 1.5px var(--lime); }
-  .hiw-chip.on button { color: var(--fg); }
-  .hiw-chip.on i { opacity: 1; }
+  .hiw-chip.on .hiw-chip__at { color: var(--lime); }
+  .hiw-chip.on .hiw-chip__bar { opacity: 1; }
+  @media (max-width: 1100px) { .hiw__chips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .hiw__tx summary { cursor: pointer; font: 500 12px var(--mono); letter-spacing: .06em; color: var(--m3); text-transform: uppercase; }
   .hiw__tx div { margin-top: 12px; max-width: 760px; font-size: 15px; line-height: 1.6; color: var(--m2); }
   @media (max-width: 700px) {
@@ -122,9 +139,19 @@
     .hiw__cap { font-size: 16px; min-height: 2.6em; }
     .hiw__ctl { justify-content: space-between; }
     .hiw__btn--lime { flex: 1; }
-    .hiw__chips { flex-wrap: nowrap; overflow-x: auto; margin: -4px calc(50% - 50vw) 0; padding: 4px calc(50vw - 50%); scrollbar-width: none; }
+    .hiw__lead { font-size: 16px; }
+    /* --g = the section's side padding, so the first card lines up with the text and snaps back to it */
+    .hiw__chips { --g: 32px; display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--g)); padding: 2px var(--g); scroll-padding-inline: var(--g); scrollbar-width: none; }
     .hiw__chips::-webkit-scrollbar { display: none; }
-    .hiw-chip { flex-shrink: 0; }
+    .hiw-chip { flex: 0 0 76%; scroll-snap-align: start; border-radius: 20px; }
+    .hiw-chip button { padding: 20px 20px 22px; gap: 8px; }
+    .hiw-chip strong { font-size: 19px; }
+    .hiw-chip__x { font-size: 14px; }
+    .hiw-chip__p, .hiw-chip b, .hiw-chip__at { font-size: 11.5px; }
+    .hiw-chip__bar { left: 20px; right: 20px; bottom: 10px; }
+  }
+  @media (max-width: 640px) {
+    .hiw__chips { --g: 20px; }
   }
 </style>
 
@@ -214,6 +241,8 @@
     chips.forEach(c => c.querySelector('button').addEventListener('click', () => {
       use(mode || 'loop');
       userPaused = false;
+      const r = v.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > innerHeight) v.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
       const go = () => { v.currentTime = +c.dataset.t; play(); };
       v.readyState >= 1 ? go() : v.addEventListener('loadedmetadata', go, { once: true });
     }));
@@ -237,6 +266,7 @@
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "HOW IT WORKS" },
     { "type": "text", "id": "title", "label": "Title", "default": "See it in 60 seconds." },
+    { "type": "textarea", "id": "lead", "label": "Intro", "default": "Tapfour Connect is a programmed NFC stand plus the tapfour app. Guests tap to review or scan for your menu; you run links, menu, orders and stats from your phone. The film shows all of it in four parts." },
     { "type": "text", "id": "video_label", "label": "Video description (screen readers)", "default": "How Tapfour Connect works: pick a stand, a guest taps for your Google review or scans your live menu, orders pop up at the counter, and the tapfour app shows every tap." },
     { "type": "text", "id": "idle_caption", "label": "Caption before the film starts", "default": "Tap, scan, order: the whole setup in a minute." },
     { "type": "header", "content": "Files (blank = file of the same name in assets/)" },
@@ -258,8 +288,9 @@
       "limit": 6,
       "settings": [
         { "type": "text", "id": "num", "label": "Number", "default": "01" },
-        { "type": "text", "id": "label", "label": "Label", "default": "Build" },
-        { "type": "text", "id": "anchor", "label": "Section link", "default": "#build" },
+        { "type": "text", "id": "label", "label": "Title", "default": "Build your setup" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "text", "id": "price", "label": "Price line" },
         { "type": "number", "id": "start", "label": "Starts at (seconds)", "default": 5 },
         { "type": "number", "id": "end", "label": "Ends at (seconds)", "default": 17 }
       ]
@@ -268,10 +299,10 @@
   "presets": [{
     "name": "How it works film",
     "blocks": [
-      { "type": "chapter", "settings": { "num": "01", "label": "Build", "anchor": "#build", "start": 5, "end": 17 } },
-      { "type": "chapter", "settings": { "num": "02", "label": "App", "anchor": "#app", "start": 17, "end": 37 } },
-      { "type": "chapter", "settings": { "num": "03", "label": "Dashboard & plans", "anchor": "#plans", "start": 37, "end": 51 } },
-      { "type": "chapter", "settings": { "num": "04", "label": "Services", "anchor": "#services", "start": 51, "end": 57 } }
+      { "type": "chapter", "settings": {"num": "01", "label": "Build your setup", "text": "3 designs, 2 finishes. Programmed with your Google link before it ships.", "price": "Stand from ₱899", "start": 5, "end": 17} },
+      { "type": "chapter", "settings": {"num": "02", "label": "The tapfour app", "text": "Tap for a Google review, scan for a live menu, table orders to your counter.", "price": "Ordering add-on from ₱499/mo", "start": 17, "end": 37} },
+      { "type": "chapter", "settings": {"num": "03", "label": "Dashboard & plans", "text": "Every tap, your busiest hours. Change a link once, every stand follows.", "price": "₱3,000 once + ₱299/mo", "start": 37, "end": 51} },
+      { "type": "chapter", "settings": {"num": "04", "label": "Done-for-you", "text": "No time? We set up your Google profile, menu and page.", "price": "From ₱1,500 one-time", "start": 51, "end": 57} }
     ]
   }]
 }
