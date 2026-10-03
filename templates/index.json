@@ -271,7 +271,7 @@
           "type": "question",
           "settings": {
             "q": "How does an NFC Google review stand work?",
-            "a": "<p>Each TAP4.1 L-Stand has an NFC chip that we program with your Google review link before it ships. A guest holds their phone near the stand and your review page opens: no app to download, no searching for your shop. Phones without NFC can scan the QR code instead.</p>"
+            "a": "<p>Each Tapfour Connect stand has an NFC chip that we program with your Google review link before it ships. A guest holds their phone near the stand and your review page opens: no app to download, no searching for your shop. Phones without NFC can scan the QR code instead.</p>"
           }
         },
         "q_phones": {
@@ -285,7 +285,7 @@
           "type": "question",
           "settings": {
             "q": "How much does it cost?",
-            "a": "<p>A single TAP4.1 L-Stand is ₱899, and a Review + QR menu stand is ₱1,398. The Solo package is 5 Review + Menu stands plus the tapfour app for ₱3,000 once + ₱299/mo. Bigger packages cover up to 5 or 20 branches. Shipping is confirmed with your order.</p>"
+            "a": "<p>A single Tapfour Connect stand is ₱899, and a Review + QR menu stand is ₱1,398. The Solo package is 5 Review + Menu stands plus the tapfour app for ₱3,000 once + ₱299/mo. Bigger packages cover up to 5 or 20 branches. Shipping is confirmed with your order.</p>"
           }
         },
         "q_app": {

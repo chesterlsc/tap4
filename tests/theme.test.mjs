@@ -308,7 +308,7 @@ test('03 packages: slider, table-ordering demo and ordering a package', async t 
   const body = decodeURIComponent(opened.split('&body=')[1]);
   assert.match(body, /Business name: Kape Norte/);
   assert.match(body, /Setup: Business package/);
-  assert.match(body, /Stands: 20 × TAP4\.1 L-Stand/);
+  assert.match(body, /Stands: 20 × Tapfour Connect/);
   assert.match(body, /Table ordering: Yes — send a quote/);
   assert.match(body, /One-time: ₱12,000/);
   assert.match(body, /Monthly: ₱799/);

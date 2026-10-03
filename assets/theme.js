@@ -26,9 +26,9 @@
   const priceOf = it => { const v = variant(it.handle, it.variant); return v ? v.price / 100 : it.price; };
   const wasOf = it => { const v = variant(it.handle, it.variant); return v ? (v.compare > v.price ? v.compare / 100 : 0) : it.was || 0; };
 
-  // Hardware: the TAP4.1 L-Stand (finish = Shopify variant, face = what's printed, no business branding).
+  // Hardware: the Tapfour Connect stand (finish = Shopify variant, face = what's printed, no business branding).
   const FINISHES = [{ id: 'black', name: 'Glossy Black', sw: '#0a0a0b' }, { id: 'white', name: 'Glossy White', sw: '#f4f3ef' }];
-  const standItem = fin => { const f = FINISHES.find(x => x.id === fin) || FINISHES[0]; return { id: 'stand', handle: 'tap4-l-stand', variant: f.name, name: 'TAP4.1 L-Stand · ' + f.name, price: 899, was: 1499 }; };
+  const standItem = fin => { const f = FINISHES.find(x => x.id === fin) || FINISHES[0]; return { id: 'stand', handle: 'tap4-l-stand', variant: f.name, name: 'Tapfour Connect · ' + f.name, price: 899, was: 1499 }; };
   const HW_MENU = { handle: 'printed-qr-menu', name: 'Printed QR menu', price: 499, was: 829 };
   const LINKS = { handle: 'multi-link-page', name: '4-in-1 links page', price: 350, was: 579 };
   const DESIGNS = [
@@ -713,7 +713,7 @@
     const face = S.pkg ? 'menu' : designOf(), c = faceCost(face), [tag, name, sub] = HERO[face];
     const img = $('[data-hero-img]', hero), src = TF.img[`l-${S.finish}-${face}`];
     if (src && img.getAttribute('src') !== src) img.src = src;
-    img.alt = `TAP4.1 L-Stand, ${name}`;
+    img.alt = `Tapfour Connect, ${name}`;
     $('[data-hero-tag]', hero).textContent = `${tag} · ${S.finish === 'white' ? 'GLOSSY WHITE' : 'GLOSSY BLACK'}`;
     $('[data-hero-name]', hero).textContent = name;
     $('[data-hero-sub]', hero).textContent = sub;
@@ -780,8 +780,8 @@
       if (recurring) line.selling_plan = v.sp;
       items.push(line);
     };
-    const props = { ...(CO.info.business.trim() && { 'Business name': CO.info.business.trim() }), Setup: d.pkg ? d.plan.name + ' package' : 'TAP4.1 L-Stand', Finish: FINISHES.find(x => x.id === S.finish).name };
-    if (d.pkg) props.Stands = PKGS[d.pkg].stands + ' × TAP4.1 L-Stand';
+    const props = { ...(CO.info.business.trim() && { 'Business name': CO.info.business.trim() }), Setup: d.pkg ? d.plan.name + ' package' : 'Tapfour Connect', Finish: FINISHES.find(x => x.id === S.finish).name };
+    if (d.pkg) props.Stands = PKGS[d.pkg].stands + ' × Tapfour Connect';
     if (d.menuOn && S.menuHow === 3) props.Menu = 'Customer will send it after checkout';
     Object.assign(props, { Design: DESIGNS.find(x => x.id === d.design).name, 'Tap opens': d.destUrl });
     if (d.design === 'links') props['4-in-1 apps'] = d.activePl.map(p => p[1]).join(', ');
